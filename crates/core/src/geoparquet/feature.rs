@@ -1,8 +1,8 @@
 use super::{FromGeoparquet, IntoGeoparquet};
-use crate::geoarrow::{VERSION, VERSION_KEY};
+use crate::geoarrow::{Table, VERSION, VERSION_KEY};
 use crate::{Error, Item, ItemCollection, Result, Value};
 use bytes::Bytes;
-use geoarrow::io::parquet::{GeoParquetRecordBatchReaderBuilder, GeoParquetWriterOptions};
+use geoarrow_geoparquet::{GeoParquetRecordBatchReaderBuilder, GeoParquetWriterOptions};
 use parquet::{
     basic::Compression,
     file::{properties::WriterProperties, reader::ChunkReader},
@@ -26,8 +26,7 @@ where
     R: ChunkReader + 'static,
 {
     let reader = GeoParquetRecordBatchReaderBuilder::try_new(reader)?.build()?;
-    let table = reader.read_table()?;
-    crate::geoarrow::from_table(table)
+    crate::geoarrow::from_record_batch_reader(reader)
 }
 
 /// Writes a [ItemCollection] to a [std::io::Write] as
@@ -112,8 +111,8 @@ pub fn into_writer_with_options<W>(
 where
     W: Write + Send,
 {
-    let table = crate::geoarrow::to_table(item_collection)?;
-    geoarrow::io::parquet::write_geoparquet(table.into_record_batch_reader(), writer, options)
+    let table = Table::from_item_collection(item_collection)?;
+    geoarrow_geoparquet::write_geoparquet(Box::new(table.into_reader()), writer, options)
         .map_err(Error::from)
 }
 

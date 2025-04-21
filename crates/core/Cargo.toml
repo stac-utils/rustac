@@ -13,17 +13,18 @@ rust-version.workspace = true
 
 [features]
 geo = ["dep:geo"]
-geoarrow = ["dep:geoarrow", "dep:arrow", "dep:geo-types"]
-geoparquet = ["geoarrow", "geoarrow/parquet", "dep:parquet"]
-geoparquet-compression = [
-    "geoparquet",
-    "geoarrow/parquet_compression",
-    "parquet/snap",
-    "parquet/brotli",
-    "parquet/flate2",
-    "parquet/lz4",
-    "parquet/zstd",
+geoarrow = [
+    "dep:geoarrow-array",
+    "dep:geoarrow-schema",
+    "dep:arrow-array",
+    "dep:arrow-cast",
+    "dep:arrow-json",
+    "dep:arrow-schema",
+    "dep:geo-traits",
+    "dep:geo-types",
 ]
+geoparquet = ["geoarrow", "dep:geoarrow-geoparquet", "dep:parquet"]
+geoparquet-compression = ["geoparquet", "geoarrow-geoparquet/compression"]
 object-store = ["dep:object_store", "dep:tokio"]
 object-store-aws = ["object-store", "object_store/aws"]
 object-store-azure = ["object-store", "object_store/azure"]
@@ -39,13 +40,19 @@ reqwest = ["dep:reqwest"]
 validate = ["dep:jsonschema", "dep:fluent-uri", "reqwest"]
 
 [dependencies]
-arrow = { workspace = true, optional = true }
+arrow-array = { workspace = true, optional = true, features = ["chrono-tz"] }
+arrow-cast = { workspace = true, optional = true }
+arrow-json = { workspace = true, optional = true }
+arrow-schema = { workspace = true, optional = true }
 bytes.workspace = true
 chrono = { workspace = true, features = ["serde"] }
 fluent-uri = { workspace = true, optional = true }
 geo = { workspace = true, optional = true }
+geo-traits = { workspace = true, optional = true }
 geo-types = { workspace = true, optional = true }
-geoarrow = { workspace = true, optional = true }
+geoarrow-array = { workspace = true, optional = true }
+geoarrow-geoparquet = { workspace = true, optional = true }
+geoarrow-schema = { workspace = true, optional = true }
 geojson.workspace = true
 indexmap.workspace = true
 jsonschema = { workspace = true, optional = true, features = ["resolve-http"] }

@@ -5,10 +5,10 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// [arrow::error::ArrowError]
+    /// [arrow_schema::ArrowError]
     #[error(transparent)]
     #[cfg(feature = "geoarrow")]
-    Arrow(#[from] arrow::error::ArrowError),
+    Arrow(#[from] arrow_schema::ArrowError),
 
     /// [chrono::ParseError]
     #[error(transparent)]
@@ -34,10 +34,10 @@ pub enum Error {
         path: String,
     },
 
-    /// [geoarrow::error::GeoArrowError]
+    /// [geoarrow_array::error::GeoArrowError]
     #[error(transparent)]
     #[cfg(feature = "geoarrow")]
-    GeoArrow(#[from] geoarrow::error::GeoArrowError),
+    GeoArrow(#[from] geoarrow_array::error::GeoArrowError),
 
     /// [geojson::Error]
     #[error(transparent)]

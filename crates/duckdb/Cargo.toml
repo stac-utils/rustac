@@ -16,12 +16,12 @@ default = []
 bundled = ["duckdb/bundled"]
 
 [dependencies]
-arrow.workspace = true
+arrow-array.workspace = true
 chrono.workspace = true
 cql2.workspace = true
 duckdb.workspace = true
 geo.workspace = true
-geoarrow = { workspace = true, features = ["parquet"] }
+geoarrow-array = { workspace = true }
 geojson.workspace = true
 log.workspace = true
 serde_json.workspace = true
