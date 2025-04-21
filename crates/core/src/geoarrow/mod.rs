@@ -74,7 +74,7 @@ impl TableBuilder {
     pub fn build(self) -> Result<Table> {
         let mut values = Vec::with_capacity(self.item_collection.items.len());
         let geometry_type = GeometryType::new(CoordType::Interleaved, Default::default());
-        let mut builder = GeometryBuilder::new(geometry_type, false);
+        let mut builder = GeometryBuilder::new(geometry_type);
         for mut item in self.item_collection.items {
             builder.push_geometry(
                 item.geometry
@@ -220,24 +220,6 @@ impl Table {
 }
 
 /// Converts a [RecordBatchReader] to an [ItemCollection].
-///
-/// # Examples
-///
-/// ```
-/// # #[cfg(feature = "geoparquet")]
-/// # {
-/// use std::fs::File;
-/// use geoarrow::io::parquet::GeoParquetRecordBatchReaderBuilder;
-///
-/// let file = File::open("data/extended-item.parquet").unwrap();
-/// let reader = GeoParquetRecordBatchReaderBuilder::try_new(file)
-///     .unwrap()
-///     .build()
-///     .unwrap();
-/// let table = reader.read_table().unwrap();
-/// let item_collection = stac::geoarrow::from_table(table).unwrap();
-/// # }
-/// ```
 pub fn from_record_batch_reader<R: RecordBatchReader>(reader: R) -> Result<ItemCollection> {
     let item_collection = json::from_record_batch_reader(reader)?
         .into_iter()
@@ -264,7 +246,6 @@ pub fn with_native_geometry(
                 CoordType::Interleaved,
                 Metadata::default().into(),
             )),
-            false,
         )?;
         let mut columns = record_batch.columns().to_vec();
         let mut schema_builder = SchemaBuilder::from(&*record_batch.schema());
