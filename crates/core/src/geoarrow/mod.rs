@@ -5,7 +5,7 @@ pub mod json;
 use crate::{Error, ItemCollection, Result};
 use arrow_array::{RecordBatch, RecordBatchIterator, RecordBatchReader, cast::AsArray};
 use arrow_json::ReaderBuilder;
-use arrow_schema::{SchemaBuilder, SchemaRef};
+use arrow_schema::{DataType, Field, SchemaBuilder, SchemaRef, TimeUnit};
 use geo_types::Geometry;
 use geoarrow_array::{
     GeoArrowArray, GeoArrowType,
@@ -21,6 +21,17 @@ pub const VERSION_KEY: &str = "stac_geoparquet:version";
 
 /// The stac-geoparquet version.
 pub const VERSION: &str = "1.0.0";
+
+const DATETIME_COLUMNS: [&str; 8] = [
+    "datetime",
+    "start_datetime",
+    "end_datetime",
+    "created",
+    "updated",
+    "expires",
+    "published",
+    "unpublished",
+];
 
 /// A geoarrow table.
 ///
@@ -107,17 +118,36 @@ impl TableBuilder {
             }
             values.push(value);
         }
+
+        // Decode JSON
         let schema = arrow_json::reader::infer_json_schema_from_iterator(values.iter().map(Ok))?;
-        let mut schema_builder = SchemaBuilder::from(schema.fields());
-        let geometry_array = builder.finish();
-        schema_builder.push(geometry_array.data_type().to_field("geometry", true));
-        let mut decoder = ReaderBuilder::new(schema.clone().into()).build_decoder()?;
+        let mut schema_builder = SchemaBuilder::new();
+        for field in schema.fields().iter() {
+            if DATETIME_COLUMNS.contains(&field.name().as_str()) {
+                schema_builder.push(Field::new(
+                    field.name(),
+                    DataType::Timestamp(TimeUnit::Millisecond, Some("UTC".into())),
+                    field.is_nullable(),
+                ));
+            } else {
+                schema_builder.push(field.clone());
+            }
+        }
+        let mut metadata = schema.metadata;
+        let _ = metadata.insert(VERSION_KEY.to_string(), VERSION.into());
+        let schema = Arc::new(schema_builder.finish());
+        let mut decoder = ReaderBuilder::new(schema.clone()).build_decoder()?;
         decoder.serialize(&values)?;
+
+        // Build the table schema
+        let geometry_array = builder.finish();
+        let mut schema_builder = SchemaBuilder::from(schema.fields());
+        schema_builder.push(geometry_array.data_type().to_field("geometry", true));
+
+        // Build the table
         let record_batch = decoder.flush()?.ok_or(Error::NoItems)?;
         let mut columns = record_batch.columns().to_vec();
         columns.push(geometry_array.to_array_ref());
-        let mut metadata = schema.metadata;
-        let _ = metadata.insert(VERSION_KEY.to_string(), VERSION.into());
         let schema = Arc::new(schema_builder.finish().with_metadata(metadata));
         let record_batch = RecordBatch::try_new(schema.clone(), columns)?;
         Ok(Table {
