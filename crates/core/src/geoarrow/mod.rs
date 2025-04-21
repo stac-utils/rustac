@@ -182,6 +182,11 @@ impl Table {
             .map(|record_batch| record_batch.num_rows())
             .sum()
     }
+
+    /// Returns true if this is an empty table.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 /// Converts a [RecordBatchReader] to an [ItemCollection].
