@@ -49,9 +49,9 @@ futures = "0.3.31"
 geo = "0.30.0"
 geo-traits = "0.2"
 geo-types = "0.7.15"
-geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "0951163e3e8724a528c2f680a4158106197e7a32" }
-geoarrow-geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "0951163e3e8724a528c2f680a4158106197e7a32" }
-geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "0951163e3e8724a528c2f680a4158106197e7a32" }
+geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "06a6d7753fadd5273e91759c7dd2248fdc54bcd0" }
+geoarrow-geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "06a6d7753fadd5273e91759c7dd2248fdc54bcd0" }
+geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "06a6d7753fadd5273e91759c7dd2248fdc54bcd0" }
 geojson = "0.24.1"
 http = "1.1"
 indexmap = { version = "2.9.0", features = ["serde"] }

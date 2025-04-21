@@ -371,7 +371,7 @@ fn set_column_for_json_rows(
                 })?;
         }
         DataType::Dictionary(_, value_type) => {
-            let hydrated = arrow::compute::cast(&array, value_type)
+            let hydrated = arrow_cast::cast(&array, value_type)
                 .expect("cannot cast dictionary to underlying values");
             set_column_for_json_rows(rows, &hydrated, col_name, explicit_nulls)?;
         }
@@ -424,6 +424,7 @@ fn set_column_for_json_rows(
     Ok(())
 }
 
+/// Creates JSON values from a record batch reader.
 pub fn from_record_batch_reader<R: RecordBatchReader>(
     reader: R,
 ) -> Result<Vec<serde_json::Map<String, Value>>, crate::Error> {

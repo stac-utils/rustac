@@ -1,15 +1,14 @@
 //! Use [duckdb](https://duckdb.org/) with [STAC](https://stacspec.org).
 
-#![warn(unused_crate_dependencies)]
+#![deny(unused_crate_dependencies)]
 
-use arrow::array::RecordBatch;
+use arrow_array::RecordBatch;
 use chrono::DateTime;
 use cql2::{Expr, ToDuckSQL};
 use duckdb::{Connection, types::Value};
 use geo::BoundingRect;
-use geoarrow::table::Table;
 use geojson::Geometry;
-use stac::{Collection, SpatialExtent, TemporalExtent};
+use stac::{Collection, SpatialExtent, TemporalExtent, geoarrow::Table};
 use stac_api::{Direction, Search};
 use std::fmt::Debug;
 use thiserror::Error;
@@ -37,10 +36,6 @@ pub fn search(
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
-    /// [arrow::error::ArrowError]
-    #[error(transparent)]
-    Arrow(#[from] arrow::error::ArrowError),
-
     /// [chrono::format::ParseError]
     #[error(transparent)]
     ChronoParse(#[from] chrono::format::ParseError),
@@ -53,9 +48,9 @@ pub enum Error {
     #[error(transparent)]
     DuckDB(#[from] duckdb::Error),
 
-    /// [geoarrow::error::GeoArrowError]
+    /// [geoarrow_array::error::GeoArrowError]
     #[error(transparent)]
-    GeoArrow(#[from] geoarrow::error::GeoArrowError),
+    GeoArrow(#[from] geoarrow_array::error::GeoArrowError),
 
     /// [serde_json::Error]
     #[error(transparent)]
@@ -369,8 +364,8 @@ impl Client {
             return Ok(Vec::new().into());
         }
         let schema = record_batches[0].schema();
-        let table = Table::try_new(record_batches, schema)?;
-        let items = stac::geoarrow::from_table(table)?;
+        let table = Table::new(record_batches, schema);
+        let items = stac::geoarrow::from_record_batch_reader(table.into_reader())?;
         Ok(items)
     }
 
@@ -388,8 +383,8 @@ impl Client {
             return Ok(Vec::new().into());
         }
         let schema = record_batches[0].schema();
-        let table = Table::try_new(record_batches, schema)?;
-        let items = stac::geoarrow::json::from_table(table)?;
+        let table = Table::new(record_batches, schema);
+        let items = stac::geoarrow::json::from_record_batch_reader(table.into_reader())?;
         let item_collection = stac_api::ItemCollection::new(items)?;
         Ok(item_collection)
     }
@@ -405,7 +400,7 @@ impl Client {
             Ok(None)
         } else {
             let schema = record_batches[0].schema();
-            let table = Table::try_new(record_batches, schema)?;
+            let table = Table::new(record_batches, schema);
             Ok(Some(table))
         }
     }

@@ -1,5 +1,5 @@
 use super::{FromGeoparquet, IntoGeoparquet};
-use crate::geoarrow::{VERSION, VERSION_KEY};
+use crate::geoarrow::{Table, VERSION, VERSION_KEY};
 use crate::{Error, Item, ItemCollection, Result, Value};
 use bytes::Bytes;
 use geoarrow_geoparquet::{GeoParquetRecordBatchReaderBuilder, GeoParquetWriterOptions};
@@ -111,7 +111,7 @@ pub fn into_writer_with_options<W>(
 where
     W: Write + Send,
 {
-    let table = crate::geoarrow::to_table(item_collection)?;
+    let table = Table::from_item_collection(item_collection)?;
     geoarrow_geoparquet::write_geoparquet(Box::new(table.into_reader()), writer, options)
         .map_err(Error::from)
 }
