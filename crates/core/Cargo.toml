@@ -23,7 +23,7 @@ geoarrow = [
     "dep:geo-traits",
     "dep:geo-types",
 ]
-geoparquet = ["dep:geoarrow-geoparquet", "dep:parquet"]
+geoparquet = ["geoarrow", "dep:geoarrow-geoparquet", "dep:parquet"]
 geoparquet-compression = ["geoparquet", "geoarrow-geoparquet/compression"]
 object-store = ["dep:object_store", "dep:tokio"]
 object-store-aws = ["object-store", "object_store/aws"]
