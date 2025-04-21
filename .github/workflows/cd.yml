@@ -1,12 +1,13 @@
-name: Docs
+name: CD
 
 on:
   push:
     branches:
-      - "main"
+      - main
 
 jobs:
-  build:
+  build-docs:
+    name: Build docs
     runs-on: ubuntu-latest
     env:
       GIT_COMMITTER_NAME: ci-bot
@@ -22,8 +23,9 @@ jobs:
         id: deployment
         with:
           path: site/
-  deploy:
-    needs: build
+  deploy-docs:
+    needs: build-docs
+    name: Deploy docs
     permissions:
       pages: write
       id-token: write
@@ -34,3 +36,18 @@ jobs:
     steps:
       - uses: actions/deploy-pages@v4
         id: deployment
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin
+      - name: Test w/ coverage
+        run: cargo tarpaulin -p stac -p stac-api --all-features --out xml
+      - uses: codecov/codecov-action@v5
+        with:
+          files: ./cobertura.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
