@@ -5,10 +5,10 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// [arrow_schema::ArrowError]
+    /// [arrow::error::ArrowError]
     #[error(transparent)]
     #[cfg(feature = "geoarrow")]
-    Arrow(#[from] arrow_schema::ArrowError),
+    Arrow(#[from] arrow::error::ArrowError),
 
     /// [chrono::ParseError]
     #[error(transparent)]

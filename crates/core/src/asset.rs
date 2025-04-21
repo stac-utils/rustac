@@ -1,8 +1,8 @@
 use crate::{Band, DataType, Statistics};
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use stac_derive::Fields;
-use std::collections::HashMap;
 
 /// An Asset is an object that contains a URI to data associated with the [Item](crate::Item) that can be downloaded or streamed.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Fields)]
@@ -98,7 +98,7 @@ pub trait Assets {
     /// let item: Item = stac::read("examples/simple-item.json").unwrap();
     /// assert!(!item.assets().is_empty());
     /// ```
-    fn assets(&self) -> &HashMap<String, Asset>;
+    fn assets(&self) -> &IndexMap<String, Asset>;
 
     /// Returns a mut reference to this object's assets.
     ///
@@ -111,7 +111,7 @@ pub trait Assets {
     /// let mut item: Item = stac::read("examples/simple-item.json").unwrap();
     /// item.assets_mut().insert("foo".to_string(), Asset::new("./asset.tif"));
     /// ```
-    fn assets_mut(&mut self) -> &mut HashMap<String, Asset>;
+    fn assets_mut(&mut self) -> &mut IndexMap<String, Asset>;
 }
 
 impl Asset {

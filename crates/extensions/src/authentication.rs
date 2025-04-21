@@ -4,17 +4,17 @@
 //! security spec](https://swagger.io/docs/specification/authentication/).
 
 use crate::Extension;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
 
 /// The authentication extension fields.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Authentication {
     /// A property that contains all of the [scheme definitions](Scheme) used by
     /// [Assets](stac::Asset) and [Links](stac::Link) in the STAC [Item](crate::Item) or [Collection](crate::Collection).
-    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
-    pub schemes: HashMap<String, Scheme>,
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub schemes: IndexMap<String, Scheme>,
 
     /// A property that specifies which schemes may be used to access an [Asset](stac::Asset)
     /// or [Link](stac::Link).
@@ -60,8 +60,8 @@ pub struct Scheme {
     /// OAuth flows: `authorizationCode` | `implicit` | `password` |
     /// `clientCredentials`.  The OAuth2 Flow Object applies for oauth2, the
     /// Signed URL Object applies to signedUrl.
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    pub flows: HashMap<String, Flow>,
+    #[serde(skip_serializing_if = "IndexMap::is_empty", default)]
+    pub flows: IndexMap<String, Flow>,
 
     /// OpenID Connect URL to discover OpenID configuration values.
     ///
@@ -94,7 +94,7 @@ pub enum Flow {
         /// The available scopes for the authentication scheme.
         ///
         /// A map between the scope name and a short description for it. The map MAY be empty.
-        scopes: HashMap<String, String>,
+        scopes: IndexMap<String, String>,
 
         /// The URL to be used for obtaining refresh tokens.
         ///
@@ -115,8 +115,8 @@ pub enum Flow {
         authorization_api: Option<String>,
 
         /// Parameter definition for requests to the authorizationApi
-        #[serde(skip_serializing_if = "HashMap::is_empty")]
-        parameters: HashMap<String, Parameter>,
+        #[serde(skip_serializing_if = "IndexMap::is_empty")]
+        parameters: IndexMap<String, Parameter>,
 
         /// Key name for the signed URL field in an authorizationApi response
         #[serde(skip_serializing_if = "Option::is_none", rename = "responseField")]
@@ -138,7 +138,7 @@ pub struct Parameter {
     pub description: Option<String>,
 
     /// Schema object following the [JSON Schema draft-07](Schema object following the JSON Schema draft-07).
-    pub schema: HashMap<String, Value>,
+    pub schema: IndexMap<String, Value>,
 }
 
 /// Query, header, or cookie.

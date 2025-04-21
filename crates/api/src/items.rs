@@ -1,9 +1,9 @@
 use crate::{Error, Fields, Filter, Result, Search, Sortby};
 use chrono::{DateTime, FixedOffset};
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use stac::{Bbox, Item};
-use std::collections::HashMap;
 
 /// Parameters for the items endpoint from STAC API - Features.
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
@@ -97,7 +97,7 @@ pub struct GetItems {
 
     /// Additional fields.
     #[serde(flatten)]
-    pub additional_fields: HashMap<String, String>,
+    pub additional_fields: IndexMap<String, String>,
 }
 
 impl Items {
@@ -423,12 +423,12 @@ fn maybe_parse_from_rfc3339(s: &str) -> Result<Option<DateTime<FixedOffset>>> {
 mod tests {
     use super::{GetItems, Items};
     use crate::{Fields, Filter, Sortby, sort::Direction};
+    use indexmap::IndexMap;
     use serde_json::{Map, Value, json};
-    use std::collections::HashMap;
 
     #[test]
     fn get_items_try_from_items() {
-        let mut additional_fields = HashMap::new();
+        let mut additional_fields = IndexMap::new();
         let _ = additional_fields.insert("token".to_string(), "foobar".to_string());
 
         let get_items = GetItems {

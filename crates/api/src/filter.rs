@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{Error, Result};
 use cql2::Expr;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -56,9 +56,22 @@ impl FromStr for Filter {
     }
 }
 
+impl TryFrom<Filter> for Expr {
+    type Error = Error;
+    fn try_from(value: Filter) -> Result<Self> {
+        match value {
+            Filter::Cql2Json(json) => {
+                serde_json::from_value(Value::Object(json)).map_err(Error::from)
+            }
+            Filter::Cql2Text(text) => cql2::parse_text(&text).map_err(|e| Error::from(Box::new(e))),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Filter;
+    use cql2::Expr;
     use serde_json::json;
 
     #[test]
@@ -94,5 +107,14 @@ mod tests {
         let value = serde_json::to_value(filter).unwrap();
         assert_eq!(value["filter-lang"], "cql2-text");
         assert!(value.get("filter").is_some());
+    }
+
+    #[test]
+    fn expr() {
+        let filter = Filter::Cql2Text(
+            "id='LC08_L1TP_060247_20180905_20180912_01_T1_L1TP' AND collection='landsat8_l1tp'"
+                .to_string(),
+        );
+        let _: Expr = filter.try_into().unwrap();
     }
 }

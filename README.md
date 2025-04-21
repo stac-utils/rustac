@@ -4,12 +4,15 @@
 ![Crates.io](https://img.shields.io/crates/l/stac?style=for-the-badge)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=for-the-badge)](./CODE_OF_CONDUCT)
 
-> The power of Rust for the STAC ecosystem
+## The power of Rust for the STAC ecosystem
+
+> [!TIP]
+> While you can pronounce "rustac" however you'd like, we like "ruh-stac".
 
 ![Ferris the crab holding the STAC logo](./img/ferris-holding-stac-small.png)
 
 Command Line Interface (CLI) and Rust libraries for the [SpatioTemporal Asset Catalog (STAC)](https://stacspec.org/) specification.
-We have a Python package based on **rustac** that lives in its own repository, [rustac-py](https://github.com/gadomski/rustac-py).
+We have a Python package based on **rustac** that lives in its own repository, [rustac-py](https://github.com/stac-utils/rustac-py).
 For more on the difference between **rustac** and **rustac-py**, see [our docs](https://stac-utils.github.io/rustac/).
 
 > [!NOTE]

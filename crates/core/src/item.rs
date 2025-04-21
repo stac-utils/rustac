@@ -3,10 +3,11 @@
 use crate::{Asset, Assets, Bbox, Error, Fields, Href, Link, Result, STAC_VERSION, Version};
 use chrono::{DateTime, FixedOffset, NaiveDateTime, Utc};
 use geojson::{Feature, Geometry, feature::Id};
+use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use stac_derive::{Links, Migrate, SelfHref};
-use std::{collections::HashMap, path::Path};
+use std::path::Path;
 use url::Url;
 
 const TOP_LEVEL_ATTRIBUTES: [&str; 8] = [
@@ -98,7 +99,7 @@ pub struct Item {
 
     /// Dictionary of asset objects that can be downloaded, each with a unique key.
     #[serde(default)]
-    pub assets: HashMap<String, Asset>,
+    pub assets: IndexMap<String, Asset>,
 
     /// The `id` of the STAC [Collection](crate::Collection) this `Item`
     /// references to.
@@ -157,7 +158,7 @@ pub struct FlatItem {
     pub links: Vec<Link>,
 
     /// Dictionary of asset objects that can be downloaded, each with a unique key.
-    pub assets: HashMap<String, Asset>,
+    pub assets: IndexMap<String, Asset>,
 
     /// The ID of the collection this Item is a part of.
     pub collection: Option<String>,
@@ -246,7 +247,7 @@ pub struct Properties {
 pub struct Builder {
     id: String,
     canonicalize_paths: bool,
-    assets: HashMap<String, Asset>,
+    assets: IndexMap<String, Asset>,
 }
 
 impl Builder {
@@ -262,7 +263,7 @@ impl Builder {
         Builder {
             id: id.to_string(),
             canonicalize_paths: true,
-            assets: HashMap::new(),
+            assets: IndexMap::new(),
         }
     }
 
@@ -357,7 +358,7 @@ impl Item {
             bbox: None,
             properties: Properties::default(),
             links: Vec::new(),
-            assets: HashMap::new(),
+            assets: IndexMap::new(),
             collection: None,
             additional_fields: Map::new(),
             self_href: None,
@@ -592,10 +593,10 @@ impl Item {
 }
 
 impl Assets for Item {
-    fn assets(&self) -> &HashMap<String, Asset> {
+    fn assets(&self) -> &IndexMap<String, Asset> {
         &self.assets
     }
-    fn assets_mut(&mut self) -> &mut HashMap<String, Asset> {
+    fn assets_mut(&mut self) -> &mut IndexMap<String, Asset> {
         &mut self.assets
     }
 }

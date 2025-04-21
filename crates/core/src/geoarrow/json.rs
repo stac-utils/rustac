@@ -371,7 +371,7 @@ fn set_column_for_json_rows(
                 })?;
         }
         DataType::Dictionary(_, value_type) => {
-            let hydrated = arrow_cast::cast::cast(&array, value_type)
+            let hydrated = arrow::compute::cast(&array, value_type)
                 .expect("cannot cast dictionary to underlying values");
             set_column_for_json_rows(rows, &hydrated, col_name, explicit_nulls)?;
         }

@@ -3,10 +3,10 @@ use crate::{
     SelfHref, Version,
 };
 use chrono::{DateTime, Utc};
+use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use stac_derive::{Fields, Links, SelfHref};
-use std::collections::HashMap;
 
 const DEFAULT_LICENSE: &str = "other";
 
@@ -107,12 +107,12 @@ pub struct Collection {
     pub links: Vec<Link>,
 
     /// Dictionary of asset objects that can be downloaded, each with a unique key.
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    pub assets: HashMap<String, Asset>,
+    #[serde(skip_serializing_if = "IndexMap::is_empty", default)]
+    pub assets: IndexMap<String, Asset>,
 
     /// A dictionary of assets that can be found in member Items.
-    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
-    pub item_assets: HashMap<String, ItemAsset>,
+    #[serde(skip_serializing_if = "IndexMap::is_empty", default)]
+    pub item_assets: IndexMap<String, ItemAsset>,
 
     /// Additional fields not part of the `Collection` specification.
     #[serde(flatten)]
@@ -208,8 +208,8 @@ impl Collection {
             extent: Extent::default(),
             summaries: None,
             links: Vec::new(),
-            assets: HashMap::new(),
-            item_assets: HashMap::new(),
+            assets: IndexMap::new(),
+            item_assets: IndexMap::new(),
             additional_fields: Map::new(),
             self_href: None,
         }
@@ -380,10 +380,10 @@ impl Default for TemporalExtent {
 }
 
 impl Assets for Collection {
-    fn assets(&self) -> &HashMap<String, Asset> {
+    fn assets(&self) -> &IndexMap<String, Asset> {
         &self.assets
     }
-    fn assets_mut(&mut self) -> &mut HashMap<String, Asset> {
+    fn assets_mut(&mut self) -> &mut IndexMap<String, Asset> {
         &mut self.assets
     }
 }

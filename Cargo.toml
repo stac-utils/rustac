@@ -29,7 +29,6 @@ rust-version = "1.85"
 
 [workspace.dependencies]
 anyhow = "1.0"
-arrow = "55.0.0"
 arrow-array = "55.0.0"
 arrow-cast = "55.0.0"
 arrow-json = "55.0.0"
@@ -43,7 +42,7 @@ bb8-postgres = "0.9.0"
 bytes = "1.7"
 chrono = "0.4.39"
 clap = "4.5"
-cql2 = "0.3.0"
+cql2 = "0.3.7-beta.0"
 duckdb = "1.2.2"
 fluent-uri = "0.3.2"
 futures = "0.3.31"
@@ -55,6 +54,7 @@ geoarrow-geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = 
 geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "0951163e3e8724a528c2f680a4158106197e7a32" }
 geojson = "0.24.1"
 http = "1.1"
+indexmap = { version = "2.9.0", features = ["serde"] }
 jsonschema = { version = "0.30.0", default-features = false }
 libduckdb-sys = "1.2.1"
 log = "0.4.25"
@@ -97,5 +97,4 @@ url = "2.3"
 webpki-roots = "0.26.8"
 
 [patch.crates-io]
-# geoarrow = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "80b15d4d5a69ab0828dbc3444f66df1e4c314bd0" }
 duckdb = { git = "https://github.com/gadomski/duckdb-rs/", branch = "arrow-v55" }

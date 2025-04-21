@@ -54,6 +54,7 @@ geoarrow-array = { workspace = true, optional = true }
 geoarrow-geoparquet = { workspace = true, optional = true }
 geoarrow-schema = { workspace = true, optional = true }
 geojson.workspace = true
+indexmap.workspace = true
 jsonschema = { workspace = true, optional = true, features = ["resolve-http"] }
 log.workspace = true
 mime.workspace = true

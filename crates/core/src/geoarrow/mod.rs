@@ -154,7 +154,7 @@ impl TableBuilder {
             }
             values.push(value);
         }
-        let schema = arrow_json::reader::infer_json_schema_from_iterator(values.iter().map(Ok))?;
+        let schema = arrow::json::reader::infer_json_schema_from_iterator(values.iter().map(Ok))?;
         let mut schema_builder = SchemaBuilder::new();
         for field in schema.fields().iter() {
             if DATETIME_COLUMNS.contains(&field.name().as_str()) {

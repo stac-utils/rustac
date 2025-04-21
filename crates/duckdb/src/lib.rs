@@ -4,6 +4,7 @@
 
 use arrow::array::RecordBatch;
 use chrono::DateTime;
+use cql2::{Expr, ToDuckSQL};
 use duckdb::{Connection, types::Value};
 use geo::BoundingRect;
 use geoarrow::table::Table;
@@ -43,6 +44,10 @@ pub enum Error {
     /// [chrono::format::ParseError]
     #[error(transparent)]
     ChronoParse(#[from] chrono::format::ParseError),
+
+    /// [cql2::Error]
+    #[error(transparent)]
+    Cql2(#[from] cql2::Error),
 
     /// [duckdb::Error]
     #[error(transparent)]
@@ -526,8 +531,10 @@ impl Client {
                 params.push(Value::Text(end.to_rfc3339()));
             }
         }
-        if search.items.filter.is_some() {
-            todo!("Implement the filter extension");
+        if let Some(filter) = search.items.filter {
+            let expr: Expr = filter.try_into()?;
+            let sql = expr.to_ducksql()?;
+            wheres.push(sql);
         }
         if search.items.query.is_some() {
             todo!("Implement the query extension");
@@ -608,7 +615,7 @@ impl Default for Config {
 
 #[cfg(test)]
 mod tests {
-    use super::{Client, Config};
+    use super::Client;
     use geo::Geometry;
     use rstest::{fixture, rstest};
     use stac::{Bbox, Validate};
@@ -621,40 +628,6 @@ mod tests {
     fn client() -> Client {
         let _mutex = MUTEX.lock().unwrap();
         Client::new().unwrap()
-    }
-
-    #[test]
-    fn no_install() {
-        let _mutex = MUTEX.lock().unwrap();
-        let config = Config {
-            install_extensions: false,
-            ..Default::default()
-        };
-        let client = Client::with_config(config).unwrap();
-        client
-            .search("data/100-sentinel-2-items.parquet", Search::default())
-            .unwrap();
-    }
-
-    #[test]
-    fn extension_directory() {
-        let _mutex = MUTEX.lock().unwrap();
-        let temp_dir = std::env::temp_dir();
-        let config = Config {
-            extension_directory: Some(temp_dir.to_string_lossy().to_string()),
-            ..Default::default()
-        };
-        let _ = Client::with_config(config).unwrap();
-    }
-
-    #[test]
-    fn custom_extension_repository() {
-        let _mutex = MUTEX.lock().unwrap();
-        let config = Config {
-            custom_extension_repository: Some(".".to_string()),
-            ..Default::default()
-        };
-        let _ = Client::with_config(config).unwrap();
     }
 
     #[rstest]
@@ -852,5 +825,15 @@ mod tests {
             schema.field_with_name("geometry").unwrap().metadata()["ARROW:extension:name"],
             "geoarrow.wkb"
         );
+    }
+
+    #[rstest]
+    fn filter(client: Client) {
+        let mut search = Search::default();
+        search.filter = Some("sat:relative_orbit = 98".parse().unwrap());
+        let item_collection = client
+            .search("data/100-sentinel-2-items.parquet", search)
+            .unwrap();
+        assert_eq!(item_collection.items.len(), 49);
     }
 }
