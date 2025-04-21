@@ -29,7 +29,7 @@ rust-version = "1.85"
 
 [workspace.dependencies]
 anyhow = "1.0"
-arrow = "54.2.1"
+arrow = "55.0.0"
 assert-json-diff = "2.0"
 assert_cmd = "2.0"
 async-stream = "0.3.6"
