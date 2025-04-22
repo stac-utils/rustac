@@ -22,7 +22,8 @@ pub const VERSION_KEY: &str = "stac_geoparquet:version";
 /// The stac-geoparquet version.
 pub const VERSION: &str = "1.0.0";
 
-const DATETIME_COLUMNS: [&str; 8] = [
+/// Geoarrow datetime columns
+pub const DATETIME_COLUMNS: [&str; 8] = [
     "datetime",
     "start_datetime",
     "end_datetime",
