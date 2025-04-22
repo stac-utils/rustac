@@ -38,11 +38,13 @@ const TOP_LEVEL_KEYS: [&str; 10] = [
     "collection",
 ];
 
+use crate::Error;
 use arrow_array::RecordBatchReader;
 use arrow_array::{cast::*, types::*, *};
 use arrow_cast::display::{ArrayFormatter, FormatOptions};
 use arrow_json::JsonSerializable;
 use arrow_schema::*;
+use chrono::DateTime;
 use geo_traits::to_geo::{
     ToGeoGeometry, ToGeoGeometryCollection, ToGeoLineString, ToGeoMultiLineString, ToGeoMultiPoint,
     ToGeoMultiPolygon, ToGeoPoint, ToGeoPolygon, ToGeoRect,
@@ -52,6 +54,8 @@ use geoarrow_array::array::from_arrow_array;
 use geoarrow_array::cast::AsGeoArrowArray;
 use serde_json::{Value, json, map::Map as JsonMap};
 use std::iter;
+
+use super::DATETIME_COLUMNS;
 
 fn primitive_array_to_json<T>(array: &dyn Array) -> Result<Vec<Value>, ArrowError>
 where
@@ -427,7 +431,7 @@ fn set_column_for_json_rows(
 /// Creates JSON values from a record batch reader.
 pub fn from_record_batch_reader<R: RecordBatchReader>(
     reader: R,
-) -> Result<Vec<serde_json::Map<String, Value>>, crate::Error> {
+) -> Result<Vec<serde_json::Map<String, Value>>, Error> {
     use geoarrow_array::GeoArrowType;
 
     let schema = reader.schema();
@@ -489,16 +493,18 @@ pub fn from_record_batch_reader<R: RecordBatchReader>(
                     "geometry".into(),
                     serde_json::to_value(geojson::Geometry::new(value))?,
                 );
-                items.push(unflatten(row));
+                items.push(unflatten(row)?);
             }
         }
     } else {
-        items = json_rows.map(unflatten).collect();
+        items = json_rows.map(unflatten).collect::<Result<_, Error>>()?;
     }
     Ok(items)
 }
 
-fn unflatten(mut item: serde_json::Map<String, Value>) -> serde_json::Map<String, Value> {
+fn unflatten(
+    mut item: serde_json::Map<String, Value>,
+) -> Result<serde_json::Map<String, Value>, Error> {
     let mut properties = serde_json::Map::new();
     let keys: Vec<_> = item
         .keys()
@@ -512,13 +518,25 @@ fn unflatten(mut item: serde_json::Map<String, Value>) -> serde_json::Map<String
         .collect();
     for key in keys {
         if let Some(value) = item.remove(&key) {
-            let _ = properties.insert(key, value);
+            if DATETIME_COLUMNS.contains(&key.as_str()) {
+                if let Some(value) = value.as_str() {
+                    let _ = properties.insert(
+                        key,
+                        DateTime::parse_from_rfc3339(value)?
+                            .to_utc()
+                            .to_rfc3339()
+                            .into(),
+                    );
+                }
+            } else {
+                let _ = properties.insert(key, value);
+            }
         }
     }
     if !properties.is_empty() {
         let _ = item.insert("properties".to_string(), Value::Object(properties));
     }
-    item
+    Ok(item)
 }
 
 fn record_batches_to_json_rows(

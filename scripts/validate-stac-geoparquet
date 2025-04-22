@@ -38,6 +38,16 @@ def clean_report(report: dict[str, Any]) -> dict[str, Any]:
             "old_value": "2020-12-14T18:02:31.437000Z",
         }:
             del report["values_changed"]["root['properties']['datetime']"]
+        if report["values_changed"].get("root['properties']['created']") == {
+            "new_value": "2020-12-15T01:48:13.725+00:00",
+            "old_value": "2020-12-15T01:48:13.725Z",
+        }:
+            del report["values_changed"]["root['properties']['created']"]
+        if report["values_changed"].get("root['properties']['updated']") == {
+            "new_value": "2020-12-15T01:48:13.725+00:00",
+            "old_value": "2020-12-15T01:48:13.725Z",
+        }:
+            del report["values_changed"]["root['properties']['updated']"]
         if not report["values_changed"]:
             del report["values_changed"]
     return report
