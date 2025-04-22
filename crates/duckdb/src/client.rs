@@ -413,13 +413,22 @@ impl From<Connection> for Client {
 #[cfg(test)]
 mod tests {
     use super::Client;
+    use duckdb::Connection;
     use geo::Geometry;
     use rstest::{fixture, rstest};
     use stac::{Bbox, Validate};
     use stac_api::{Search, Sortby};
 
     #[fixture]
-    fn client() -> Client {
+    #[once]
+    fn install_spatial() {
+        let connection = Connection::open_in_memory().unwrap();
+        connection.execute("INSTALL spatial", []).unwrap();
+    }
+
+    #[allow(unused_variables)]
+    #[fixture]
+    fn client(install_spatial: ()) -> Client {
         Client::new().unwrap()
     }
 
