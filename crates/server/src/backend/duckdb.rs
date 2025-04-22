@@ -151,7 +151,7 @@ impl DuckdbConnection {
     }
 
     fn search(&self, search: Search) -> Result<stac_api::ItemCollection> {
-        let item_collection = self.client.search_to_json(&self.href, search)?;
+        let item_collection = self.client.search(&self.href, search)?;
         Ok(item_collection)
     }
 }
