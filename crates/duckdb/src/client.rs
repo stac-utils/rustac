@@ -408,8 +408,9 @@ mod tests {
         Client::new().unwrap()
     }
 
-    #[test]
-    fn new() {
+    #[allow(unused_variables)]
+    #[rstest]
+    fn new(install_spatial: ()) {
         Client::new().unwrap();
     }
 
