@@ -43,6 +43,7 @@ impl Client {
     /// ```
     pub fn new() -> Result<Client> {
         let connection = Connection::open_in_memory()?;
+        connection.execute("INSTALL spatial", [])?;
         connection.execute("LOAD spatial", [])?;
         Ok(connection.into())
     }
