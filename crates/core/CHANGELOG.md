@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - Default to snappy compression for geoparquet ([#673](https://github.com/stac-utils/rustac/pull/673))
+- Ensure geoparquet->json provides valid datetime strings (UTC) ([#711](https://github.com/stac-utils/rustac/pull/711)])
 
 ## [0.12.0] - 2025-01-31
 

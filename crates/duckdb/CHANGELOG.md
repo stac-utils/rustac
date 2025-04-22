@@ -8,13 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
-- Configure s3 credential chain ([#621](https://github.com/stac-utils/rustac/pull/621))
-- Read hive partitioned datasets, `Config` structure ([#624](https://github.com/stac-utils/rustac/pull/624))
-- `Client.search_to_arrow_table` ([#634](https://github.com/stac-utils/rustac/pull/634))
+- Read hive partitioned datasets ([#624](https://github.com/stac-utils/rustac/pull/624))
 - Conditionally disable parsing the WKB ([#635](https://github.com/stac-utils/rustac/pull/635))
 - `Client.extensions` ([#665](https://github.com/stac-utils/rustac/pull/665))
-- `Config.install_extensions` ([#681](https://github.com/stac-utils/rustac/pull/681))
-- `Config.from_href` ([#684](https://github.com/stac-utils/rustac/pull/684))
 - Filtering ([#699](https://github.com/stac-utils/rustac/pull/699))
 
 ### Removed
