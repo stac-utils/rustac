@@ -22,8 +22,14 @@ const DEFAULT_COLLECTION_DESCRIPTION: &str =
 #[derive(Debug)]
 pub struct Client {
     connection: Connection,
-    use_hive_partitioning: bool,
-    convert_wkb: bool,
+
+    /// Whether to use hive partitioning
+    pub use_hive_partitioning: bool,
+
+    /// Whether to convert WKB to native geometries.
+    ///
+    /// If False, WKB metadata will be added.
+    pub convert_wkb: bool,
 }
 
 impl Client {
@@ -46,36 +52,6 @@ impl Client {
         connection.execute("INSTALL spatial", [])?;
         connection.execute("LOAD spatial", [])?;
         Ok(connection.into())
-    }
-
-    /// Whether or not to use hive partitioning.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stac_duckdb::Client;
-    ///
-    /// let client = Client::new().unwrap().use_hive_partitioning(true);
-    /// ```
-    pub fn use_hive_partitioning(mut self, use_hive_paritioning: bool) -> Client {
-        self.use_hive_partitioning = use_hive_paritioning;
-        self
-    }
-
-    /// Whether or not to convert WKB fields to native geoarrow geometries.
-    ///
-    /// If false, WKB metadata will be added instead.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stac_duckdb::Client;
-    ///
-    /// let client = Client::new().unwrap().convert_wkb(false);
-    /// ```
-    pub fn convert_wkb(mut self, convert_wkb: bool) -> Client {
-        self.convert_wkb = convert_wkb;
-        self
     }
 
     /// Returns a vector of all extensions.
@@ -611,8 +587,8 @@ mod tests {
     }
 
     #[rstest]
-    fn no_convert_wkb(client: Client) {
-        let client = client.convert_wkb(false);
+    fn no_convert_wkb(mut client: Client) {
+        client.convert_wkb = false;
         let record_batches = client
             .search_to_arrow("data/100-sentinel-2-items.parquet", Search::default())
             .unwrap();
