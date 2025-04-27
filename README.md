@@ -112,7 +112,7 @@ See [RELEASING.md](./RELEASING.md) for a checklist to use when releasing a new v
 
 ## Acknowledgements
 
-We'd like to thank @jkeifer, @parksjr, and Rob Gomez (all from @Element84) for creating the [rustac logo](./img/rustac.svg) from an AI-generated image from the prompt "a crab, a cabin, and a glass of whisky".
+We'd like to thank [@jkeifer](https://github.com/jkeifer), [@parksjr](https://github.com/parksjr), and Rob Gomez (all from [@Element84](https://github.com/Element84)) for creating the [rustac logo](./img/rustac.svg) from an AI-generated image from the prompt "a crab, a cabin, and a glass of whisky".
 
 ## License
 
