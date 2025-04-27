@@ -8,16 +8,18 @@
 
 The power of Rust for the STAC ecosystem
 
-> [!TIP]
-> We pronounce **rustac** "ruh-stac".
-
 **rustac** is a monorepo of Rust crates for the [SpatioTemporal Asset Catalog (STAC)](https://stacspec.org/) specification.
 We have a Python package derived from **rustac** in its own repository, [rustac-py](https://github.com/stac-utils/rustac-py).
 For more on the difference between **rustac** and **rustac-py**, see [our docs](https://stac-utils.github.io/rustac/).
 
+<!-- markdownlint-disable MD028 -->
+> [!TIP]
+> We pronounce **rustac** "ruh-stac".
+
 > [!NOTE]
 > Until 2025-04-17, this repository was named **stac-rs**.
 > See [this RFC](https://github.com/stac-utils/rustac/issues/641) for context on the name change.
+<!-- markdownlint-enable MD028 -->
 
 ## Formats
 
