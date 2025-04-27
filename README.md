@@ -4,15 +4,15 @@
 ![Crates.io](https://img.shields.io/crates/l/stac?style=for-the-badge)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=for-the-badge)](./CODE_OF_CONDUCT)
 
-## The power of Rust for the STAC ecosystem
+The power of Rust for the STAC ecosystem
+
+![rustac logo](./img/rustac-small.png)
 
 > [!TIP]
-> While you can pronounce "rustac" however you'd like, we like "ruh-stac".
+> We pronounce **rustac** "ruh-stac".
 
-![Ferris the crab holding the STAC logo](./img/ferris-holding-stac-small.png)
-
-Command Line Interface (CLI) and Rust libraries for the [SpatioTemporal Asset Catalog (STAC)](https://stacspec.org/) specification.
-We have a Python package based on **rustac** that lives in its own repository, [rustac-py](https://github.com/stac-utils/rustac-py).
+**rustac** is a monorepo of Rust crates for the [SpatioTemporal Asset Catalog (STAC)](https://stacspec.org/) specification.
+We have a Python package derived from **rustac** in its own repository, [rustac-py](https://github.com/stac-utils/rustac-py).
 For more on the difference between **rustac** and **rustac-py**, see [our docs](https://stac-utils.github.io/rustac/).
 
 > [!NOTE]
@@ -109,6 +109,10 @@ graph TD
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for information about contributing to this project.
 See [RELEASING.md](./RELEASING.md) for a checklist to use when releasing a new version.
+
+## Acknowledgements
+
+We'd like to thank @jkeifer, @parksjr, and Rob Gomez (all from @Element84) for creating the [rustac logo](./img/rustac.svg) from an AI-generated image from the prompt "a crab, a cabin, and a glass of whisky".
 
 ## License
 

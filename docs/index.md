@@ -1,13 +1,17 @@
 # rustac
 
-![Ferris holding STAC](./img/ferris-holding-stac-small.png)
+![rustac logo](./img/rustac-small.png)
 
 Welcome to the home of STAC and Rust.
 We're happy you're here.
 
 ## What is rustac?
 
-**rustac** is a [Github repository](https://github.com/stac-utils/rustac) that holds the code for several Rust [crates](https://doc.rust-lang.org/book/ch07-01-packages-and-crates.html) that can be used to create, search for, and otherwise work with [STAC](https://stacspec.org).
+**rustac** is a [Github repository](https://github.com/stac-utils/rustac) that holds the code for several Rust [crates](https://doc.rust-lang.org/book/ch07-01-packages-and-crates.html) for creating, searching, and otherwise working with [STAC](https://stacspec.org).
+
+!!! tip
+
+    We pronounce **rustac** "ruh-stac"
 
 !!! note
 
@@ -45,3 +49,7 @@ Couple of reasons:
 - [stac-api](https://docs.rs/stac-api): Data structures for a STAC API, and a client for searching one
 - [stac-server](https://docs.rs/stac-server): A STAC API server with multiple backends
 - [pgstac](https://docs.rs/pgstac): Rust bindings for [pgstac](https://github.com/stac-utils/pgstac)
+
+## Acknowledgements
+
+We'd like to thank [@jkeifer](https://github.com/jkeifer), [@parksjr](https://github.com/parksjr), and Rob Gomez (all from @Element84) for creating the [rustac logo](./img/rustac.svg) from an AI-generated image from the prompt "a crab, a cabin, and a glass of whisky".
