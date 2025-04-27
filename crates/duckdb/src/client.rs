@@ -513,6 +513,17 @@ mod tests {
     }
 
     #[rstest]
+    fn search_datetime_empty_interval(client: Client) {
+        let item_collection = client
+            .search(
+                "data/100-sentinel-2-items.parquet",
+                Search::default().datetime("2024-12-02T00:00:00Z/"),
+            )
+            .unwrap();
+        assert_eq!(item_collection.items.len(), 1);
+    }
+
+    #[rstest]
     fn search_limit(client: Client) {
         let item_collection = client
             .search(
