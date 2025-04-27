@@ -4,9 +4,9 @@
 ![Crates.io](https://img.shields.io/crates/l/stac?style=for-the-badge)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=for-the-badge)](./CODE_OF_CONDUCT)
 
-The power of Rust for the STAC ecosystem
-
 ![rustac logo](./img/rustac-small.png)
+
+The power of Rust for the STAC ecosystem
 
 > [!TIP]
 > We pronounce **rustac** "ruh-stac".
