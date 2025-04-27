@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - geoarrow record batch converters (moved from **stac-duckdb**) ([#652](https://github.com/stac-utils/rustac/pull/652))
 - `Clone` for `Container` ([#666](https://github.com/stac-utils/rustac/pull/666))
 - `Serialize` for `Container` ([#667](https://github.com/stac-utils/rustac/pull/667))
+- More permissive datetime interval parsing ([#715](https://github.com/stac-utils/rustac/pull/715))
 
 ### Changed
 
