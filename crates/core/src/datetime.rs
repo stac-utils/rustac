@@ -43,9 +43,20 @@ pub fn parse(datetime: &str) -> Result<Interval> {
 fn parse_one(s: &str) -> Result<Option<DateTime<FixedOffset>>> {
     if s == ".." {
         Ok(None)
+    } else if s.is_empty() {
+        log::warn!("an empty string in a datetime interval are invalid, converting to \"..\"");
+        Ok(None)
     } else {
         DateTime::parse_from_rfc3339(s)
             .map(Some)
             .map_err(Error::from)
+    }
+}
+
+mod tests {
+    #[test]
+    fn empty_interval() {
+        let _ = super::parse("2024-04-27T00:00:00Z/").unwrap();
+        let _ = super::parse("/2024-04-27T00:00:00Z").unwrap();
     }
 }
