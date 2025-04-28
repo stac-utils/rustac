@@ -205,6 +205,7 @@ impl Client {
         ))?;
         let mut has_start_datetime = false;
         let mut has_end_datetime = false;
+        let mut column_names = Vec::new();
         let mut columns = Vec::new();
         for row in statement.query_map([], |row| row.get::<_, String>(0))? {
             let column = row?;
@@ -230,6 +231,7 @@ impl Client {
             } else {
                 columns.push(format!("\"{}\"", column));
             }
+            column_names.push(column);
         }
 
         // Get limit and offset
@@ -311,8 +313,12 @@ impl Client {
         }
         if let Some(filter) = search.items.filter {
             let expr: Expr = filter.try_into()?;
-            let sql = expr.to_ducksql()?;
-            wheres.push(sql);
+            if expr_properties_match(&expr, &column_names) {
+                let sql = expr.to_ducksql()?;
+                wheres.push(sql);
+            } else {
+                return Ok(Vec::new());
+            }
         }
 
         let mut suffix = String::new();
@@ -359,6 +365,29 @@ impl Client {
         } else {
             format!("read_parquet('{}', filename=true)", href)
         }
+    }
+}
+
+fn expr_properties_match(expr: &Expr, properties: &[String]) -> bool {
+    use Expr::*;
+
+    match expr {
+        Property { property } => properties.contains(property),
+        Float(_) | Literal(_) | Bool(_) | Geometry(_) => true,
+        Operation { args, .. } => args
+            .iter()
+            .all(|expr| expr_properties_match(expr, properties)),
+        Interval { interval } => interval
+            .iter()
+            .all(|expr| expr_properties_match(expr, properties)),
+        Timestamp { timestamp } => expr_properties_match(timestamp, properties),
+        Date { date } => expr_properties_match(date, properties),
+        Array(exprs) => exprs
+            .iter()
+            .all(|expr| expr_properties_match(expr, properties)),
+        BBox { bbox } => bbox
+            .iter()
+            .all(|expr| expr_properties_match(expr, properties)),
     }
 }
 
@@ -619,5 +648,15 @@ mod tests {
             .search("data/100-sentinel-2-items.parquet", search)
             .unwrap();
         assert_eq!(item_collection.items.len(), 49);
+    }
+
+    #[rstest]
+    fn filter_no_column(client: Client) {
+        let mut search = Search::default();
+        search.filter = Some("foo:bar = 42".parse().unwrap());
+        let item_collection = client
+            .search("data/100-sentinel-2-items.parquet", search)
+            .unwrap();
+        assert_eq!(item_collection.items.len(), 0);
     }
 }
