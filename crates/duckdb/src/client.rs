@@ -246,7 +246,7 @@ impl Client {
         let mut order_by = Vec::with_capacity(search.sortby.len());
         for sortby in &search.sortby {
             order_by.push(format!(
-                "{} {}",
+                "\"{}\" {}",
                 sortby.field,
                 match sortby.direction {
                     Direction::Ascending => "ASC",
@@ -658,5 +658,15 @@ mod tests {
             .search("data/100-sentinel-2-items.parquet", search)
             .unwrap();
         assert_eq!(item_collection.items.len(), 0);
+    }
+
+    #[rstest]
+    fn sortby_property(client: Client) {
+        let mut search = Search::default();
+        search.sortby = vec!["eo:cloud_cover".parse().unwrap()];
+        let item_collection = client
+            .search("data/100-sentinel-2-items.parquet", search)
+            .unwrap();
+        assert_eq!(item_collection.items.len(), 100);
     }
 }
