@@ -77,7 +77,7 @@ impl TableBuilder {
     /// Builds a [Table]
     pub fn build(self) -> Result<Table> {
         let mut values = Vec::with_capacity(self.item_collection.items.len());
-        let geometry_type = GeometryType::new(CoordType::Interleaved, Default::default());
+        let geometry_type = GeometryType::new(CoordType::Interleaved, Default::default()); // the choice of interleaved is arbitrary
         let mut builder = GeometryBuilder::new(geometry_type.clone());
         let mut geometry_builders = HashMap::new();
         for mut item in self.item_collection.items {
