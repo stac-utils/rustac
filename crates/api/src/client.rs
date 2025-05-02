@@ -29,6 +29,7 @@ pub async fn search(
             search.limit = Some(max_items.try_into()?);
         }
     }
+    tracing::debug!("getting first page");
     let stream = client.search(search).await?;
     let mut items = if let Some(max_items) = max_items {
         if max_items == 0 {
@@ -38,7 +39,9 @@ pub async fn search(
     } else {
         Vec::new()
     };
+    tracing::debug!("pinning stream");
     pin_mut!(stream);
+    tracing::debug!("paging");
     while let Some(item) = stream.next().await {
         let item = item?;
         items.push(item);
