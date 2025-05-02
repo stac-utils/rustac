@@ -256,7 +256,9 @@ impl Client {
         if let Some(headers) = headers.into() {
             request = request.headers(headers);
         }
+        tracing::debug!("sending request");
         let response = request.send().await?.error_for_status()?;
+        tracing::debug!("retrieving json");
         response.json().await.map_err(Error::from)
     }
 
