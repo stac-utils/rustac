@@ -252,4 +252,11 @@ mod tests {
             .unwrap();
         let _ = Value::from_geoparquet_bytes(buf).unwrap();
     }
+
+    #[test]
+    fn multipolygon() {
+        let items: ItemCollection = stac::read("data/multi-polygons.json").unwrap();
+        let cursor = Cursor::new(Vec::new());
+        super::into_writer(cursor, items).unwrap();
+    }
 }

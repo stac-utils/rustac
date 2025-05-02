@@ -14,13 +14,16 @@ use geoarrow_array::{
 };
 use geoarrow_schema::{CoordType, GeometryType, Metadata};
 use serde_json::{Value, json};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 /// The stac-geoparquet version metadata key.
 pub const VERSION_KEY: &str = "stac_geoparquet:version";
 
 /// The stac-geoparquet version.
 pub const VERSION: &str = "1.0.0";
+
+/// Other geoarrow geometry columns (other than "geometry")
+pub const OTHER_GEOMETRY_COLUMNS: [&str; 1] = ["proj:geometry"];
 
 /// Geoarrow datetime columns
 pub const DATETIME_COLUMNS: [&str; 8] = [
@@ -74,8 +77,9 @@ impl TableBuilder {
     /// Builds a [Table]
     pub fn build(self) -> Result<Table> {
         let mut values = Vec::with_capacity(self.item_collection.items.len());
-        let geometry_type = GeometryType::new(CoordType::Interleaved, Default::default());
-        let mut builder = GeometryBuilder::new(geometry_type);
+        let geometry_type = GeometryType::new(CoordType::Interleaved, Default::default()); // the choice of interleaved is arbitrary
+        let mut builder = GeometryBuilder::new(geometry_type.clone());
+        let mut geometry_builders = HashMap::new();
         for mut item in self.item_collection.items {
             builder.push_geometry(
                 item.geometry
@@ -89,6 +93,18 @@ impl TableBuilder {
                 let value = value
                     .as_object_mut()
                     .expect("a flat item should serialize to an object");
+                for key in OTHER_GEOMETRY_COLUMNS {
+                    if let Some(value) = value.remove(key) {
+                        let entry = geometry_builders
+                            .entry(key)
+                            .or_insert_with(|| GeometryBuilder::new(geometry_type.clone()));
+                        let geometry =
+                            geojson::Geometry::from_json_value(value).map_err(Box::new)?;
+                        entry.push_geometry(Some(
+                            &(Geometry::try_from(geometry).map_err(Box::new)?),
+                        ))?;
+                    }
+                }
                 let _ = value.remove("geometry");
                 if let Some(bbox) = value.remove("bbox") {
                     let bbox = bbox
@@ -140,15 +156,22 @@ impl TableBuilder {
         let mut decoder = ReaderBuilder::new(schema.clone()).build_decoder()?;
         decoder.serialize(&values)?;
 
-        // Build the table schema
-        let geometry_array = builder.finish();
-        let mut schema_builder = SchemaBuilder::from(schema.fields());
-        schema_builder.push(geometry_array.data_type().to_field("geometry", true));
-
         // Build the table
         let record_batch = decoder.flush()?.ok_or(Error::NoItems)?;
+        let mut schema_builder = SchemaBuilder::from(schema.fields());
         let mut columns = record_batch.columns().to_vec();
+
+        let geometry_array = builder.finish();
         columns.push(geometry_array.to_array_ref());
+        schema_builder.push(geometry_array.data_type().to_field("geometry", true));
+
+        for (key, geometry_builder) in geometry_builders {
+            let geometry_array = geometry_builder.finish();
+            columns.push(geometry_array.to_array_ref());
+            schema_builder.push(geometry_array.data_type().to_field(key, true));
+        }
+
+        // Build the table
         let schema = Arc::new(schema_builder.finish().with_metadata(metadata));
         let record_batch = RecordBatch::try_new(schema.clone(), columns)?;
         Ok(Table {

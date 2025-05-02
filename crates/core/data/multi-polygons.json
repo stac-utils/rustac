@@ -1,0 +1,621 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "stac_version": "1.1.0",
+            "stac_extensions": [
+                "https://stac-extensions.github.io/view/v1.0.0/schema.json",
+                "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+                "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
+                "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+                "https://stac-extensions.github.io/grid/v1.1.0/schema.json"
+            ],
+            "id": "17/031331303020/10300100DB064000",
+            "geometry": {
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [
+                        [
+                            [
+                                -82.15777073941177,
+                                27.028834264548532
+                            ],
+                            [
+                                -82.15753602518427,
+                                27.005918617583724
+                            ],
+                            [
+                                -82.19988080040206,
+                                27.005658363491168
+                            ],
+                            [
+                                -82.20000454999004,
+                                27.028480567533563
+                            ],
+                            [
+                                -82.15777073941177,
+                                27.028834264548532
+                            ]
+                        ]
+                    ],
+                    [
+                        [
+                            [
+                                -82.15727956343206,
+                                26.980879713737167
+                            ],
+                            [
+                                -82.19974451690291,
+                                26.980524624659747
+                            ],
+                            [
+                                -82.1998403315606,
+                                26.998195
+                            ],
+                            [
+                                -82.1574569157907,
+                                26.998195
+                            ],
+                            [
+                                -82.15727956343206,
+                                26.980879713737167
+                            ]
+                        ]
+                    ]
+                ]
+            },
+            "bbox": [
+                -82.20000454999004,
+                26.980524624659747,
+                -82.15727956343206,
+                27.028834264548532
+            ],
+            "properties": {
+                "datetime": "2022-10-03T16:02:35Z",
+                "platform": "WV02",
+                "gsd": 0.66,
+                "ard_metadata_version": "0.0.1",
+                "catalog_id": "10300100DB064000",
+                "utm_zone": 17,
+                "quadkey": "031331303020",
+                "view:off_nadir": 34.0,
+                "view:azimuth": 141.7,
+                "view:incidence_angle": 51.2,
+                "view:sun_azimuth": 146.9,
+                "view:sun_elevation": 54.2,
+                "proj:geometry": {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [
+                                    385156.25,
+                                    2990156.25
+                                ],
+                                [
+                                    385156.25,
+                                    2987652.2153448043
+                                ],
+                                [
+                                    380954.5810541001,
+                                    2987662.0770342536
+                                ],
+                                [
+                                    380966.1865234375,
+                                    2990156.25
+                                ],
+                                [
+                                    385156.25,
+                                    2990156.25
+                                ]
+                            ]
+                        ],
+                        [
+                            [
+                                [
+                                    385156.25,
+                                    2984843.75
+                                ],
+                                [
+                                    380941.46728515625,
+                                    2984843.75
+                                ],
+                                [
+                                    380950.80992524966,
+                                    2986851.6102314275
+                                ],
+                                [
+                                    385156.25,
+                                    2986816.8046731134
+                                ],
+                                [
+                                    385156.25,
+                                    2984843.75
+                                ]
+                            ]
+                        ]
+                    ]
+                },
+                "grid:code": "MXRA-Z17-031331303020",
+                "proj:bbox": [
+                    380941.46728515625,
+                    2984843.75,
+                    385156.25,
+                    2990156.25
+                ],
+                "tile:data_area": 18.8,
+                "tile:clouds_area": 0.1,
+                "tile:clouds_percent": 0,
+                "proj:code": "EPSG:32617"
+            },
+            "links": [
+                {
+                    "href": "https://maxar-opendata.s3.amazonaws.com/events/Hurricane-Ian-9-26-2022/ard/17/031331303020/2022-10-03/10300100DB064000.json",
+                    "rel": "self",
+                    "type": "application/json"
+                },
+                {
+                    "href": "../../../acquisition_collections/10300100DB064000_collection.json",
+                    "rel": "collection",
+                    "type": "application/json"
+                },
+                {
+                    "href": "../../../acquisition_collections/10300100DB064000_collection.json",
+                    "rel": "parent",
+                    "type": "application/json"
+                },
+                {
+                    "href": "../../../order_collections/6024237538206357701_root_collection.json",
+                    "rel": "root",
+                    "type": "application/json"
+                }
+            ],
+            "assets": {
+                "data-mask": {
+                    "href": "./10300100DB064000-data-mask.gpkg",
+                    "title": "Data Mask",
+                    "type": "application/geopackage+sqlite3",
+                    "roles": [
+                        "data-mask"
+                    ]
+                },
+                "ms_analytic": {
+                    "href": "./10300100DB064000-ms.tif",
+                    "title": "Multispectral Image",
+                    "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                    "roles": [
+                        "data"
+                    ],
+                    "proj:bbox": [
+                        379843.75,
+                        2984843.75,
+                        385156.25,
+                        2990156.25
+                    ],
+                    "proj:shape": [
+                        2019,
+                        2019
+                    ],
+                    "proj:transform": [
+                        2.631253095591877,
+                        0.0,
+                        379843.75,
+                        0.0,
+                        -2.631253095591877,
+                        2990156.25,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "eo:bands": [
+                        {
+                            "name": "BAND_C",
+                            "common_name": "coastal",
+                            "description": "Coastal Blue"
+                        },
+                        {
+                            "name": "BAND_B",
+                            "common_name": "blue",
+                            "description": "Blue"
+                        },
+                        {
+                            "name": "BAND_G",
+                            "common_name": "green",
+                            "description": "Green"
+                        },
+                        {
+                            "name": "BAND_Y",
+                            "common_name": "yellow",
+                            "description": "Yellow"
+                        },
+                        {
+                            "name": "BAND_R",
+                            "common_name": "red",
+                            "description": "Red"
+                        },
+                        {
+                            "name": "BAND_RE",
+                            "common_name": "rededge",
+                            "description": "Red Edge 1"
+                        },
+                        {
+                            "name": "BAND_N",
+                            "common_name": "nir08",
+                            "description": "Near Infrared 1"
+                        },
+                        {
+                            "name": "BAND_N2",
+                            "common_name": "nir09",
+                            "description": "Near Infrared 2"
+                        }
+                    ]
+                },
+                "pan_analytic": {
+                    "href": "./10300100DB064000-pan.tif",
+                    "title": "Panchromatic Image",
+                    "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                    "roles": [
+                        "data"
+                    ],
+                    "proj:bbox": [
+                        379843.75,
+                        2984843.75,
+                        385156.25,
+                        2990156.25
+                    ],
+                    "proj:shape": [
+                        8076,
+                        8076
+                    ],
+                    "proj:transform": [
+                        0.6578132738979693,
+                        0.0,
+                        379843.75,
+                        0.0,
+                        -0.6578132738979693,
+                        2990156.25,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "eo:bands": [
+                        {
+                            "name": "BAND_P",
+                            "description": "Pan"
+                        }
+                    ]
+                },
+                "visual": {
+                    "href": "./10300100DB064000-visual.tif",
+                    "title": "Visual Image",
+                    "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                    "roles": [
+                        "visual"
+                    ],
+                    "proj:bbox": [
+                        379843.75,
+                        2984843.75,
+                        385156.25,
+                        2990156.25
+                    ],
+                    "proj:shape": [
+                        17408,
+                        17408
+                    ],
+                    "proj:transform": [
+                        0.30517578125,
+                        0.0,
+                        379843.75,
+                        0.0,
+                        -0.30517578125,
+                        2990156.25,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "eo:bands": [
+                        {
+                            "name": "BAND_R",
+                            "common_name": "red",
+                            "description": "Red"
+                        },
+                        {
+                            "name": "BAND_G",
+                            "common_name": "green",
+                            "description": "Green"
+                        },
+                        {
+                            "name": "BAND_B",
+                            "common_name": "blue",
+                            "description": "Blue"
+                        }
+                    ]
+                }
+            },
+            "collection": "10300100DB064000"
+        },
+        {
+            "type": "Feature",
+            "stac_version": "1.1.0",
+            "stac_extensions": [
+                "https://stac-extensions.github.io/view/v1.0.0/schema.json",
+                "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+                "https://stac-extensions.github.io/eo/v1.1.0/schema.json",
+                "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+                "https://stac-extensions.github.io/grid/v1.1.0/schema.json"
+            ],
+            "id": "17/031331303211/10300100DB064000",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            -82.05927686621214,
+                            26.939332877485054
+                        ],
+                        [
+                            -82.05882920224273,
+                            26.89137611675341
+                        ],
+                        [
+                            -82.00534390081602,
+                            26.891766891151907
+                        ],
+                        [
+                            -82.00576896119208,
+                            26.939724459507854
+                        ],
+                        [
+                            -82.05927686621214,
+                            26.939332877485054
+                        ]
+                    ]
+                ]
+            },
+            "bbox": [
+                -82.05927686621214,
+                26.89137611675341,
+                -82.00534390081602,
+                26.939724459507854
+            ],
+            "properties": {
+                "datetime": "2022-10-03T16:02:35Z",
+                "platform": "WV02",
+                "gsd": 0.65,
+                "ard_metadata_version": "0.0.1",
+                "catalog_id": "10300100DB064000",
+                "utm_zone": 17,
+                "quadkey": "031331303211",
+                "view:off_nadir": 33.3,
+                "view:azimuth": 142.6,
+                "view:incidence_angle": 52.0,
+                "view:sun_azimuth": 146.8,
+                "view:sun_elevation": 54.2,
+                "proj:geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                394843.75,
+                                2980156.25
+                            ],
+                            [
+                                394843.75,
+                                2974843.75
+                            ],
+                            [
+                                400156.25,
+                                2974843.75
+                            ],
+                            [
+                                400156.25,
+                                2980156.25
+                            ],
+                            [
+                                394843.75,
+                                2980156.25
+                            ]
+                        ]
+                    ]
+                },
+                "grid:code": "MXRA-Z17-031331303211",
+                "proj:bbox": [
+                    394843.75,
+                    2974843.75,
+                    400156.25,
+                    2980156.25
+                ],
+                "tile:data_area": 28.2,
+                "tile:clouds_area": 0.0,
+                "tile:clouds_percent": 0,
+                "proj:code": "EPSG:32617"
+            },
+            "links": [
+                {
+                    "href": "https://maxar-opendata.s3.amazonaws.com/events/Hurricane-Ian-9-26-2022/ard/17/031331303211/2022-10-03/10300100DB064000.json",
+                    "rel": "self",
+                    "type": "application/json"
+                },
+                {
+                    "href": "../../../acquisition_collections/10300100DB064000_collection.json",
+                    "rel": "collection",
+                    "type": "application/json"
+                },
+                {
+                    "href": "../../../acquisition_collections/10300100DB064000_collection.json",
+                    "rel": "parent",
+                    "type": "application/json"
+                },
+                {
+                    "href": "../../../order_collections/6024237538206357701_root_collection.json",
+                    "rel": "root",
+                    "type": "application/json"
+                }
+            ],
+            "assets": {
+                "data-mask": {
+                    "href": "./10300100DB064000-data-mask.gpkg",
+                    "title": "Data Mask",
+                    "type": "application/geopackage+sqlite3",
+                    "roles": [
+                        "data-mask"
+                    ]
+                },
+                "ms_analytic": {
+                    "href": "./10300100DB064000-ms.tif",
+                    "title": "Multispectral Image",
+                    "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                    "roles": [
+                        "data"
+                    ],
+                    "proj:bbox": [
+                        394843.75,
+                        2974843.75,
+                        400156.25,
+                        2980156.25
+                    ],
+                    "proj:shape": [
+                        2042,
+                        2042
+                    ],
+                    "proj:transform": [
+                        2.6016160626836435,
+                        0.0,
+                        394843.75,
+                        0.0,
+                        -2.6016160626836435,
+                        2980156.25,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "eo:bands": [
+                        {
+                            "name": "BAND_C",
+                            "common_name": "coastal",
+                            "description": "Coastal Blue"
+                        },
+                        {
+                            "name": "BAND_B",
+                            "common_name": "blue",
+                            "description": "Blue"
+                        },
+                        {
+                            "name": "BAND_G",
+                            "common_name": "green",
+                            "description": "Green"
+                        },
+                        {
+                            "name": "BAND_Y",
+                            "common_name": "yellow",
+                            "description": "Yellow"
+                        },
+                        {
+                            "name": "BAND_R",
+                            "common_name": "red",
+                            "description": "Red"
+                        },
+                        {
+                            "name": "BAND_RE",
+                            "common_name": "rededge",
+                            "description": "Red Edge 1"
+                        },
+                        {
+                            "name": "BAND_N",
+                            "common_name": "nir08",
+                            "description": "Near Infrared 1"
+                        },
+                        {
+                            "name": "BAND_N2",
+                            "common_name": "nir09",
+                            "description": "Near Infrared 2"
+                        }
+                    ]
+                },
+                "pan_analytic": {
+                    "href": "./10300100DB064000-pan.tif",
+                    "title": "Panchromatic Image",
+                    "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                    "roles": [
+                        "data"
+                    ],
+                    "proj:bbox": [
+                        394843.75,
+                        2974843.75,
+                        400156.25,
+                        2980156.25
+                    ],
+                    "proj:shape": [
+                        8168,
+                        8168
+                    ],
+                    "proj:transform": [
+                        0.6504040156709109,
+                        0.0,
+                        394843.75,
+                        0.0,
+                        -0.6504040156709109,
+                        2980156.25,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "eo:bands": [
+                        {
+                            "name": "BAND_P",
+                            "description": "Pan"
+                        }
+                    ]
+                },
+                "visual": {
+                    "href": "./10300100DB064000-visual.tif",
+                    "title": "Visual Image",
+                    "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                    "roles": [
+                        "visual"
+                    ],
+                    "proj:bbox": [
+                        394843.75,
+                        2974843.75,
+                        400156.25,
+                        2980156.25
+                    ],
+                    "proj:shape": [
+                        17408,
+                        17408
+                    ],
+                    "proj:transform": [
+                        0.30517578125,
+                        0.0,
+                        394843.75,
+                        0.0,
+                        -0.30517578125,
+                        2980156.25,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "eo:bands": [
+                        {
+                            "name": "BAND_R",
+                            "common_name": "red",
+                            "description": "Red"
+                        },
+                        {
+                            "name": "BAND_G",
+                            "common_name": "green",
+                            "description": "Green"
+                        },
+                        {
+                            "name": "BAND_B",
+                            "common_name": "blue",
+                            "description": "Blue"
+                        }
+                    ]
+                }
+            },
+            "collection": "10300100DB064000"
+        }
+    ]
+}
