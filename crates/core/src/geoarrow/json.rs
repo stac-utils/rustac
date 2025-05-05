@@ -503,7 +503,7 @@ fn record_batch_to_json_rows(
             let array = from_arrow_array(col, field)?;
             set_geometry_column_for_json_rows(&mut rows, array, col_name)?;
         } else {
-            set_column_for_json_rows(&mut rows, col, col_name, true)?;
+            set_column_for_json_rows(&mut rows, col, col_name, false)?;
         }
     }
     rows.into_iter()
