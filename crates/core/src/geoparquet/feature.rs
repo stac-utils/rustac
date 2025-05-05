@@ -224,6 +224,16 @@ mod tests {
     }
 
     #[test]
+    fn roundtrip_proj_geometry() {
+        let item_collection: ItemCollection = crate::read("data/multi-polygons.json").unwrap();
+        let mut cursor = Cursor::new(Vec::new());
+        super::into_writer(&mut cursor, item_collection).unwrap();
+        let bytes = Bytes::from(cursor.into_inner());
+        let item_collection = super::from_reader(bytes).unwrap();
+        assert_eq!(item_collection.items.len(), 2);
+    }
+
+    #[test]
     fn read() {
         let _ = ItemCollection::from_geoparquet_path("data/extended-item.parquet");
     }

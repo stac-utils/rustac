@@ -49,11 +49,11 @@ use geo_traits::to_geo::{
     ToGeoGeometry, ToGeoGeometryCollection, ToGeoLineString, ToGeoMultiLineString, ToGeoMultiPoint,
     ToGeoMultiPolygon, ToGeoPoint, ToGeoPolygon, ToGeoRect,
 };
-use geoarrow_array::ArrayAccessor;
 use geoarrow_array::array::from_arrow_array;
 use geoarrow_array::cast::AsGeoArrowArray;
+use geoarrow_array::{ArrayAccessor, GeoArrowArray, GeoArrowType};
 use serde_json::{Value, json, map::Map as JsonMap};
-use std::iter;
+use std::{iter, sync::Arc};
 
 use super::DATETIME_COLUMNS;
 
@@ -428,78 +428,90 @@ fn set_column_for_json_rows(
     Ok(())
 }
 
-/// Creates JSON values from a record batch reader.
+fn set_geometry_column_for_json_rows(
+    rows: &mut [Option<JsonMap<String, Value>>],
+    array: Arc<dyn GeoArrowArray>,
+    col_name: &str,
+) -> Result<(), Error> {
+    for (i, row) in rows
+        .iter_mut()
+        .enumerate()
+        .filter_map(|(i, maybe_row)| maybe_row.as_mut().map(|row| (i, row)))
+    {
+        use GeoArrowType::*;
+        let value = match array.data_type() {
+            Point(_) => geojson::Value::from(&array.as_point().value(i)?.to_point()),
+            LineString(_) => {
+                geojson::Value::from(&array.as_line_string().value(i)?.to_line_string())
+            }
+            Polygon(_) => geojson::Value::from(&array.as_polygon().value(i)?.to_polygon()),
+            MultiPoint(_) => {
+                geojson::Value::from(&array.as_multi_point().value(i)?.to_multi_point())
+            }
+            MultiLineString(_) => geojson::Value::from(
+                &array
+                    .as_multi_line_string()
+                    .value(i)?
+                    .to_multi_line_string(),
+            ),
+            MultiPolygon(_) => {
+                geojson::Value::from(&array.as_multi_polygon().value(i)?.to_multi_polygon())
+            }
+            Geometry(_) => geojson::Value::from(&array.as_geometry().value(i)?.to_geometry()),
+            GeometryCollection(_) => geojson::Value::from(
+                &array
+                    .as_geometry_collection()
+                    .value(i)?
+                    .to_geometry_collection(),
+            ),
+            Rect(_) => geojson::Value::from(&array.as_rect().value(i)?.to_rect()),
+            Wkb(_) => geojson::Value::from(&array.as_wkb::<i32>().value(i)?.to_geometry()),
+            LargeWkb(_) => geojson::Value::from(&array.as_wkb::<i64>().value(i)?.to_geometry()),
+            Wkt(_) => geojson::Value::from(&array.as_wkt::<i32>().value(i)?.to_geometry()),
+            LargeWkt(_) => geojson::Value::from(&array.as_wkt::<i64>().value(i)?.to_geometry()),
+        };
+        let _ = row.insert(
+            col_name.to_string(),
+            serde_json::to_value(geojson::Geometry::new(value))?,
+        );
+    }
+    Ok(())
+}
+
+/// Creates STAC JSON values from a record batch reader.
 pub fn from_record_batch_reader<R: RecordBatchReader>(
     reader: R,
 ) -> Result<Vec<serde_json::Map<String, Value>>, Error> {
-    use geoarrow_array::GeoArrowType;
-
-    let schema = reader.schema();
-    let geometry_index = schema.column_with_name("geometry").map(|(index, _)| index);
-
-    // For now we collect all batches into memory, but in the future we could iterate on the stream
-    // directly.
-    let batches = reader.collect::<Result<Vec<_>, _>>()?;
-    let mut json_rows = record_batches_to_json_rows(&batches, geometry_index)?;
-    let mut items = Vec::new();
-    if let Some(index) = geometry_index {
-        let field = schema.field(index);
-        for batch in &batches {
-            let array = batch.column(index);
-            let chunk = from_arrow_array(array, field)?;
-            for i in 0..chunk.len() {
-                use GeoArrowType::*;
-                let value = match chunk.data_type() {
-                    Point(_) => geojson::Value::from(&chunk.as_point().value(i)?.to_point()),
-                    LineString(_) => {
-                        geojson::Value::from(&chunk.as_line_string().value(i)?.to_line_string())
-                    }
-                    Polygon(_) => geojson::Value::from(&chunk.as_polygon().value(i)?.to_polygon()),
-                    MultiPoint(_) => {
-                        geojson::Value::from(&chunk.as_multi_point().value(i)?.to_multi_point())
-                    }
-                    MultiLineString(_) => geojson::Value::from(
-                        &chunk
-                            .as_multi_line_string()
-                            .value(i)?
-                            .to_multi_line_string(),
-                    ),
-                    MultiPolygon(_) => {
-                        geojson::Value::from(&chunk.as_multi_polygon().value(i)?.to_multi_polygon())
-                    }
-                    Geometry(_) => {
-                        geojson::Value::from(&chunk.as_geometry().value(i)?.to_geometry())
-                    }
-                    GeometryCollection(_) => geojson::Value::from(
-                        &chunk
-                            .as_geometry_collection()
-                            .value(i)?
-                            .to_geometry_collection(),
-                    ),
-                    Rect(_) => geojson::Value::from(&chunk.as_rect().value(i)?.to_rect()),
-                    Wkb(_) => geojson::Value::from(&chunk.as_wkb::<i32>().value(i)?.to_geometry()),
-                    LargeWkb(_) => {
-                        geojson::Value::from(&chunk.as_wkb::<i64>().value(i)?.to_geometry())
-                    }
-                    Wkt(_) => geojson::Value::from(&chunk.as_wkt::<i32>().value(i)?.to_geometry()),
-                    LargeWkt(_) => {
-                        geojson::Value::from(&chunk.as_wkt::<i64>().value(i)?.to_geometry())
-                    }
-                };
-                let mut row = json_rows
-                    .next()
-                    .expect("we shouldn't run out of rows before we're done");
-                let _ = row.insert(
-                    "geometry".into(),
-                    serde_json::to_value(geojson::Geometry::new(value))?,
-                );
-                items.push(unflatten(row)?);
-            }
-        }
-    } else {
-        items = json_rows.map(unflatten).collect::<Result<_, Error>>()?;
+    let mut rows = Vec::new();
+    for result in reader {
+        let record_batch = result?;
+        rows.extend(record_batch_to_json_rows(record_batch)?);
     }
-    Ok(items)
+    Ok(rows)
+}
+
+fn record_batch_to_json_rows(
+    record_batch: RecordBatch,
+) -> Result<Vec<JsonMap<String, Value>>, Error> {
+    let mut rows: Vec<Option<JsonMap<String, Value>>> =
+        iter::repeat_n(Some(JsonMap::new()), record_batch.num_rows()).collect();
+    let schema = record_batch.schema();
+    for (j, col) in record_batch.columns().iter().enumerate() {
+        let field = schema.field(j);
+        let col_name = field.name();
+        if field.extension_type_name().is_some() & GeoArrowType::try_from(field).is_ok() {
+            let array = from_arrow_array(col, field)?;
+            set_geometry_column_for_json_rows(&mut rows, array, col_name)?;
+        } else {
+            set_column_for_json_rows(&mut rows, col, col_name, true)?;
+        }
+    }
+    rows.into_iter()
+        .map(|row| {
+            let row = row.unwrap();
+            unflatten(row)
+        })
+        .collect::<Result<_, _>>()
 }
 
 fn unflatten(
@@ -516,6 +528,9 @@ fn unflatten(
             }
         })
         .collect();
+    if let Some(assets) = item.get_mut("assets").and_then(|a| a.as_object_mut()) {
+        assets.retain(|_, asset| asset.is_object());
+    }
     for key in keys {
         if let Some(value) = item.remove(&key) {
             if DATETIME_COLUMNS.contains(&key.as_str()) {
@@ -537,52 +552,6 @@ fn unflatten(
         let _ = item.insert("properties".to_string(), Value::Object(properties));
     }
     Ok(item)
-}
-
-fn record_batches_to_json_rows(
-    batches: &[RecordBatch],
-    geometry_index: Option<usize>,
-) -> Result<impl Iterator<Item = JsonMap<String, Value>> + use<>, ArrowError> {
-    // For backwards compatibility, default to skip nulls
-    // Skip converting the geometry index, we'll do that later.
-    record_batches_to_json_rows_internal(batches, false, geometry_index)
-}
-
-fn record_batches_to_json_rows_internal(
-    batches: &[RecordBatch],
-    explicit_nulls: bool,
-    geometry_index: Option<usize>,
-) -> Result<impl Iterator<Item = JsonMap<String, Value>> + use<>, ArrowError> {
-    let mut rows: Vec<Option<JsonMap<String, Value>>> = iter::repeat_n(
-        Some(JsonMap::new()),
-        batches.iter().map(|b| b.num_rows()).sum(),
-    )
-    .collect();
-
-    if !rows.is_empty() {
-        let schema = batches[0].schema();
-        let mut base = 0;
-        for batch in batches {
-            let row_count = batch.num_rows();
-            let row_slice = &mut rows[base..base + batch.num_rows()];
-            for (j, col) in batch.columns().iter().enumerate() {
-                if geometry_index.map(|v| v == j).unwrap_or_default() {
-                    continue;
-                }
-                let col_name = schema.field(j).name();
-                set_column_for_json_rows(row_slice, col, col_name, explicit_nulls)?
-            }
-            base += row_count;
-        }
-    }
-
-    Ok(rows.into_iter().map(|a| {
-        let mut a = a.unwrap();
-        if let Some(assets) = a.get_mut("assets").and_then(|a| a.as_object_mut()) {
-            assets.retain(|_, asset| asset.is_object());
-        }
-        a
-    }))
 }
 
 fn convert_bbox(obj: serde_json::Map<String, Value>) -> Value {
