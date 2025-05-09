@@ -163,15 +163,14 @@ impl Format {
         let href = href.into();
         match href.clone().realize() {
             RealizedHref::Url(url) => {
-                use object_store::ObjectStore;
-
                 let (object_store, path) = parse_url_opts(&url, options)?;
-                tracing::debug!("getting {self} from {url} with object store");
-                let get_result = object_store.get(&path).await.map_err(|err| Error::Get {
-                    href,
-                    message: err.to_string(),
-                })?;
-                let mut value: T = self.from_bytes(get_result.bytes().await?)?;
+                let mut value: T =
+                    self.get_store(object_store.into(), path)
+                        .await
+                        .map_err(|err| Error::Get {
+                            href,
+                            message: err.to_string(),
+                        })?;
                 *value.self_href_mut() = Some(Href::Url(url));
                 Ok(value)
             }
@@ -186,6 +185,23 @@ impl Format {
                 })
             }
         }
+    }
+
+    /// Gets a STAC value from an object store.
+    #[cfg(feature = "object-store")]
+    pub async fn get_store<T>(
+        &self,
+        object_store: std::sync::Arc<dyn object_store::ObjectStore>,
+        path: impl Into<object_store::path::Path>,
+    ) -> Result<T>
+    where
+        T: SelfHref + FromJson + FromNdjson + FromGeoparquet,
+    {
+        let path = path.into();
+        tracing::debug!("getting {self} from {path} with object store");
+        let get_result = object_store.get(&path).await?;
+        let value: T = self.from_bytes(get_result.bytes().await?)?;
+        Ok(value)
     }
 
     /// Writes a STAC value to the provided path.
@@ -257,15 +273,29 @@ impl Format {
     {
         let href = href.to_string();
         if let Ok(url) = url::Url::parse(&href) {
-            use object_store::ObjectStore;
-
             let (object_store, path) = parse_url_opts(&url, options)?;
-            let bytes = self.into_vec(value)?;
-            let put_result = object_store.put(&path, bytes.into()).await?;
-            Ok(Some(put_result))
+            self.put_store(object_store.into(), path, value)
+                .await
+                .map(Some)
         } else {
             self.write(href, value).map(|_| None)
         }
+    }
+
+    /// Puts a STAC value into an object store.
+    #[cfg(feature = "object-store")]
+    pub async fn put_store<T>(
+        &self,
+        object_store: std::sync::Arc<dyn object_store::ObjectStore>,
+        path: impl Into<object_store::path::Path>,
+        value: T,
+    ) -> Result<object_store::PutResult>
+    where
+        T: ToJson + ToNdjson + IntoGeoparquet,
+    {
+        let bytes = self.into_vec(value)?;
+        let put_result = object_store.put(&path.into(), bytes.into()).await?;
+        Ok(put_result)
     }
 
     /// Returns the default JSON format (compact).
@@ -384,6 +414,7 @@ impl FromStr for Format {
 #[cfg(test)]
 mod tests {
     use super::Format;
+    use crate::Item;
     use crate::geoparquet::Compression;
 
     #[test]
@@ -424,5 +455,34 @@ mod tests {
             Format::Geoparquet(None),
             Format::infer_from_href("out.parquet").unwrap()
         );
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "object-store")]
+    async fn prefix_store_read() {
+        use std::sync::Arc;
+
+        let object_store =
+            object_store::local::LocalFileSystem::new_with_prefix("examples").unwrap();
+        let _: Item = Format::json()
+            .get_store(Arc::new(object_store), "simple-item.json")
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "object-store")]
+    async fn store_write() {
+        use object_store::ObjectStore;
+        use std::sync::Arc;
+
+        let object_store = Arc::new(object_store::memory::InMemory::new());
+        let item = Item::new("an-id");
+        let _ = Format::json()
+            .put_store(object_store.clone(), "item.json", item)
+            .await
+            .unwrap();
+        let get_result = object_store.get(&"item.json".into()).await.unwrap();
+        let _: Item = serde_json::from_slice(&get_result.bytes().await.unwrap()).unwrap();
     }
 }
