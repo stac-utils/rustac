@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Empty `type` field for `ItemCollection` ([#734](https://github.com/stac-utils/rustac/pull/734))
+
 ### Removed
 
 - Python ([#679](https://github.com/stac-utils/rustac/pull/679))

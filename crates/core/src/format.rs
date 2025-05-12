@@ -414,7 +414,6 @@ impl FromStr for Format {
 #[cfg(test)]
 mod tests {
     use super::Format;
-    use crate::Item;
     use crate::geoparquet::Compression;
 
     #[test]
@@ -460,6 +459,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "object-store")]
     async fn prefix_store_read() {
+        use crate::Item;
         use std::sync::Arc;
 
         let object_store =
@@ -473,6 +473,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "object-store")]
     async fn store_write() {
+        use crate::Item;
         use object_store::ObjectStore;
         use std::sync::Arc;
 

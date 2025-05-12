@@ -143,4 +143,11 @@ mod tests {
     fn permissive_deserialization() {
         let _: ItemCollection = serde_json::from_value(json!({})).unwrap();
     }
+
+    #[test]
+    fn serialize_type_field() {
+        let item_collection = ItemCollection::from(vec![]);
+        let value = serde_json::to_value(item_collection).unwrap();
+        assert_eq!(value.as_object().unwrap()["type"], "FeatureCollection");
+    }
 }
