@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 use std::{collections::HashMap, sync::Arc};
 
 /// The stac-geoparquet version metadata key.
-pub const VERSION_KEY: &str = "stac_geoparquet:version";
+pub const VERSION_KEY: &str = "stac:geoparquet_version";
 
 /// The stac-geoparquet version.
 pub const VERSION: &str = "1.0.0";
@@ -329,7 +329,7 @@ mod tests {
     fn to_table() {
         let item: Item = crate::read("examples/simple-item.json").unwrap();
         let table = Table::from_item_collection(vec![item]).unwrap();
-        assert_eq!(table.schema().metadata["stac_geoparquet:version"], "1.0.0");
+        assert_eq!(table.schema().metadata["stac:geoparquet_version"], "1.0.0");
     }
 
     #[test]
