@@ -81,8 +81,6 @@
 //! To write, use [write()]:
 //!
 //! ```no_run
-//! use stac::Format;
-//!
 //! stac::write("an-id.json", stac::Item::new("an-id")).unwrap();
 //! ```
 //!
