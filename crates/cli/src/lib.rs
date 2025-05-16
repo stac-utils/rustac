@@ -4,8 +4,9 @@
 
 use anyhow::{Error, Result, anyhow};
 use clap::{Parser, Subcommand};
-use stac::{Collection, Format, Item, Links, Migrate, Validate, geoparquet::Compression};
+use stac::{Collection, Item, Links, Migrate, geoparquet::Compression};
 use stac_api::{GetItems, GetSearch, Search};
+use stac_io::{Format, Validate};
 use stac_server::Backend;
 use std::{collections::HashMap, io::Write, str::FromStr};
 use tokio::{io::AsyncReadExt, net::TcpListener, runtime::Handle};
@@ -326,14 +327,7 @@ impl Rustac {
                 };
                 let search: Search = get_search.try_into()?;
                 let item_collection = if use_duckdb {
-                    #[cfg(feature = "duckdb")]
-                    {
-                        stac_duckdb::search(href, search, *max_items)?
-                    }
-                    #[cfg(not(feature = "duckdb"))]
-                    return Err(anyhow!(
-                        "the `duckdb` feature is not enabled, cannot search stac-geoparquet"
-                    ));
+                    stac_duckdb::search(href, search, *max_items)?
                 } else {
                     stac_api::client::search(href, search, *max_items).await?
                 };
@@ -354,31 +348,16 @@ impl Rustac {
                 if matches!(use_duckdb, Some(true))
                     || (use_duckdb.is_none() && hrefs.len() == 1 && hrefs[0].ends_with("parquet"))
                 {
-                    #[cfg(feature = "duckdb")]
-                    {
-                        let backend = stac_server::DuckdbBackend::new(&hrefs[0]).await?;
-                        eprintln!("Backend: duckdb");
-                        return load_and_serve(
-                            addr,
-                            backend,
-                            Vec::new(),
-                            HashMap::new(),
-                            create_collections,
-                        )
-                        .await;
-                    }
-                    #[cfg(not(feature = "duckdb"))]
-                    {
-                        if matches!(use_duckdb, Some(true)) {
-                            return Err(anyhow!(
-                                "cannot use DuckDB for the server because the CLI was not built with the `duckdb` feature"
-                            ));
-                        } else {
-                            tracing::warn!(
-                                "cannot use DuckDB for the server because the CLI was not built with the `duckdb` feature, falling back to non-duckdb behavior"
-                            )
-                        }
-                    }
+                    let backend = stac_server::DuckdbBackend::new(&hrefs[0]).await?;
+                    eprintln!("Backend: duckdb");
+                    return load_and_serve(
+                        addr,
+                        backend,
+                        Vec::new(),
+                        HashMap::new(),
+                        create_collections,
+                    )
+                    .await;
                 }
                 let mut collections = Vec::new();
                 let mut items: HashMap<String, Vec<stac::Item>> = HashMap::new();
@@ -445,7 +424,7 @@ impl Rustac {
                     .spawn_blocking(move || value.validate())
                     .await?;
                 if let Err(error) = result {
-                    if let stac::Error::Validation(errors) = error {
+                    if let stac_io::Error::Validation(errors) = error {
                         if let Some(format) = self.output_format {
                             if let Format::Json(_) = format {
                                 let value = errors
@@ -677,7 +656,8 @@ mod tests {
     use assert_cmd::Command;
     use clap::Parser;
     use rstest::{fixture, rstest};
-    use stac::{Format, geoparquet::Compression};
+    use stac::geoparquet::Compression;
+    use stac_io::Format;
 
     #[fixture]
     fn command() -> Command {
@@ -727,7 +707,10 @@ mod tests {
         assert_eq!(rustac.input_format(None), Format::NdJson);
 
         let rustac = Rustac::parse_from(["rustac", "--input-format", "parquet", "translate"]);
-        assert_eq!(rustac.input_format(None), Format::Geoparquet(None));
+        assert_eq!(
+            rustac.input_format(None),
+            Format::Geoparquet(Some(Compression::SNAPPY))
+        );
 
         let rustac = Rustac::parse_from([
             "rustac",

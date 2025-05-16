@@ -51,6 +51,8 @@ impl Client {
         let connection = Connection::open_in_memory()?;
         connection.execute("INSTALL spatial", [])?;
         connection.execute("LOAD spatial", [])?;
+        connection.execute("INSTALL icu", [])?;
+        connection.execute("LOAD icu", [])?;
         Ok(connection.into())
     }
 
@@ -421,8 +423,9 @@ mod tests {
     use duckdb::Connection;
     use geo::Geometry;
     use rstest::{fixture, rstest};
-    use stac::{Bbox, Validate};
+    use stac::Bbox;
     use stac_api::{Search, Sortby};
+    use stac_io::Validate;
 
     #[fixture]
     #[once]

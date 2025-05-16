@@ -7,12 +7,14 @@ members = [
     "crates/derive",
     "crates/duckdb",
     "crates/extensions",
+    "crates/io",
     "crates/pgstac",
     "crates/server",
 ]
 default-members = [
     "crates/api",
     "crates/core",
+    "crates/io",
     "crates/derive",
     "crates/extensions",
     "crates/server",
@@ -53,6 +55,7 @@ geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "17bf
 geoarrow-geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "17bf33e4cf78b060afa08ca9560dc4efd73c2c76" }
 geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "17bf33e4cf78b060afa08ca9560dc4efd73c2c76" }
 geojson = "0.24.1"
+getrandom = { version = "0.3.3", features = ["wasm_js"] }
 http = "1.1"
 indexmap = { version = "2.9.0", features = ["serde"] }
 jsonschema = { version = "0.30.0", default-features = false }
@@ -77,6 +80,7 @@ stac-api = { version = "0.7.0", path = "crates/api" }
 stac-derive = { version = "0.2.0", path = "crates/derive" }
 stac-duckdb = { version = "0.1.1", path = "crates/duckdb" }
 stac-extensions = { version = "0.1.0", path = "crates/extensions" }
+stac-io = { version = "0.1.0", path = "crates/io" }
 stac-server = { version = "0.3.2", path = "crates/server" }
 syn = "2.0"
 tempfile = "3.16"

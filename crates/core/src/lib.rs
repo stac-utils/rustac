@@ -60,59 +60,12 @@
 //! let value = value.migrate(&Version::v1_1_0).unwrap();
 //! ```
 //!
-//! # Input and output
-//!
-//! Synchronous reads from the filesystem are supported via [read]:
-//!
-//! ```
-//! let value: stac::Item = stac::read("examples/simple-item.json").unwrap();
-//! ```
-//!
-//! If the [reqwest](https://docs.rs/reqwest/latest/reqwest/) feature is enabled, synchronous reads from urls are also supported:
-//!
-//! ```
-//! #[cfg(feature = "reqwest")]
-//! {
-//!     let url = "https://raw.githubusercontent.com/radiantearth/stac-spec/master/examples/simple-item.json";
-//!     let item: stac::Item = stac::read(url).unwrap();
-//! }
-//! ```
-//!
-//! To write, use [write()]:
-//!
-//! ```no_run
-//! stac::write("an-id.json", stac::Item::new("an-id")).unwrap();
-//! ```
-//!
-//! Enable the `object-store` feature to get and put objects from cloud storage, e.g. s3 (with the `object-store-aws` feature) or from other backends (see [features](#features) for a complete listing):
-//!
-//! ```no_run
-//! use stac::Item;
-//!
-//! #[cfg(feature = "object-store")]
-//! {
-//!     # tokio_test::block_on(async {
-//!     stac::io::put_opts("s3://bucket/item.json", Item::new("an-id"), [("foo", "bar")]).await.unwrap();
-//!     let item: Item = stac::io::get_opts("s3://bucket/item.json", [("foo", "bar")]).await.unwrap();
-//!     # })
-//! }
-//! ```
-//!
-//! For more, see the documentation in the [io] module.
-//!
 //! # Features
 //!
 //! - `geo`: add some geo-enabled methods, see [geo]
 //! - `geoarrow`: read and write [geoarrow](https://geoarrow.org/), see [geoarrow]
 //! - `geoparquet`: read and write [geoparquet](https://geoparquet.org/), see [geoparquet]
 //!     - `geoparquet-compression`: enable parquet compression
-//! - `object-store`: get and put from object stores. Sub-features enable specific protocols:
-//!     - `object-store-aws`
-//!     - `object-store-azure`
-//!     - `object-store-gcp`
-//!     - `object-store-http`
-//!     - `object-store-all` (enable them all)
-//! - `reqwest`: get from `http` and `https` urls when using [read]
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(
@@ -157,14 +110,13 @@ mod data_type;
 pub mod datetime;
 mod error;
 mod fields;
-mod format;
 #[cfg(feature = "geo")]
 pub mod geo;
 #[cfg(feature = "geoarrow")]
 pub mod geoarrow;
+#[cfg(feature = "geoparquet")]
 pub mod geoparquet;
 mod href;
-pub mod io;
 pub mod item;
 mod item_asset;
 mod item_collection;
@@ -173,12 +125,7 @@ pub mod link;
 mod migrate;
 pub mod mime;
 mod ndjson;
-mod node;
-#[cfg(feature = "object-store")]
-mod resolver;
 mod statistics;
-#[cfg(feature = "validate")]
-mod validate;
 mod value;
 mod version;
 
@@ -192,11 +139,10 @@ pub use collection::{Collection, Extent, Provider, SpatialExtent, TemporalExtent
 pub use data_type::DataType;
 pub use error::Error;
 pub use fields::Fields;
-pub use format::Format;
 pub use geojson::Geometry;
+#[cfg(feature = "geoparquet")]
 pub use geoparquet::{FromGeoparquet, IntoGeoparquet};
-pub use href::{Href, RealizedHref, SelfHref};
-pub use io::{read, write};
+pub use href::{Href, SelfHref};
 pub use item::{FlatItem, Item, Properties};
 pub use item_asset::ItemAsset;
 pub use item_collection::ItemCollection;
@@ -204,20 +150,32 @@ pub use json::{FromJson, ToJson};
 pub use link::{Link, Links};
 pub use migrate::Migrate;
 pub use ndjson::{FromNdjson, ToNdjson};
-pub use node::{Container, Node};
-#[cfg(feature = "object-store")]
-pub use resolver::Resolver;
 pub use statistics::Statistics;
-#[cfg(feature = "validate")]
-pub use validate::{Validate, Validator};
 pub use value::Value;
 pub use version::Version;
+
+use serde::de::DeserializeOwned;
+use std::{fs::File, path::Path};
 
 /// The default STAC version of this library.
 pub const STAC_VERSION: Version = Version::v1_1_0;
 
 /// Custom [Result](std::result::Result) type for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
+
+/// A simple function to read a STAC value from a JSON file local filesystem.
+///
+/// For any other IO, see the **stac-io** crate.
+pub fn read<T>(path: impl AsRef<Path>) -> Result<T>
+where
+    T: DeserializeOwned + SelfHref,
+{
+    let path = path.as_ref();
+    let file = File::open(path)?;
+    let mut value: T = serde_json::from_reader(file)?;
+    *value.self_href_mut() = Some(path.to_string_lossy().into_owned().into());
+    Ok(value)
+}
 
 /// Enum for the four "types" of STAC values.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, serde::Serialize)]
@@ -329,11 +287,6 @@ pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
-/// Returns a string suitable for use as a HTTP user agent.
-pub fn user_agent() -> &'static str {
-    concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"))
-}
-
 #[cfg(test)]
 mod tests {
     use rstest as _;
@@ -422,7 +375,3 @@ mod readme {
 
     external_doc_test!(include_str!("../README.md"));
 }
-
-// For now, we only use tracing in the validate module.
-#[cfg(not(feature = "validate"))]
-use tracing as _;
