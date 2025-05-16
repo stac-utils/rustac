@@ -8,6 +8,8 @@ mod extension;
 
 pub use {client::Client, error::Error, extension::Extension};
 
+use getrandom as _;
+
 /// Searches a stac-geoparquet file.
 ///
 /// # Examples
