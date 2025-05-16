@@ -1,14 +1,18 @@
-use super::{FromGeoparquet, IntoGeoparquet};
-use crate::geoarrow::{Table, VERSION, VERSION_KEY};
-use crate::{Error, Item, ItemCollection, Result, Value};
+//! Read data from and write data in [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet/blob/main/spec/stac-geoparquet-spec.md).
+
+use crate::{
+    Catalog, Collection, Item, ItemCollection, Result, Value,
+    geoarrow::{Table, VERSION, VERSION_KEY},
+};
 use bytes::Bytes;
 use geoarrow_geoparquet::{GeoParquetRecordBatchReaderBuilder, GeoParquetWriterOptions};
 use parquet::{
-    basic::Compression,
     file::{properties::WriterProperties, reader::ChunkReader},
     format::KeyValue,
 };
-use std::{fs::File, io::Write, path::Path};
+use std::io::Write;
+
+pub use parquet::basic::Compression;
 
 /// Reads a [ItemCollection] from a [ChunkReader] as
 /// [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet).
@@ -59,8 +63,7 @@ where
 ///
 /// ```
 /// use std::io::Cursor;
-/// use stac::Item;
-/// use parquet::basic::Compression;
+/// use stac::{Item, geoparquet::Compression};
 ///
 /// # #[cfg(feature = "geoparquet-compression")]
 /// # {
@@ -96,8 +99,7 @@ where
 ///
 /// ```
 /// use std::io::Cursor;
-/// use stac::Item;
-/// use parquet::basic::Compression;
+/// use stac::{Item, geoparquet::Compression};
 ///
 /// let item: Item = stac::read("examples/simple-item.json").unwrap();
 /// let mut cursor = Cursor::new(Vec::new());
@@ -112,17 +114,84 @@ where
     W: Write + Send,
 {
     let table = Table::from_item_collection(item_collection)?;
-    geoarrow_geoparquet::write_geoparquet(Box::new(table.into_reader()), writer, options)
-        .map_err(Error::from)
+    geoarrow_geoparquet::write_geoparquet(Box::new(table.into_reader()), writer, options)?;
+    Ok(())
+}
+/// Create a STAC object from geoparquet data.
+pub trait FromGeoparquet: Sized {
+    /// Creates a STAC object from geoparquet bytes.
+    #[allow(unused_variables)]
+    fn from_geoparquet_bytes(bytes: impl Into<Bytes>) -> Result<Self>;
 }
 
-impl FromGeoparquet for ItemCollection {
-    fn from_geoparquet_path(path: impl AsRef<Path>) -> Result<Self> {
-        let path = path.as_ref();
-        let file = File::open(path)?;
-        from_reader(file)
-    }
+/// Write a STAC object to geoparquet.
+pub trait IntoGeoparquet: Sized {
+    /// Writes a value to a writer as stac-geoparquet.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use stac::{IntoGeoparquet, ItemCollection, Item};
+    ///
+    /// let item_collection: ItemCollection = vec![Item::new("a"), Item::new("b")].into();
+    /// let mut buf = Vec::new();
+    /// item_collection.into_geoparquet_writer(&mut buf, None).unwrap();
+    /// ```
+    fn into_geoparquet_writer(
+        self,
+        writer: impl Write + Send,
+        compression: Option<Compression>,
+    ) -> Result<()>;
 
+    /// Writes a value to a writer as stac-geoparquet to some bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use stac::{IntoGeoparquet, ItemCollection, Item};
+    ///
+    /// let item_collection: ItemCollection = vec![Item::new("a"), Item::new("b")].into();
+    /// let bytes = item_collection.into_geoparquet_vec(None).unwrap();
+    /// ```
+    fn into_geoparquet_vec(self, compression: Option<Compression>) -> Result<Vec<u8>> {
+        let mut buf = Vec::new();
+        self.into_geoparquet_writer(&mut buf, compression)?;
+        Ok(buf)
+    }
+}
+
+macro_rules! impl_from_geoparquet {
+    ($object:ty) => {
+        impl FromGeoparquet for $object {
+            fn from_geoparquet_bytes(
+                _: impl Into<Bytes>,
+            ) -> std::result::Result<Self, crate::Error> {
+                Err(crate::Error::UnsupportedGeoparquetType)
+            }
+        }
+    };
+}
+macro_rules! impl_into_geoparquet {
+    ($object:ty) => {
+        impl IntoGeoparquet for $object {
+            fn into_geoparquet_writer(
+                self,
+                _: impl Write + Send,
+                _: Option<Compression>,
+            ) -> std::result::Result<(), crate::Error> {
+                Err(crate::Error::UnsupportedGeoparquetType)
+            }
+        }
+    };
+}
+
+impl_from_geoparquet!(Item);
+impl_from_geoparquet!(Catalog);
+impl_from_geoparquet!(Collection);
+impl_into_geoparquet!(Catalog);
+impl_into_geoparquet!(Collection);
+
+impl FromGeoparquet for ItemCollection {
     fn from_geoparquet_bytes(bytes: impl Into<Bytes>) -> Result<Self> {
         let item_collection = from_reader(bytes.into())?;
         Ok(item_collection)
@@ -130,12 +199,6 @@ impl FromGeoparquet for ItemCollection {
 }
 
 impl FromGeoparquet for Value {
-    fn from_geoparquet_path(path: impl AsRef<Path>) -> Result<Self> {
-        Ok(Value::ItemCollection(ItemCollection::from_geoparquet_path(
-            path,
-        )?))
-    }
-
     fn from_geoparquet_bytes(bytes: impl Into<Bytes>) -> Result<Self> {
         Ok(Value::ItemCollection(
             ItemCollection::from_geoparquet_bytes(bytes)?,
@@ -234,11 +297,6 @@ mod tests {
     }
 
     #[test]
-    fn read() {
-        let _ = ItemCollection::from_geoparquet_path("data/extended-item.parquet");
-    }
-
-    #[test]
     fn from_bytes() {
         let mut buf = Vec::new();
         let _ = File::open("data/extended-item.parquet")
@@ -246,11 +304,6 @@ mod tests {
             .read_to_end(&mut buf)
             .unwrap();
         let _ = ItemCollection::from_geoparquet_bytes(buf).unwrap();
-    }
-
-    #[test]
-    fn read_value() {
-        let _ = Value::from_geoparquet_path("data/extended-item.parquet").unwrap();
     }
 
     #[test]

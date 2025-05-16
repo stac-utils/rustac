@@ -47,7 +47,6 @@ url.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true
-stac = { workspace = true, features = ["validate"] }
 tokio = { workspace = true, features = ["macros"] }
 tokio-test.workspace = true
 tower = { workspace = true, features = ["util"] }

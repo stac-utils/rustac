@@ -5,7 +5,8 @@
 //! Validation is provided via the [Validate] trait:
 //!
 //! ```
-//! use stac::{Item, Validate};
+//! use stac::Item;
+//! use stac_io::Validate;
 //!
 //! Item::new("an-id").validate().unwrap();
 //! ```
@@ -14,7 +15,8 @@
 //! validations, you should re-use the same [Validator]:
 //!
 //! ```
-//! # use stac::{Item, Validator};
+//! # use stac::Item;
+//! use stac_io::Validator;
 //! let mut items: Vec<_> = (0..10).map(|n| Item::new(format!("item-{}", n))).collect();
 //! let mut validator = Validator::new().unwrap();
 //! for item in items {
@@ -46,7 +48,8 @@ pub trait Validate: Serialize + Sized {
     /// # Examples
     ///
     /// ```
-    /// use stac::{Item, Validate};
+    /// use stac::Item;
+    /// use stac_io::Validate;
     ///
     /// let mut item = Item::new("an-id");
     /// item.validate().unwrap();

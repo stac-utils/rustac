@@ -14,23 +14,23 @@ rust-version.workspace = true
 [features]
 default = []
 pgstac = ["stac-server/pgstac"]
-duckdb = ["dep:stac-duckdb", "stac-server/duckdb"]
-duckdb-bundled = ["duckdb", "stac-duckdb/bundled"]
+duckdb-bundled = ["stac-duckdb/bundled"]
 
 [dependencies]
 anyhow.workspace = true
 axum.workspace = true
 clap = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
-stac = { workspace = true, features = [
-    "geoparquet-compression",
-    "object-store-all",
+stac.workspace = true
+stac-api = { workspace = true, features = ["client"] }
+stac-duckdb.workspace = true
+stac-io = { workspace = true, features = [
+    "store-all",
     "reqwest",
     "validate",
+    "geoparquet-compression",
 ] }
-stac-api = { workspace = true, features = ["client"] }
-stac-duckdb = { workspace = true, optional = true }
-stac-server = { workspace = true, features = ["axum"] }
+stac-server = { workspace = true, features = ["axum", "duckdb"] }
 tokio = { workspace = true, features = [
     "macros",
     "io-std",

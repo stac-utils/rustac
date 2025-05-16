@@ -1,5 +1,6 @@
 use rstest::rstest;
-use stac::{Migrate, Validate, Value, Version};
+use stac::{Migrate, Value, Version};
+use stac_io::Validate;
 use std::path::PathBuf;
 
 #[rstest]

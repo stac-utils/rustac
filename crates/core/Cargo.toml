@@ -25,19 +25,6 @@ geoarrow = [
 ]
 geoparquet = ["geoarrow", "dep:geoarrow-geoparquet", "dep:parquet"]
 geoparquet-compression = ["geoparquet", "geoarrow-geoparquet/compression"]
-object-store = ["dep:object_store", "dep:tokio"]
-object-store-aws = ["object-store", "object_store/aws"]
-object-store-azure = ["object-store", "object_store/azure"]
-object-store-gcp = ["object-store", "object_store/gcp"]
-object-store-http = ["object-store", "object_store/http"]
-object-store-all = [
-    "object-store-aws",
-    "object-store-azure",
-    "object-store-gcp",
-    "object-store-http",
-]
-reqwest = ["dep:reqwest"]
-validate = ["dep:jsonschema", "dep:fluent-uri", "reqwest"]
 
 [dependencies]
 arrow-array = { workspace = true, optional = true, features = ["chrono-tz"] }
@@ -46,7 +33,6 @@ arrow-json = { workspace = true, optional = true }
 arrow-schema = { workspace = true, optional = true }
 bytes.workspace = true
 chrono = { workspace = true, features = ["serde"] }
-fluent-uri = { workspace = true, optional = true }
 geo = { workspace = true, optional = true }
 geo-traits = { workspace = true, optional = true }
 geo-types = { workspace = true, optional = true }
@@ -55,17 +41,13 @@ geoarrow-geoparquet = { workspace = true, optional = true }
 geoarrow-schema = { workspace = true, optional = true }
 geojson.workspace = true
 indexmap.workspace = true
-jsonschema = { workspace = true, optional = true, features = ["resolve-http"] }
 log.workspace = true
 mime.workspace = true
-object_store = { workspace = true, optional = true }
 parquet = { workspace = true, optional = true }
-reqwest = { workspace = true, features = ["json", "blocking"], optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 stac-derive.workspace = true
 thiserror.workspace = true
-tokio = { workspace = true, optional = true }
 tracing.workspace = true
 url = { workspace = true, features = ["serde"] }
 
@@ -73,33 +55,9 @@ url = { workspace = true, features = ["serde"] }
 assert-json-diff.workspace = true
 bytes.workspace = true
 rstest.workspace = true
-tempfile.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tokio-test.workspace = true
-
-[[test]]
-name = "examples"
-required-features = ["validate"]
-
-[[test]]
-name = "migrate"
-required-features = ["validate"]
-
-[[test]]
-name = "aws"
-required-features = ["object-store-aws"]
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
-
-[package.metadata.cargo-all-features]
-max_combination_size = 2
-denylist = [
-    "geoparquet-compression",
-    "object-store-all",
-    "object-store-aws",
-    "object-store-azure",
-    "object-store-gcp",
-    "object-store-http",
-]

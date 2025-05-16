@@ -21,16 +21,6 @@ pub enum Href {
     String(String),
 }
 
-/// An href that has been realized to a path or a url.
-#[derive(Debug)]
-pub enum RealizedHref {
-    /// A path buf
-    PathBuf(PathBuf),
-
-    /// A url
-    Url(Url),
-}
-
 /// Implemented by all three STAC objects, the [SelfHref] trait allows getting
 /// and setting an object's href.
 ///
@@ -140,22 +130,6 @@ impl Href {
             Href::String(s) => s.as_str(),
         }
     }
-
-    /// If the url scheme is `file`, convert it to a path string.
-    pub fn realize(self) -> RealizedHref {
-        match self {
-            Href::Url(url) => {
-                if url.scheme() == "file" {
-                    url.to_file_path()
-                        .map(RealizedHref::PathBuf)
-                        .unwrap_or_else(|_| RealizedHref::Url(url))
-                } else {
-                    RealizedHref::Url(url)
-                }
-            }
-            Href::String(s) => RealizedHref::PathBuf(PathBuf::from(s)),
-        }
-    }
 }
 
 impl Display for Href {
@@ -187,34 +161,6 @@ impl From<String> for Href {
     }
 }
 
-impl From<&Path> for Href {
-    fn from(value: &Path) -> Self {
-        if cfg!(target_os = "windows") {
-            if let Ok(url) = Url::from_file_path(value) {
-                Href::Url(url)
-            } else {
-                Href::String(value.to_string_lossy().into_owned())
-            }
-        } else {
-            Href::String(value.to_string_lossy().into_owned())
-        }
-    }
-}
-
-impl From<PathBuf> for Href {
-    fn from(value: PathBuf) -> Self {
-        if cfg!(target_os = "windows") {
-            if let Ok(url) = Url::from_file_path(&value) {
-                Href::Url(url)
-            } else {
-                Href::String(value.to_string_lossy().into_owned())
-            }
-        } else {
-            Href::String(value.to_string_lossy().into_owned())
-        }
-    }
-}
-
 impl TryFrom<Href> for Url {
     type Error = Error;
     fn try_from(value: Href) -> Result<Self> {
@@ -225,17 +171,37 @@ impl TryFrom<Href> for Url {
     }
 }
 
-#[cfg(feature = "reqwest")]
 impl From<Url> for Href {
     fn from(value: Url) -> Self {
         Href::Url(value)
     }
 }
 
-#[cfg(not(feature = "reqwest"))]
-impl From<Url> for Href {
-    fn from(value: Url) -> Self {
-        Href::Url(value)
+impl From<&Path> for Href {
+    fn from(value: &Path) -> Self {
+        #[cfg(target_os = "windows")]
+        if let Ok(url) = Url::from_file_path(value) {
+            Href::Url(url)
+        } else {
+            Href::String(value.to_string_lossy().into_owned())
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            Href::String(value.to_string_lossy().into_owned())
+        }
+    }
+}
+
+impl From<PathBuf> for Href {
+    fn from(value: PathBuf) -> Self {
+        #[cfg(target_os = "windows")]
+        if let Ok(url) = Url::from_file_path(&value) {
+            Href::Url(url)
+        } else {
+            Href::String(value.to_string_lossy().into_owned())
+        }
+        #[cfg(not(target_os = "windows"))]
+        Href::String(value.to_string_lossy().into_owned())
     }
 }
 

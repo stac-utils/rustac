@@ -1,9 +1,10 @@
-use crate::{Error, Result, Type, Version};
+use crate::{Error, Result};
 use fluent_uri::Uri;
 use jsonschema::{Resource, Retrieve, ValidationOptions, Validator as JsonschemaValidator};
 use reqwest::blocking::Client;
 use serde::Serialize;
 use serde_json::{Map, Value};
+use stac::{Type, Version};
 use std::collections::HashMap;
 
 const SCHEMA_BASE: &str = "https://schemas.stacspec.org";
@@ -24,7 +25,7 @@ impl Validator {
     /// # Examples
     ///
     /// ```
-    /// use stac::Validator;
+    /// use stac_io::Validator;
     ///
     /// let validator = Validator::new().unwrap();
     /// ```
@@ -46,7 +47,8 @@ impl Validator {
     /// # Examples
     ///
     /// ```
-    /// use stac::{Item, Validator};
+    /// use stac::Item;
+    /// use stac_io::Validator;
     ///
     /// let item = Item::new("an-id");
     /// let mut validator = Validator::new().unwrap();
@@ -372,8 +374,9 @@ fn prebuild_resources() -> Vec<(String, Resource)> {
 #[cfg(test)]
 mod tests {
     use super::Validator;
-    use crate::{Collection, Item, Validate};
+    use crate::Validate;
     use serde_json::json;
+    use stac::{Collection, Item};
 
     #[test]
     fn validate_simple_item() {

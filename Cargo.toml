@@ -7,6 +7,7 @@ members = [
     "crates/derive",
     "crates/duckdb",
     "crates/extensions",
+    "crates/io",
     "crates/pgstac",
     "crates/server",
 ]
@@ -77,6 +78,7 @@ stac-api = { version = "0.7.0", path = "crates/api" }
 stac-derive = { version = "0.2.0", path = "crates/derive" }
 stac-duckdb = { version = "0.1.1", path = "crates/duckdb" }
 stac-extensions = { version = "0.1.0", path = "crates/extensions" }
+stac-io = { version = "0.1.0", path = "crates/io" }
 stac-server = { version = "0.3.2", path = "crates/server" }
 syn = "2.0"
 tempfile = "3.16"

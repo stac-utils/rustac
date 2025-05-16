@@ -1,8 +1,6 @@
-use crate::{
-    Error, FromJson, FromNdjson, Href, RealizedHref, Result, SelfHref, ToJson, ToNdjson,
-    geoparquet::{Compression, FromGeoparquet, IntoGeoparquet},
-};
+use crate::{Error, Readable, RealizedHref, Result, Writeable};
 use bytes::Bytes;
+use stac::{Href, SelfHref};
 use std::{fmt::Display, path::Path, str::FromStr};
 
 /// The format of STAC data.
@@ -17,7 +15,8 @@ pub enum Format {
     NdJson,
 
     /// [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet)
-    Geoparquet(Option<Compression>),
+    #[cfg(feature = "geoparquet")]
+    Geoparquet(Option<stac::geoparquet::Compression>),
 }
 
 impl Format {
@@ -26,20 +25,16 @@ impl Format {
     /// # Examples
     ///
     /// ```
-    /// use stac::Format;
+    /// use stac_io::Format;
     ///
     /// assert_eq!(Format::Json(false), Format::infer_from_href("item.json").unwrap());
     /// ```
     pub fn infer_from_href(href: &str) -> Option<Format> {
-        let format = href.rsplit_once('.').and_then(|(_, ext)| ext.parse().ok());
-        if let Some(Format::Geoparquet(_)) = format {
-            Some(Format::geoparquet()) // to pick up the default compression
-        } else {
-            format
-        }
+        href.rsplit_once('.').and_then(|(_, ext)| ext.parse().ok())
     }
 
     /// Returns true if this is a geoparquet href.
+    #[cfg(feature = "geoparquet")]
     pub fn is_geoparquet_href(href: &str) -> bool {
         matches!(Format::infer_from_href(href), Some(Format::Geoparquet(_)))
     }
@@ -49,17 +44,15 @@ impl Format {
     /// # Examples
     ///
     /// ```
-    /// use stac::{Format, Item};
+    /// use stac::Item;
+    /// use stac_io::Format;
     ///
     /// let item: Item = Format::json().read("examples/simple-item.json").unwrap();
     /// ```
     #[allow(unused_variables)]
-    pub fn read<T: SelfHref + FromJson + FromNdjson + FromGeoparquet>(
-        &self,
-        href: impl Into<Href>,
-    ) -> Result<T> {
+    pub fn read<T: Readable + SelfHref>(&self, href: impl Into<Href>) -> Result<T> {
         let mut href = href.into();
-        let mut value: T = match href.clone().realize() {
+        let mut value: T = match href.clone().into() {
             RealizedHref::Url(url) => {
                 #[cfg(feature = "reqwest")]
                 {
@@ -87,18 +80,17 @@ impl Format {
     /// # Examples
     ///
     /// ```
-    /// use stac::{Format, Item};
+    /// use stac::Item;
+    /// use stac_io::Format;
     ///
     /// let item: Item = Format::json().from_path("examples/simple-item.json").unwrap();
     /// ```
-    pub fn from_path<T: FromJson + FromNdjson + FromGeoparquet + SelfHref>(
-        &self,
-        path: impl AsRef<Path>,
-    ) -> Result<T> {
+    pub fn from_path<T: Readable + SelfHref>(&self, path: impl AsRef<Path>) -> Result<T> {
         let path = path.as_ref().canonicalize()?;
         match self {
             Format::Json(_) => T::from_json_path(&path),
             Format::NdJson => T::from_ndjson_path(&path),
+            #[cfg(feature = "geoparquet")]
             Format::Geoparquet(_) => T::from_geoparquet_path(&path),
         }
         .map_err(|err| {
@@ -118,22 +110,22 @@ impl Format {
     /// # Examples
     ///
     /// ```
-    /// use stac::{Format, Item};
+    /// use stac::Item;
+    /// use stac_io::Format;
     /// use std::{io::Read, fs::File};
     ///
     /// let mut buf = Vec::new();
     /// File::open("examples/simple-item.json").unwrap().read_to_end(&mut buf).unwrap();
     /// let item: Item = Format::json().from_bytes(buf).unwrap();
     /// ```
-    pub fn from_bytes<T: FromJson + FromNdjson + FromGeoparquet>(
-        &self,
-        bytes: impl Into<Bytes>,
-    ) -> Result<T> {
-        match self {
-            Format::Json(_) => T::from_json_slice(&bytes.into()),
-            Format::NdJson => T::from_ndjson_bytes(bytes),
-            Format::Geoparquet(_) => T::from_geoparquet_bytes(bytes),
-        }
+    pub fn from_bytes<T: Readable>(&self, bytes: impl Into<Bytes>) -> Result<T> {
+        let value = match self {
+            Format::Json(_) => T::from_json_slice(&bytes.into())?,
+            Format::NdJson => T::from_ndjson_bytes(bytes)?,
+            #[cfg(feature = "geoparquet")]
+            Format::Geoparquet(_) => T::from_geoparquet_bytes(bytes)?,
+        };
+        Ok(value)
     }
 
     /// Gets a STAC value from an object store with the provided options.
@@ -141,27 +133,28 @@ impl Format {
     /// # Examples
     ///
     /// ```no_run
-    /// use stac::{Catalog, Format};
+    /// use stac::Catalog;
+    /// use stac_io::Format;
     ///
-    /// #[cfg(feature = "object-store-aws")]
+    /// #[cfg(feature = "store-aws")]
     /// {
     /// # tokio_test::block_on(async {
-    ///     let catalog: Catalog = stac::io::get_opts("s3://nz-elevation/catalog.json",
+    ///     let catalog: Catalog = stac_io::get_opts("s3://nz-elevation/catalog.json",
     ///         [("skip_signature", "true"), ("region", "ap-southeast-2")],
     ///     ).await.unwrap();
     /// # })
     /// }
     /// ```
-    #[cfg(feature = "object-store")]
+    #[cfg(feature = "store")]
     pub async fn get_opts<T, I, K, V>(&self, href: impl Into<Href>, options: I) -> Result<T>
     where
-        T: SelfHref + FromJson + FromNdjson + FromGeoparquet,
+        T: SelfHref + Readable,
         I: IntoIterator<Item = (K, V)>,
         K: AsRef<str>,
         V: Into<String>,
     {
         let href = href.into();
-        match href.clone().realize() {
+        match href.clone().into() {
             RealizedHref::Url(url) => {
                 let (object_store, path) = parse_url_opts(&url, options)?;
                 let mut value: T =
@@ -188,14 +181,14 @@ impl Format {
     }
 
     /// Gets a STAC value from an object store.
-    #[cfg(feature = "object-store")]
+    #[cfg(feature = "store")]
     pub async fn get_store<T>(
         &self,
         object_store: std::sync::Arc<dyn object_store::ObjectStore>,
         path: impl Into<object_store::path::Path>,
     ) -> Result<T>
     where
-        T: SelfHref + FromJson + FromNdjson + FromGeoparquet,
+        T: SelfHref + Readable,
     {
         let path = path.into();
         tracing::debug!("getting {self} from {path} with object store");
@@ -209,18 +202,16 @@ impl Format {
     /// # Examples
     ///
     /// ```no_run
-    /// use stac::{Item, Format};
+    /// use stac::Item;
+    /// use stac_io::Format;
     ///
     /// Format::json().write("an-id.json", Item::new("an-id")).unwrap();
     /// ```
-    pub fn write<T: ToJson + ToNdjson + IntoGeoparquet>(
-        &self,
-        path: impl AsRef<Path>,
-        value: T,
-    ) -> Result<()> {
+    pub fn write<T: Writeable>(&self, path: impl AsRef<Path>, value: T) -> Result<()> {
         match self {
             Format::Json(pretty) => value.to_json_path(path, *pretty),
             Format::NdJson => value.to_ndjson_path(path),
+            #[cfg(feature = "geoparquet")]
             Format::Geoparquet(compression) => value.into_geoparquet_path(path, *compression),
         }
     }
@@ -230,17 +221,20 @@ impl Format {
     /// # Examples
     ///
     /// ```
-    /// use stac::{Format, Item};
+    /// use stac::Item;
+    /// use stac_io::Format;
     ///
     /// let item = Item::new("an-id");
     /// let bytes = Format::json().into_vec(item).unwrap();
     /// ```
-    pub fn into_vec<T: ToJson + ToNdjson + IntoGeoparquet>(&self, value: T) -> Result<Vec<u8>> {
-        match self {
-            Format::Json(pretty) => value.to_json_vec(*pretty),
-            Format::NdJson => value.to_ndjson_vec(),
-            Format::Geoparquet(compression) => value.into_geoparquet_vec(*compression),
-        }
+    pub fn into_vec<T: Writeable>(&self, value: T) -> Result<Vec<u8>> {
+        let value = match self {
+            Format::Json(pretty) => value.to_json_vec(*pretty)?,
+            Format::NdJson => value.to_ndjson_vec()?,
+            #[cfg(feature = "geoparquet")]
+            Format::Geoparquet(compression) => value.into_geoparquet_vec(*compression)?,
+        };
+        Ok(value)
     }
 
     /// Puts a STAC value to an object store with the provided options.
@@ -248,17 +242,18 @@ impl Format {
     /// # Examples
     ///
     /// ```no_run
-    /// use stac::{Item, Format};
+    /// use stac::Item;
+    /// use stac_io::Format;
     ///
     /// let item = Item::new("an-id");
-    /// #[cfg(feature = "object-store-aws")]
+    /// #[cfg(feature = "store-aws")]
     /// {
     /// # tokio_test::block_on(async {
     ///     Format::json().put_opts("s3://bucket/item.json", item, [("aws_access_key_id", "...")]).await.unwrap();
     /// # })
     /// }
     /// ```
-    #[cfg(feature = "object-store")]
+    #[cfg(feature = "store")]
     pub async fn put_opts<T, I, K, V>(
         &self,
         href: impl ToString,
@@ -266,7 +261,7 @@ impl Format {
         options: I,
     ) -> Result<Option<object_store::PutResult>>
     where
-        T: ToJson + ToNdjson + IntoGeoparquet,
+        T: Writeable,
         I: IntoIterator<Item = (K, V)>,
         K: AsRef<str>,
         V: Into<String>,
@@ -283,7 +278,7 @@ impl Format {
     }
 
     /// Puts a STAC value into an object store.
-    #[cfg(feature = "object-store")]
+    #[cfg(feature = "store")]
     pub async fn put_store<T>(
         &self,
         object_store: std::sync::Arc<dyn object_store::ObjectStore>,
@@ -291,7 +286,7 @@ impl Format {
         value: T,
     ) -> Result<object_store::PutResult>
     where
-        T: ToJson + ToNdjson + IntoGeoparquet,
+        T: Writeable,
     {
         let bytes = self.into_vec(value)?;
         let put_result = object_store.put(&path.into(), bytes.into()).await?;
@@ -309,10 +304,11 @@ impl Format {
     }
 
     /// Returns the default geoparquet format (snappy compression if compression is enabled).
+    #[cfg(feature = "geoparquet")]
     pub fn geoparquet() -> Format {
         #[cfg(feature = "geoparquet-compression")]
         {
-            Format::Geoparquet(Some(Compression::SNAPPY))
+            Format::Geoparquet(Some(stac::geoparquet::Compression::SNAPPY))
         }
         #[cfg(not(feature = "geoparquet-compression"))]
         {
@@ -321,7 +317,7 @@ impl Format {
     }
 }
 
-#[cfg(feature = "object-store")]
+#[cfg(feature = "store")]
 fn parse_url_opts<I, K, V>(
     url: &url::Url,
     options: I,
@@ -333,7 +329,7 @@ where
 {
     // It's technically inefficient to parse it twice, but we're doing this to
     // then do IO so who cares.
-    #[cfg(feature = "object-store-aws")]
+    #[cfg(feature = "store-aws")]
     if let Ok((object_store::ObjectStoreScheme::AmazonS3, path)) =
         object_store::ObjectStoreScheme::parse(url)
     {
@@ -365,6 +361,7 @@ impl Display for Format {
                 }
             }
             Self::NdJson => f.write_str("ndjson"),
+            #[cfg(feature = "geoparquet")]
             Self::Geoparquet(compression) => {
                 if let Some(compression) = *compression {
                     write!(f, "geoparquet[{}]", compression)
@@ -386,80 +383,89 @@ impl FromStr for Format {
             "json-pretty" | "geojson-pretty" => Ok(Self::Json(true)),
             "ndjson" => Ok(Self::NdJson),
             _ => {
-                if s.starts_with("parquet") || s.starts_with("geoparquet") {
-                    if let Some((_, compression)) = s.split_once('[') {
-                        if let Some(stop) = compression.find(']') {
-                            #[cfg(feature = "geoparquet")]
-                            {
-                                Ok(Self::Geoparquet(Some(compression[..stop].parse()?)))
-                            }
-                            #[cfg(not(feature = "geoparquet"))]
-                            {
-                                Ok(Self::Geoparquet(Some(Compression)))
-                            }
-                        } else {
-                            Err(Error::UnsupportedFormat(s.to_string()))
-                        }
-                    } else {
-                        Ok(Self::Geoparquet(None))
-                    }
-                } else {
-                    Err(Error::UnsupportedFormat(s.to_string()))
+                #[cfg(feature = "geoparquet")]
+                {
+                    infer_geoparquet_format(s)
                 }
+                #[cfg(not(feature = "geoparquet"))]
+                Err(Error::UnsupportedFormat(s.to_string()))
             }
         }
+    }
+}
+
+#[cfg(feature = "geoparquet")]
+fn infer_geoparquet_format(s: &str) -> Result<Format> {
+    if s.starts_with("parquet") || s.starts_with("geoparquet") {
+        if let Some((_, compression)) = s.split_once('[') {
+            if let Some(stop) = compression.find(']') {
+                let format = compression[..stop]
+                    .parse()
+                    .map(Some)
+                    .map(Format::Geoparquet)?;
+                Ok(format)
+            } else {
+                Err(Error::UnsupportedFormat(s.to_string()))
+            }
+        } else if cfg!(feature = "geoparquet-compression") {
+            Ok(Format::Geoparquet(Some(
+                stac::geoparquet::Compression::SNAPPY,
+            )))
+        } else {
+            Ok(Format::Geoparquet(None))
+        }
+    } else {
+        Err(Error::UnsupportedFormat(s.to_string()))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::Format;
-    use crate::geoparquet::Compression;
-
-    #[test]
-    fn parse_geoparquet() {
-        assert_eq!(
-            "parquet".parse::<Format>().unwrap(),
-            Format::Geoparquet(None)
-        );
-    }
-
-    #[test]
-    #[cfg(feature = "geoparquet")]
-    fn parse_geoparquet_compression() {
-        let format: Format = "geoparquet[snappy]".parse().unwrap();
-        assert_eq!(format, Format::Geoparquet(Some(Compression::SNAPPY)));
-    }
 
     #[test]
     #[cfg(not(feature = "geoparquet"))]
-    fn parse_geoparquet_compression() {
-        let format: Format = "geoparquet[snappy]".parse().unwrap();
-        assert_eq!(format, Format::Geoparquet(Some(Compression)));
+    fn parse_geoparquet() {
+        assert!(matches!(
+            "parquet".parse::<Format>().unwrap_err(),
+            crate::Error::UnsupportedFormat(_),
+        ));
     }
 
-    #[test]
-    #[cfg(feature = "geoparquet-compression")]
-    fn infer_from_href() {
-        assert_eq!(
-            Format::Geoparquet(Some(Compression::SNAPPY)),
-            Format::infer_from_href("out.parquet").unwrap()
-        );
-    }
+    #[cfg(feature = "geoparquet")]
+    mod geoparquet {
+        use super::Format;
+        use stac::geoparquet::Compression;
 
-    #[test]
-    #[cfg(not(feature = "geoparquet-compression"))]
-    fn infer_from_href() {
-        assert_eq!(
-            Format::Geoparquet(None),
-            Format::infer_from_href("out.parquet").unwrap()
-        );
+        #[test]
+        fn parse_geoparquet_compression() {
+            let format: Format = "geoparquet[snappy]".parse().unwrap();
+            assert_eq!(format, Format::Geoparquet(Some(Compression::SNAPPY)));
+        }
+
+        #[test]
+        #[cfg(feature = "geoparquet-compression")]
+        fn infer_from_href() {
+            assert_eq!(
+                Format::Geoparquet(Some(Compression::SNAPPY)),
+                Format::infer_from_href("out.parquet").unwrap()
+            );
+        }
+
+        #[test]
+        #[cfg(not(feature = "geoparquet-compression"))]
+        fn infer_from_href() {
+            assert_eq!(
+                Format::Geoparquet(None),
+                Format::infer_from_href("out.parquet").unwrap()
+            );
+        }
     }
 
     #[tokio::test]
-    #[cfg(feature = "object-store")]
+    #[cfg(feature = "store")]
     async fn prefix_store_read() {
-        use crate::Item;
+        use stac::Item;
         use std::sync::Arc;
 
         let object_store =
@@ -471,10 +477,10 @@ mod tests {
     }
 
     #[tokio::test]
-    #[cfg(feature = "object-store")]
+    #[cfg(feature = "store")]
     async fn store_write() {
-        use crate::Item;
         use object_store::ObjectStore;
+        use stac::Item;
         use std::sync::Arc;
 
         let object_store = Arc::new(object_store::memory::InMemory::new());

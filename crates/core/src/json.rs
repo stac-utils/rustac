@@ -1,31 +1,9 @@
-use crate::{Error, Result, SelfHref};
+use crate::{Error, Result};
 use serde::{Serialize, de::DeserializeOwned};
-use std::{
-    fs::File,
-    io::{Read, Write},
-    path::Path,
-};
+use std::io::Write;
 
 /// Create a STAC object from JSON.
-pub trait FromJson: DeserializeOwned + SelfHref {
-    /// Reads JSON data from a file.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stac::{FromJson, Item};
-    ///
-    /// let item = Item::from_json_path("examples/simple-item.json").unwrap();
-    /// ```
-    fn from_json_path(path: impl AsRef<Path>) -> Result<Self> {
-        let path = path.as_ref();
-        let mut buf = Vec::new();
-        let _ = File::open(path)?.read_to_end(&mut buf)?;
-        let mut value = Self::from_json_slice(&buf)?;
-        *value.self_href_mut() = Some(path.into());
-        Ok(value)
-    }
-
+pub trait FromJson: DeserializeOwned {
     /// Creates an object from JSON bytes.
     ///
     /// # Examples
@@ -43,22 +21,8 @@ pub trait FromJson: DeserializeOwned + SelfHref {
     }
 }
 
-/// Write a STAC object to JSON.
+/// Writes a STAC object to JSON bytes.
 pub trait ToJson: Serialize {
-    /// Writes a value to a path as JSON.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use stac::{ToJson, Item};
-    ///
-    /// Item::new("an-id").to_json_path("an-id.json", true).unwrap();
-    /// ```
-    fn to_json_path(&self, path: impl AsRef<Path>, pretty: bool) -> Result<()> {
-        let file = File::create(path)?;
-        self.to_json_writer(file, pretty)
-    }
-
     /// Writes a value as JSON.
     ///
     /// # Examples
@@ -95,22 +59,5 @@ pub trait ToJson: Serialize {
     }
 }
 
-impl<T: DeserializeOwned + SelfHref> FromJson for T {}
+impl<T: DeserializeOwned> FromJson for T {}
 impl<T: Serialize> ToJson for T {}
-
-#[cfg(test)]
-mod tests {
-    use super::FromJson;
-    use crate::{Item, SelfHref};
-
-    #[test]
-    fn set_href() {
-        let item = Item::from_json_path("examples/simple-item.json").unwrap();
-        assert!(
-            item.self_href()
-                .unwrap()
-                .as_str()
-                .ends_with("examples/simple-item.json")
-        );
-    }
-}
