@@ -50,7 +50,7 @@ pub enum Error {
 
     #[cfg(feature = "geoparquet")]
     #[error(transparent)]
-    /// [parquet::error::ParquetError]
+    /// [parquet::errors::ParquetError]
     Parquet(#[from] parquet::errors::ParquetError),
 
     #[cfg(feature = "reqwest")]
