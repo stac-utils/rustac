@@ -333,6 +333,13 @@ mod tests {
     }
 
     #[test]
+    fn has_type() {
+        let item: Item = crate::read("examples/simple-item.json").unwrap();
+        let table = Table::from_item_collection(vec![item]).unwrap();
+        let _ = table.schema().field_with_name("type").unwrap();
+    }
+
+    #[test]
     fn from_table() {
         let file = File::open("data/extended-item.parquet").unwrap();
         let reader = GeoParquetRecordBatchReaderBuilder::try_new(file)

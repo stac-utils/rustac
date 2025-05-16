@@ -126,6 +126,9 @@ pub struct Item {
 /// use this "flat" representation.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FlatItem {
+    #[serde(default = "item_type", deserialize_with = "deserialize_item_type")]
+    r#type: String,
+
     #[serde(rename = "stac_version", default = "default_stac_version")]
     version: Version,
 
@@ -579,6 +582,7 @@ impl Item {
             }
         }
         Ok(FlatItem {
+            r#type: self.r#type,
             version: STAC_VERSION,
             extensions: self.extensions,
             id: self.id,
