@@ -49,7 +49,7 @@ duckdb = "1.2.2"
 fluent-uri = "0.3.2"
 futures = "0.3.31"
 geo = "0.30.0"
-geo-traits = "0.3.0"
+geo-traits = "0.2.0"
 geo-types = "0.7.15"
 geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "17bf33e4cf78b060afa08ca9560dc4efd73c2c76" }
 geoarrow-geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "17bf33e4cf78b060afa08ca9560dc4efd73c2c76" }
