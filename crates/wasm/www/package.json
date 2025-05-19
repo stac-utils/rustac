@@ -1,0 +1,20 @@
+{
+  "name": "stac-wasm",
+  "version": "0.1.0",
+  "description": "STAC WASM test",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "start": "webpack-dev-server"
+  },
+  "keywords": [],
+  "license": "(MIT OR Apache-2.0)",
+  "devDependencies": {
+    "stac-wasm": "file:../pkg",
+    "@duckdb/duckdb-wasm": "^1.28.0",
+    "webpack": "^5.99.8",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.1",
+    "copy-webpack-plugin": "^5.0.0"
+  }
+}
