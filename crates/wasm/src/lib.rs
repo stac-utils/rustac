@@ -1,6 +1,6 @@
 use arrow_array::RecordBatchIterator;
 use arrow_schema::ArrowError;
-use arrow_wasm::{Table, error::WasmResult};
+use arrow_wasm::{Table, arrow_js::table::JSTable, error::WasmResult};
 use thiserror::Error;
 use wasm_bindgen::prelude::*;
 
@@ -11,7 +11,8 @@ pub enum Error {
 }
 
 #[wasm_bindgen(js_name = arrowToStacJson)]
-pub fn arrow_to_stac_json(table: Table) -> WasmResult<JsValue> {
+pub fn arrow_to_stac_json(table: JSTable) -> WasmResult<JsValue> {
+    let table = Table::from_js(&table)?;
     let reader = RecordBatchIterator::new(
         table.record_batches().into_iter().map(From::from).map(Ok),
         table.schema().into(),
