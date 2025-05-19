@@ -25,4 +25,4 @@ If you don't have DuckDB on your system, you can also use the Python wheel, whic
 python -m pip install rustac
 ```
 
-For examples of using the CLI, check out the slides from [@gadomski's](https://github.com/gadomski/) 2024 FOSS4G-NA presentation [here](https://www.gadom.ski/2024-09-FOSS4G-NA-rustac/).
+For examples of using the CLI, check out the slides from [@gadomski's](https://github.com/gadomski/) [2024 FOSS4G-NA presentation](https://www.gadom.ski/2024-09-FOSS4G-NA-rustac/).
