@@ -4,3 +4,4 @@ dist/
 pyrightconfig.json
 site/
 .cache
+crates/wasm/www/package-lock.json
