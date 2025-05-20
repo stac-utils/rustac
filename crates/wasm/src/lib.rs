@@ -1,6 +1,8 @@
 use arrow_array::RecordBatchIterator;
 use arrow_schema::ArrowError;
 use arrow_wasm::{Table, arrow_js::table::JSTable, error::WasmResult};
+use serde::Serialize;
+use serde_wasm_bindgen::Serializer;
 use thiserror::Error;
 use wasm_bindgen::prelude::*;
 
@@ -18,6 +20,7 @@ pub fn arrow_to_stac_json(table: JSTable) -> WasmResult<JsValue> {
         table.schema().into(),
     );
     let items = stac::geoarrow::json::from_record_batch_reader(reader)?;
-    let items = serde_wasm_bindgen::to_value(&items)?;
+    let serializer = Serializer::json_compatible();
+    let items = items.serialize(&serializer)?;
     Ok(items)
 }
