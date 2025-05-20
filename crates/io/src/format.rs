@@ -128,75 +128,6 @@ impl Format {
         Ok(value)
     }
 
-    /// Gets a STAC value from an object store with the provided options.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use stac::Catalog;
-    /// use stac_io::Format;
-    ///
-    /// #[cfg(feature = "store-aws")]
-    /// {
-    /// # tokio_test::block_on(async {
-    ///     let catalog: Catalog = stac_io::get_opts("s3://nz-elevation/catalog.json",
-    ///         [("skip_signature", "true"), ("region", "ap-southeast-2")],
-    ///     ).await.unwrap();
-    /// # })
-    /// }
-    /// ```
-    #[cfg(feature = "store")]
-    pub async fn get_opts<T, I, K, V>(&self, href: impl Into<Href>, options: I) -> Result<T>
-    where
-        T: SelfHref + Readable,
-        I: IntoIterator<Item = (K, V)>,
-        K: AsRef<str>,
-        V: Into<String>,
-    {
-        let href = href.into();
-        match href.clone().into() {
-            RealizedHref::Url(url) => {
-                let (object_store, path) = parse_url_opts(&url, options)?;
-                let mut value: T =
-                    self.get_store(object_store.into(), path)
-                        .await
-                        .map_err(|err| Error::Get {
-                            href,
-                            message: err.to_string(),
-                        })?;
-                value.set_self_href(url);
-                Ok(value)
-            }
-            RealizedHref::PathBuf(path) => {
-                tracing::debug!(
-                    "getting {self} from {} with the standard library",
-                    path.display()
-                );
-                self.from_path(path).map_err(|err| Error::Get {
-                    href,
-                    message: err.to_string(),
-                })
-            }
-        }
-    }
-
-    /// Gets a STAC value from an object store.
-    #[cfg(feature = "store")]
-    pub async fn get_store<T>(
-        &self,
-        object_store: std::sync::Arc<dyn object_store::ObjectStore>,
-        path: impl Into<object_store::path::Path>,
-    ) -> Result<T>
-    where
-        T: SelfHref + Readable,
-    {
-        let path = path.into();
-        tracing::debug!("getting {self} from {path} with object store");
-        let get_result = object_store.get(&path).await?;
-        let value: T = self.from_bytes(get_result.bytes().await?)?;
-        Ok(value)
-    }
-
     /// Writes a STAC value to the provided path.
     ///
     /// # Examples
@@ -237,62 +168,6 @@ impl Format {
         Ok(value)
     }
 
-    /// Puts a STAC value to an object store with the provided options.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use stac::Item;
-    /// use stac_io::Format;
-    ///
-    /// let item = Item::new("an-id");
-    /// #[cfg(feature = "store-aws")]
-    /// {
-    /// # tokio_test::block_on(async {
-    ///     Format::json().put_opts("s3://bucket/item.json", item, [("aws_access_key_id", "...")]).await.unwrap();
-    /// # })
-    /// }
-    /// ```
-    #[cfg(feature = "store")]
-    pub async fn put_opts<T, I, K, V>(
-        &self,
-        href: impl ToString,
-        value: T,
-        options: I,
-    ) -> Result<Option<object_store::PutResult>>
-    where
-        T: Writeable,
-        I: IntoIterator<Item = (K, V)>,
-        K: AsRef<str>,
-        V: Into<String>,
-    {
-        let href = href.to_string();
-        if let Ok(url) = url::Url::parse(&href) {
-            let (object_store, path) = parse_url_opts(&url, options)?;
-            self.put_store(object_store.into(), path, value)
-                .await
-                .map(Some)
-        } else {
-            self.write(href, value).map(|_| None)
-        }
-    }
-
-    /// Puts a STAC value into an object store.
-    #[cfg(feature = "store")]
-    pub async fn put_store<T>(
-        &self,
-        object_store: std::sync::Arc<dyn object_store::ObjectStore>,
-        path: impl Into<object_store::path::Path>,
-        value: T,
-    ) -> Result<object_store::PutResult>
-    where
-        T: Writeable,
-    {
-        let bytes = self.into_vec(value)?;
-        let put_result = object_store.put(&path.into(), bytes.into()).await?;
-        Ok(put_result)
-    }
-
     /// Returns the default JSON format (compact).
     pub fn json() -> Format {
         Format::Json(false)
@@ -315,33 +190,6 @@ impl Format {
             Format::Geoparquet(None)
         }
     }
-}
-
-#[cfg(feature = "store")]
-fn parse_url_opts<I, K, V>(
-    url: &url::Url,
-    options: I,
-) -> Result<(Box<dyn object_store::ObjectStore>, object_store::path::Path)>
-where
-    I: IntoIterator<Item = (K, V)>,
-    K: AsRef<str>,
-    V: Into<String>,
-{
-    // It's technically inefficient to parse it twice, but we're doing this to
-    // then do IO so who cares.
-    #[cfg(feature = "store-aws")]
-    if let Ok((object_store::ObjectStoreScheme::AmazonS3, path)) =
-        object_store::ObjectStoreScheme::parse(url)
-    {
-        let mut builder = object_store::aws::AmazonS3Builder::from_env();
-        for (key, value) in options {
-            builder = builder.with_config(key.as_ref().parse()?, value);
-        }
-        return Ok((Box::new(builder.with_url(url.to_string()).build()?), path));
-    }
-
-    let result = object_store::parse_url_opts(url, options)?;
-    Ok(result)
 }
 
 impl Default for Format {
@@ -460,36 +308,5 @@ mod tests {
                 Format::infer_from_href("out.parquet").unwrap()
             );
         }
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "store")]
-    async fn prefix_store_read() {
-        use stac::Item;
-        use std::sync::Arc;
-
-        let object_store =
-            object_store::local::LocalFileSystem::new_with_prefix("examples").unwrap();
-        let _: Item = Format::json()
-            .get_store(Arc::new(object_store), "simple-item.json")
-            .await
-            .unwrap();
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "store")]
-    async fn store_write() {
-        use object_store::ObjectStore;
-        use stac::Item;
-        use std::sync::Arc;
-
-        let object_store = Arc::new(object_store::memory::InMemory::new());
-        let item = Item::new("an-id");
-        let _ = Format::json()
-            .put_store(object_store.clone(), "item.json", item)
-            .await
-            .unwrap();
-        let get_result = object_store.get(&"item.json".into()).await.unwrap();
-        let _: Item = serde_json::from_slice(&get_result.bytes().await.unwrap()).unwrap();
     }
 }

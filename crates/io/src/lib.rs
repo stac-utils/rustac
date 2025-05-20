@@ -15,10 +15,7 @@ mod write;
 #[cfg(feature = "geoparquet")]
 pub use geoparquet::{FromGeoparquetPath, IntoGeoparquetPath};
 #[cfg(feature = "store")]
-pub use store::{
-    get::{get, get_opts},
-    put::{put, put_opts},
-};
+pub use store::{StacStore, parse_href, parse_href_opts};
 #[cfg(feature = "validate")]
 pub use validate::{Validate, Validator};
 pub use {
@@ -134,38 +131,12 @@ mod tests {
         let _ = super::read::<ItemCollection>("data/extended-item.parquet").unwrap_err();
     }
 
-    #[tokio::test]
-    #[cfg(all(feature = "store", not(target_os = "windows")))]
-    async fn get() {
-        let path = format!(
-            "file://{}",
-            std::fs::canonicalize("examples/simple-item.json")
-                .unwrap()
-                .to_string_lossy()
-        );
-        let _: Item = super::get(path).await.unwrap();
-    }
-
     #[test]
     fn write() {
         let tempdir = TempDir::new().unwrap();
         let item = Item::new("an-id");
         super::write(tempdir.path().join("item.json"), item).unwrap();
         let item: Item = super::read(tempdir.path().join("item.json")).unwrap();
-        assert_eq!(item.id, "an-id");
-    }
-
-    #[tokio::test]
-    #[cfg(feature = "store")]
-    async fn put() {
-        let tempdir = TempDir::new().unwrap();
-        let path = format!(
-            "file://{}",
-            tempdir.path().join("item.json").to_string_lossy()
-        );
-        let item = Item::new("an-id");
-        assert!(super::put(path, item).await.unwrap().is_some());
-        let item: Item = crate::read(tempdir.path().join("item.json")).unwrap();
         assert_eq!(item.id, "an-id");
     }
 }

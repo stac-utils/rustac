@@ -178,7 +178,16 @@ impl TryFrom<Href> for Url {
     fn try_from(value: Href) -> Result<Self> {
         match value {
             Href::Url(url) => Ok(url),
-            Href::String(s) => s.parse().map_err(Error::from),
+            Href::String(mut s) => {
+                if !s.starts_with("/") {
+                    s = std::env::current_dir()?
+                        .join(s)
+                        .to_string_lossy()
+                        .into_owned();
+                }
+                let url = Url::parse(&format!("file://{s}"))?;
+                Ok(url)
+            }
         }
     }
 }
@@ -321,4 +330,18 @@ fn make_relative(href: &str, base: &str) -> String {
     }
 
     relative
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Href;
+    use url::Url;
+
+    #[test]
+    fn href_to_url() {
+        let href = Href::from("examples/simple-item.json");
+        let url: Url = href.try_into().unwrap();
+        assert_eq!(url.scheme(), "file");
+        assert!(url.path().ends_with("examples/simple-item.json"));
+    }
 }

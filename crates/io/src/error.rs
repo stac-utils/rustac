@@ -83,6 +83,10 @@ pub enum Error {
     #[cfg(feature = "validate")]
     #[error(transparent)]
     JsonschemaValidation(#[from] jsonschema::ValidationError<'static>),
+
+    /// [url::ParseError]
+    #[error(transparent)]
+    UrlParse(#[from] url::ParseError),
 }
 
 #[cfg(feature = "validate")]
