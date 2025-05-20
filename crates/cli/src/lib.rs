@@ -4,7 +4,7 @@
 
 use anyhow::{Error, Result, anyhow};
 use clap::{Parser, Subcommand};
-use stac::{Collection, Item, Links, Migrate, geoparquet::Compression};
+use stac::{Collection, Href, Item, Links, Migrate, geoparquet::Compression};
 use stac_api::{GetItems, GetSearch, Search};
 use stac_io::{Format, Validate};
 use stac_server::Backend;
@@ -459,7 +459,8 @@ impl Rustac {
         let href = href.and_then(|s| if s == "-" { None } else { Some(s) });
         let format = self.input_format(href);
         if let Some(href) = href {
-            let value: stac::Value = format.get_opts(href, self.opts()).await?;
+            let (store, path) = stac_io::parse_href_opts(Href::from(href), self.opts())?;
+            let value: stac::Value = store.get_format(path, format).await?;
             Ok(value)
         } else {
             let mut buf = Vec::new();
@@ -473,10 +474,10 @@ impl Rustac {
         let href = href.and_then(|s| if s == "-" { None } else { Some(s) });
         let format = self.output_format(href);
         if let Some(href) = href {
-            let opts = self.opts();
+            let (store, path) = stac_io::parse_href_opts(Href::from(href), self.opts())?;
             let _ = match value {
-                Value::Json(json) => format.put_opts(href, json, opts).await?,
-                Value::Stac(stac) => format.put_opts(href, stac, opts).await?,
+                Value::Json(json) => store.put_format(path, json, format).await?,
+                Value::Stac(stac) => store.put_format(path, stac, format).await?,
             };
             Ok(())
         } else {

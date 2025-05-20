@@ -1,6 +1,35 @@
 use crate::{Format, Readable, Result, Writeable};
 use object_store::{ObjectStore, PutResult, path::Path};
+use stac::Href;
 use std::sync::Arc;
+
+/// Parses an href into a [StacStore] and a [Path].
+pub fn parse_href(href: impl AsRef<Href>) -> Result<(StacStore, Path)> {
+    parse_href_opts(href, [] as [(&str, &str); 0])
+}
+
+/// Parses an href and options into [StacStore] and a [Path].
+///
+/// Relative string hrefs are made absolute `file://` hrefs relative to the current directory.`
+pub fn parse_href_opts<I, K, V>(href: impl AsRef<Href>, options: I) -> Result<(StacStore, Path)>
+where
+    I: IntoIterator<Item = (K, V)>,
+    K: AsRef<str>,
+    V: Into<String>,
+{
+    let (store, path) = match href.as_ref() {
+        Href::Url(url) => object_store::parse_url_opts(url, options)?,
+        Href::String(s) => {
+            if s.starts_with("/") {
+                object_store::parse_url_opts(&format!("file://{s}").parse()?, options)?
+            } else {
+                let s = std::env::current_dir()?.join(s);
+                object_store::parse_url_opts(&format!("file://{}", s.display()).parse()?, options)?
+            }
+        }
+    };
+    Ok((store.into(), path))
+}
 
 /// Reads STAC from an [ObjectStore].
 #[derive(Debug)]

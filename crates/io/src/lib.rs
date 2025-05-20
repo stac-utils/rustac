@@ -15,7 +15,7 @@ mod write;
 #[cfg(feature = "geoparquet")]
 pub use geoparquet::{FromGeoparquetPath, IntoGeoparquetPath};
 #[cfg(feature = "store")]
-pub use store::StacStore;
+pub use store::{StacStore, parse_href, parse_href_opts};
 #[cfg(feature = "validate")]
 pub use validate::{Validate, Validator};
 pub use {
