@@ -71,7 +71,7 @@ impl Format {
                 value
             }
         };
-        *value.self_href_mut() = Some(href);
+        value.set_self_href(href);
         Ok(value)
     }
 
@@ -164,7 +164,7 @@ impl Format {
                             href,
                             message: err.to_string(),
                         })?;
-                *value.self_href_mut() = Some(Href::Url(url));
+                value.set_self_href(url);
                 Ok(value)
             }
             RealizedHref::PathBuf(path) => {

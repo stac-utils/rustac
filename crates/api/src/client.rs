@@ -209,7 +209,7 @@ impl Client {
         let mut value = self
             .request::<(), V>(Method::GET, url.clone(), None, None)
             .await?;
-        *value.self_href_mut() = Some(url.into());
+        value.set_self_href(url);
         Ok(value)
     }
 

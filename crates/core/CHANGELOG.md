@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - More permissive datetime interval parsing ([#715](https://github.com/stac-utils/rustac/pull/715))
 - `Format` methods for providing your own object store ([#730](https://github.com/stac-utils/rustac/pull/730))
 - `type` field to **stac-geoparquet** writes ([#736](https://github.com/stac-utils/rustac/pull/736))
+- `SelfHref::set_self_href` and `SelfHref::clear_self_href` ([#746](https://github.com/stac-utils/rustac/pull/746))
 
 ### Changed
 
