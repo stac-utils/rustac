@@ -173,7 +173,7 @@ where
     let path = path.as_ref();
     let file = File::open(path)?;
     let mut value: T = serde_json::from_reader(file)?;
-    *value.self_href_mut() = Some(path.to_string_lossy().into_owned().into());
+    value.set_self_href(path.to_string_lossy().into_owned());
     Ok(value)
 }
 

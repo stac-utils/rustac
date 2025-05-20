@@ -278,7 +278,7 @@ mod tests {
     #[test]
     fn roundtrip() {
         let mut item: Item = crate::read("examples/simple-item.json").unwrap();
-        *item.self_href_mut() = None;
+        item.clear_self_href();
         let mut cursor = Cursor::new(Vec::new());
         super::into_writer(&mut cursor, vec![item.clone()]).unwrap();
         let bytes = Bytes::from(cursor.into_inner());

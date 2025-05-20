@@ -20,7 +20,7 @@ pub trait FromJsonPath: FromJson + SelfHref {
         let mut buf = Vec::new();
         let _ = File::open(path)?.read_to_end(&mut buf)?;
         let mut value = Self::from_json_slice(&buf)?;
-        *value.self_href_mut() = Some(path.into());
+        value.set_self_href(path);
         Ok(value)
     }
 }

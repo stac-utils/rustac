@@ -62,6 +62,16 @@ pub trait SelfHref {
     /// *item.self_href_mut() = Option::Some("./a/relative/path.json".into());
     /// ```
     fn self_href_mut(&mut self) -> &mut Option<Href>;
+
+    /// Sets this object's self href.
+    fn set_self_href(&mut self, href: impl Into<Href>) {
+        *self.self_href_mut() = Some(href.into())
+    }
+
+    /// Clear's this object's self href.
+    fn clear_self_href(&mut self) {
+        *self.self_href_mut() = None
+    }
 }
 
 impl Href {
