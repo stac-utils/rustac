@@ -10,6 +10,7 @@ members = [
     "crates/io",
     "crates/pgstac",
     "crates/server",
+    "crates/wasm",
 ]
 default-members = [
     "crates/api",
