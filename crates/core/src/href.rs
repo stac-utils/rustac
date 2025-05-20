@@ -82,10 +82,11 @@ impl Href {
     /// ```
     /// use stac::Href;
     ///
-    /// let href = Href::from("./a/b.json").absolute(&"/c/d/e.json".into()).unwrap();
+    /// let href = Href::from("./a/b.json").into_absolute(Href::from("/c/d/e.json")).unwrap();
     /// assert_eq!(href, "/c/d/a/b.json");
     /// ```
-    pub fn absolute(&self, base: &Href) -> Result<Href> {
+    pub fn into_absolute(&self, base: impl AsRef<Href>) -> Result<Href> {
+        let base = base.as_ref();
         tracing::debug!("making href={self} absolute with base={base}");
         match base {
             Href::Url(url) => url.join(self.as_str()).map(Href::Url).map_err(Error::from),
@@ -100,10 +101,11 @@ impl Href {
     /// ```
     /// use stac::Href;
     ///
-    /// let href = Href::from("/a/b/c.json").relative(&"/a/d.json".into()).unwrap();
+    /// let href = Href::from("/a/b/c.json").into_relative(Href::from("/a/d.json")).unwrap();
     /// assert_eq!(href, "./b/c.json");
     /// ```
-    pub fn relative(&self, base: &Href) -> Result<Href> {
+    pub fn into_relative(&self, base: impl AsRef<Href>) -> Result<Href> {
+        let base = base.as_ref();
         tracing::debug!("making href={self} relative with base={base}");
         match base {
             Href::Url(base) => match self {
@@ -221,8 +223,13 @@ impl PartialEq<&str> for Href {
     }
 }
 
+impl AsRef<Href> for Href {
+    fn as_ref(&self) -> &Href {
+        self
+    }
+}
+
 fn make_absolute(href: &str, base: &str) -> String {
-    // TODO if we make this interface public, make this an impl Option
     if href.starts_with('/') {
         href.to_string()
     } else {
