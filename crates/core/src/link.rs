@@ -671,20 +671,20 @@ impl Link {
     /// # Examples
     ///
     /// ```
-    /// use stac::Link;
+    /// use stac::{Link, Href};
     ///
     /// let mut link = Link::new("./b/item.json", "rel");
-    /// link.make_absolute(&"/a/base/catalog.json".into()).unwrap();
+    /// link.make_absolute(Href::from("/a/base/catalog.json")).unwrap();
     /// assert_eq!(link.href, "/a/base/b/item.json")
     /// ```
-    pub fn make_absolute(&mut self, base: &Href) -> Result<()> {
-        self.href = self.href.absolute(base)?;
+    pub fn make_absolute(&mut self, base: impl AsRef<Href>) -> Result<()> {
+        self.href = self.href.into_absolute(base)?;
         Ok(())
     }
 
     /// Makes this link relative
-    pub fn make_relative(&mut self, base: &Href) -> Result<()> {
-        self.href = self.href.relative(base)?;
+    pub fn make_relative(&mut self, base: impl AsRef<Href>) -> Result<()> {
+        self.href = self.href.into_relative(base)?;
         Ok(())
     }
 }
