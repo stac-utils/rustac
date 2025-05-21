@@ -90,6 +90,7 @@ pub enum Error {
     JsonschemaValidation(#[from] jsonschema::ValidationError<'static>),
 
     /// [tokio::task::JoinError]
+    #[cfg(feature = "store")]
     #[error(transparent)]
     TokioTaskJoin(#[from] tokio::task::JoinError),
 

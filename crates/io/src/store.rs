@@ -156,7 +156,7 @@ impl StacStore {
             let path = if parts.len() > 1 {
                 let take = parts.len() - 1;
                 let prefix = Path::from_iter(parts.into_iter().take(take));
-                format!("{}/{}", prefix, link.href.to_string())
+                format!("{}/{}", prefix, link.href)
             } else {
                 link.href.to_string()
             };
