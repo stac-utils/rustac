@@ -1,4 +1,4 @@
-use crate::{Band, DataType, Href, Statistics};
+use crate::{Band, DataType, Href, Result, Statistics};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -112,6 +112,14 @@ pub trait Assets {
     /// item.assets_mut().insert("foo".to_string(), Asset::new("./asset.tif"));
     /// ```
     fn assets_mut(&mut self) -> &mut IndexMap<String, Asset>;
+
+    /// Makes all asset hrefs absolute.
+    fn make_assets_absolute(&mut self, base: impl AsRef<Href>) -> Result<()> {
+        for asset in self.assets_mut().values_mut() {
+            asset.href = asset.href.into_absolute(&base)?;
+        }
+        Ok(())
+    }
 }
 
 impl Asset {
@@ -174,7 +182,8 @@ impl<'a> From<&'a str> for Asset {
 
 #[cfg(test)]
 mod tests {
-    use super::Asset;
+    use super::{Asset, Assets};
+    use crate::{Href, Item};
 
     #[test]
     fn new() {
@@ -194,5 +203,15 @@ mod tests {
         assert!(value.get("description").is_none());
         assert!(value.get("type").is_none());
         assert!(value.get("roles").is_none());
+    }
+
+    #[test]
+    fn make_absolute() {
+        let asset = Asset::new("an-href");
+        let mut item = Item::new("an-item");
+        let _ = item.assets.insert("data".into(), asset);
+        item.make_assets_absolute(Href::from("http://rustac.test"))
+            .unwrap();
+        assert_eq!(item.assets["data"].href, "http://rustac.test/an-href");
     }
 }
