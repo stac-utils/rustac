@@ -8,7 +8,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use stac_derive::{Links, Migrate, SelfHref};
 use std::path::Path;
-use url::Url;
 
 const TOP_LEVEL_ATTRIBUTES: [&str; 8] = [
     "type",
@@ -311,11 +310,11 @@ impl Builder {
     pub fn build(self) -> Result<Item> {
         let mut item = Item::new(self.id);
         for (key, mut asset) in self.assets {
-            if Url::parse(&asset.href).is_err() && self.canonicalize_paths {
-                asset.href = Path::new(&asset.href)
-                    .canonicalize()?
-                    .to_string_lossy()
-                    .into_owned();
+            if let Href::String(ref s) = asset.href {
+                if self.canonicalize_paths {
+                    asset.href =
+                        Href::String(Path::new(s).canonicalize()?.to_string_lossy().into_owned());
+                }
             }
             let _ = item.assets.insert(key, asset);
         }
@@ -841,6 +840,7 @@ mod tests {
         assert!(
             asset
                 .href
+                .to_string()
                 .ends_with(&format!("assets{}dataset.tif", std::path::MAIN_SEPARATOR))
         );
     }
