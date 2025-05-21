@@ -4,6 +4,7 @@
 
 use anyhow::{Error, Result, anyhow};
 use clap::{Parser, Subcommand};
+use futures_util::{TryStreamExt, pin_mut};
 use stac::{Collection, Href, Item, Links, Migrate, geoparquet::Compression};
 use stac_api::{GetItems, GetSearch, Search};
 use stac_io::{Format, Validate};
@@ -232,6 +233,17 @@ pub enum Command {
         create_collections: bool,
     },
 
+    /// Crawls a STAC catalog or collection.
+    Crawl {
+        /// The input file.
+        infile: String,
+
+        /// The output directory.
+        ///
+        /// Items will be written out grouped by collection.
+        outdir: String,
+    },
+
     /// Validates a STAC value.
     ///
     /// The default output format is plain text — use `--output-format=json` to
@@ -336,6 +348,52 @@ impl Rustac {
                     serde_json::to_value(item_collection)?.into(),
                 )
                 .await
+            }
+            Command::Crawl {
+                ref infile,
+                ref outdir,
+            } => {
+                use stac::Value::*;
+
+                let (store, path) =
+                    stac_io::parse_href_opts(&Href::from(infile.as_str()), self.opts())?;
+                let mut items: HashMap<Option<String>, Vec<stac::Item>> = HashMap::new();
+                let crawl = store.crawl(path).await;
+                pin_mut!(crawl);
+                while let Some(value) = crawl.try_next().await? {
+                    match value {
+                        Catalog(catalog) => {
+                            println!("Crawling catalog={}", catalog.id);
+                        }
+                        Collection(collection) => {
+                            println!("Crawling collection={}", collection.id);
+                        }
+                        ItemCollection(item_collection) => {
+                            for item in item_collection {
+                                items.entry(item.collection.clone()).or_default().push(item);
+                            }
+                        }
+                        Item(item) => {
+                            items.entry(item.collection.clone()).or_default().push(item);
+                        }
+                    }
+                }
+                let (store, prefix) =
+                    stac_io::parse_href_opts(&Href::from(outdir.as_str()), self.opts())?;
+                let format = self.output_format.unwrap_or_default();
+                for (key, items) in items {
+                    let file_name = format!(
+                        "{}.{}",
+                        key.as_deref().unwrap_or("default"),
+                        format.extension()
+                    );
+                    let path = prefix.child(file_name);
+                    println!("Writing /{path}");
+                    store
+                        .put_format(path, stac::ItemCollection::from(items), format)
+                        .await?;
+                }
+                Ok(())
             }
             Command::Serve {
                 ref hrefs,

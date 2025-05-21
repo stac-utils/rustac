@@ -1,7 +1,7 @@
 use crate::{Format, Readable, Result, Writeable};
 use async_stream::try_stream;
 use futures_core::TryStream;
-use object_store::{ObjectStore, PutResult, path::Path};
+use object_store::{DynObjectStore, ObjectStore, PutResult, path::Path};
 use stac::{Href, Link, Links, Value};
 use std::{collections::VecDeque, sync::Arc};
 use tokio::task::JoinSet;
@@ -20,8 +20,28 @@ where
     K: AsRef<str>,
     V: Into<String>,
 {
-    let (store, path) = match href.as_ref() {
-        Href::Url(url) => object_store::parse_url_opts(url, options)?,
+    let (store, path): (Box<DynObjectStore>, _) = match href.as_ref() {
+        Href::Url(url) => {
+            tracing::debug!("parsing url={url}");
+            // It's technically inefficient to parse it twice, but we're doing this to
+            // then do IO so who cares.
+            #[cfg(feature = "store-aws")]
+            if let Ok((object_store::ObjectStoreScheme::AmazonS3, path)) =
+                object_store::ObjectStoreScheme::parse(url)
+            {
+                let mut builder = object_store::aws::AmazonS3Builder::from_env();
+                for (key, value) in options {
+                    builder = builder.with_config(key.as_ref().parse()?, value);
+                }
+                (Box::new(builder.with_url(url.to_string()).build()?), path)
+            } else {
+                object_store::parse_url_opts(url, options)?
+            }
+            #[cfg(not(feature = "store-aws"))]
+            {
+                object_store::parse_url_opts(url, options)?
+            }
+        }
         Href::String(s) => {
             if s.starts_with("/") {
                 object_store::parse_url_opts(&format!("file://{s}").parse()?, options)?
@@ -85,6 +105,7 @@ impl StacStore {
         T: Readable,
     {
         let path = path.into();
+        tracing::debug!("getting {path} (format={format})");
         let get_result = self.0.get(&path).await?;
         let bytes = get_result.bytes().await?;
         let value: T = format.from_bytes(bytes)?;
@@ -131,13 +152,15 @@ impl StacStore {
                 Href::String(s) => Path::from_absolute_path(s)?,
             }
         } else {
-            let mut path = Path::parse(stac::href::normalize_path(&link.href.to_string()))?;
             let parts: Vec<_> = parent_path.parts().collect();
-            if parts.len() > 1 {
+            let path = if parts.len() > 1 {
                 let take = parts.len() - 1;
-                path = Path::from_iter(parts.into_iter().take(take).chain(path.parts()));
-            }
-            path
+                let prefix = Path::from_iter(parts.into_iter().take(take));
+                format!("{}/{}", prefix, link.href.to_string())
+            } else {
+                link.href.to_string()
+            };
+            Path::parse(stac::href::normalize_path(&path))?
         };
         let value = self.get(path.clone()).await?;
         Ok((value, path))

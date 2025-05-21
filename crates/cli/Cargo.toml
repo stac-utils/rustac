@@ -20,6 +20,7 @@ duckdb-bundled = ["stac-duckdb/bundled"]
 anyhow.workspace = true
 axum.workspace = true
 clap = { workspace = true, features = ["derive"] }
+futures-util = "0.3.31"
 serde_json.workspace = true
 stac.workspace = true
 stac-api = { workspace = true, features = ["client"] }
