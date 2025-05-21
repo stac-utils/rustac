@@ -1,4 +1,4 @@
-use crate::{Band, DataType, Statistics};
+use crate::{Band, DataType, Href, Statistics};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -10,7 +10,7 @@ pub struct Asset {
     /// URI to the asset object.
     ///
     /// Relative and absolute URIs are both allowed.
-    pub href: String,
+    pub href: Href,
 
     /// The displayed title for clients and users.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -124,9 +124,9 @@ impl Asset {
     /// let asset = Asset::new("an-href");
     /// assert_eq!(asset.href, "an-href");
     /// ```
-    pub fn new(href: impl ToString) -> Asset {
+    pub fn new(href: impl Into<Href>) -> Asset {
         Asset {
-            href: href.to_string(),
+            href: href.into(),
             title: None,
             description: None,
             r#type: None,
