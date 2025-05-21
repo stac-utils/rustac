@@ -48,6 +48,11 @@ pub enum Error {
     /// [object_store::Error]
     ObjectStore(#[from] object_store::Error),
 
+    #[cfg(feature = "store")]
+    #[error(transparent)]
+    /// [object_store::path::Error]
+    ObjectStorePath(#[from] object_store::path::Error),
+
     #[cfg(feature = "geoparquet")]
     #[error(transparent)]
     /// [parquet::errors::ParquetError]
@@ -83,6 +88,10 @@ pub enum Error {
     #[cfg(feature = "validate")]
     #[error(transparent)]
     JsonschemaValidation(#[from] jsonschema::ValidationError<'static>),
+
+    /// [tokio::task::JoinError]
+    #[error(transparent)]
+    TokioTaskJoin(#[from] tokio::task::JoinError),
 
     /// [url::ParseError]
     #[error(transparent)]

@@ -1,3 +1,5 @@
+//! Utilities and structures for dealing with hrefs.
+
 use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -251,7 +253,8 @@ fn make_absolute(href: &str, base: &str) -> String {
     }
 }
 
-fn normalize_path(path: &str) -> String {
+/// Normalizes a path by removing extra ".." and ".".
+pub fn normalize_path(path: &str) -> String {
     let mut parts = if path.starts_with('/') {
         Vec::new()
     } else {

@@ -1,7 +1,10 @@
 use crate::{Format, Readable, Result, Writeable};
+use async_stream::try_stream;
+use futures_core::TryStream;
 use object_store::{ObjectStore, PutResult, path::Path};
-use stac::Href;
-use std::sync::Arc;
+use stac::{Href, Link, Links, Value};
+use std::{collections::VecDeque, sync::Arc};
+use tokio::task::JoinSet;
 
 /// Parses an href into a [StacStore] and a [Path].
 pub fn parse_href(href: impl AsRef<Href>) -> Result<(StacStore, Path)> {
@@ -32,7 +35,7 @@ where
 }
 
 /// Reads STAC from an [ObjectStore].
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct StacStore(Arc<dyn ObjectStore>);
 
 impl StacStore {
@@ -88,6 +91,58 @@ impl StacStore {
         Ok(value)
     }
 
+    /// Crawls a STAC value, streaming all items and children, recursively.
+    pub async fn crawl(&self, path: impl Into<Path>) -> impl TryStream<Item = Result<Value>> {
+        let mut values = VecDeque::new();
+        let path = path.into();
+        try_stream! {
+            let value: Value = self.get(path.clone()).await?;
+            values.push_front((value, path));
+            while let Some((value, path)) = values.pop_front() {
+                let mut join_set = JoinSet::new();
+                for link in value.links().iter().filter(|link| link.is_child() || link.is_item()).cloned() {
+                    let store = self.clone();
+                    let path = path.clone();
+                    join_set.spawn(async move {
+                        store.get_link(link, path).await
+                    });
+                }
+                yield value;
+                while let Some(result) = join_set.join_next().await {
+                    let (value, path) = result??;
+                    match value {
+                        Value::Catalog(_)  | Value::Collection(_) => values.push_back((value, path)),
+                        Value::Item(_) => yield value,
+                        Value::ItemCollection(item_collection) => {
+                            for item in item_collection.items {
+                                yield item.into();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    async fn get_link(&self, link: Link, parent_path: Path) -> Result<(Value, Path)> {
+        let path = if link.is_absolute() {
+            match link.href {
+                Href::Url(url) => Path::from_url_path(url.path())?,
+                Href::String(s) => Path::from_absolute_path(s)?,
+            }
+        } else {
+            let mut path = Path::parse(stac::href::normalize_path(&link.href.to_string()))?;
+            let parts: Vec<_> = parent_path.parts().collect();
+            if parts.len() > 1 {
+                let take = parts.len() - 1;
+                path = Path::from_iter(parts.into_iter().take(take).chain(path.parts()));
+            }
+            path
+        };
+        let value = self.get(path.clone()).await?;
+        Ok((value, path))
+    }
+
     /// Puts a STAC value to the store.
     pub async fn put<T>(&self, path: impl Into<Path>, value: T) -> Result<PutResult>
     where
@@ -127,6 +182,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::StacStore;
+    use futures_util::{TryStreamExt, pin_mut};
     use object_store::local::LocalFileSystem;
     use stac::Item;
 
@@ -136,5 +192,19 @@ mod tests {
             LocalFileSystem::new_with_prefix(std::env::current_dir().unwrap()).unwrap(),
         );
         let _: Item = store.get("examples/simple-item.json").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn crawl() {
+        let store = StacStore::from(
+            LocalFileSystem::new_with_prefix(std::env::current_dir().unwrap()).unwrap(),
+        );
+        let stream = store.crawl("examples/catalog.json").await;
+        pin_mut!(stream);
+        let mut values = Vec::new();
+        while let Some(value) = stream.try_next().await.unwrap() {
+            values.push(value);
+        }
+        assert_eq!(values.len(), 6);
     }
 }
