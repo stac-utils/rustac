@@ -72,7 +72,7 @@ where
 }
 
 /// Reads STAC from an [ObjectStore].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StacStore {
     store: Arc<dyn ObjectStore>,
     root: Url,
@@ -131,6 +131,7 @@ impl StacStore {
         T: Readable,
     {
         let path = path.into();
+        tracing::debug!("getting {path} in format {format}");
         let get_result = self.store.get(&path).await?;
         let bytes = get_result.bytes().await?;
         let mut value: T = format.from_bytes(bytes)?;

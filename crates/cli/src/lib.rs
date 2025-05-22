@@ -3,15 +3,23 @@
 #![deny(unused_crate_dependencies)]
 
 use anyhow::{Error, Result, anyhow};
+use async_stream::try_stream;
 use clap::{Parser, Subcommand};
-use stac::{Collection, Href, Item, Links, Migrate, geoparquet::Compression};
+use futures_core::TryStream;
+use futures_util::{TryStreamExt, pin_mut};
+use stac::{Assets, Collection, Href, Item, Links, Migrate, SelfHref, geoparquet::Compression};
 use stac_api::{GetItems, GetSearch, Search};
-use stac_io::{Format, Validate};
+use stac_io::{Format, StacStore, Validate};
 use stac_server::Backend;
-use std::{collections::HashMap, io::Write, str::FromStr};
-use tokio::{io::AsyncReadExt, net::TcpListener, runtime::Handle};
+use std::{
+    collections::{HashMap, VecDeque},
+    io::Write,
+    str::FromStr,
+};
+use tokio::{io::AsyncReadExt, net::TcpListener, runtime::Handle, task::JoinSet};
 use tracing::metadata::Level;
 use tracing_subscriber::EnvFilter;
+use url::Url;
 
 const DEFAULT_COLLECTION_ID: &str = "default-collection-id";
 
@@ -232,6 +240,19 @@ pub enum Command {
         create_collections: bool,
     },
 
+    /// Crawls a STAC Catalog or Collection by following its links.
+    ///
+    /// Items are saved as item collections (in the output format) in the output directory.
+    Crawl {
+        /// The href of a STAC Catalog or Collection
+        href: String,
+
+        /// The output directory
+        ///
+        /// This doesn't have to be local, by the way.
+        directory: String,
+    },
+
     /// Validates a STAC value.
     ///
     /// The default output format is plain text — use `--output-format=json` to
@@ -417,6 +438,45 @@ impl Rustac {
                     eprintln!("Backend: memory");
                     load_and_serve(addr, backend, collections, items, create_collections).await
                 }
+            }
+            Command::Crawl {
+                ref href,
+                ref directory,
+            } => {
+                let opts = self.opts();
+                let (store, path) = stac_io::parse_href_opts(href.clone(), opts.clone())?;
+                let value: stac::Value = store.get(path).await.unwrap();
+                let mut items: HashMap<Option<String>, Vec<Item>> = HashMap::new();
+                let crawl = crawl(value, store).await;
+                pin_mut!(crawl);
+                let mut warned = false;
+                while let Some(item) = crawl.try_next().await? {
+                    let collection = item.collection.clone();
+                    if collection.as_deref() == Some(DEFAULT_COLLECTION_ID) && !warned {
+                        warned = true;
+                        tracing::warn!(
+                            "collection id matches the default collection id, so any collection-less items will be grouped into this collection: {DEFAULT_COLLECTION_ID}"
+                        )
+                    }
+                    items.entry(collection).or_default().push(item);
+                }
+                let (store, path) = stac_io::parse_href_opts(directory.clone(), opts)?;
+                let format = self.output_format(None);
+                for (collection, items) in items {
+                    let file_name = format!(
+                        "{}.{}",
+                        collection.as_deref().unwrap_or(DEFAULT_COLLECTION_ID),
+                        format.extension()
+                    );
+                    store
+                        .put_format(
+                            path.child(file_name),
+                            stac::ItemCollection::from(items),
+                            format,
+                        )
+                        .await?;
+                }
+                Ok(())
             }
             Command::Validate { ref infile } => {
                 let value = self.get(infile.as_deref()).await?;
@@ -648,6 +708,59 @@ fn level_value(level: Option<Level>) -> i8 {
         Some(Level::INFO) => 2,
         Some(Level::DEBUG) => 3,
         Some(Level::TRACE) => 4,
+    }
+}
+
+async fn crawl(value: stac::Value, store: StacStore) -> impl TryStream<Item = Result<Item>> {
+    use stac::Value::*;
+
+    try_stream! {
+        let mut values = VecDeque::from([value]);
+        while let Some(mut value) = values.pop_front() {
+            value.make_links_absolute()?;
+            match value {
+                Catalog(_) | Collection(_) => {
+                    if let Catalog(ref catalog) = value {
+                        tracing::info!("got catalog={}", catalog.id);
+                    }
+                    if let Collection(ref collection) = value {
+                        tracing::info!("got collection={}", collection.id);
+                    }
+                    let mut join_set: JoinSet<Result<stac::Value>> = JoinSet::new();
+                    for link in value
+                        .links()
+                        .iter()
+                        .filter(|link| link.is_child() || link.is_item())
+                        .cloned()
+                    {
+                        let store = store.clone();
+                        let url = Url::try_from(link.href)?;
+                        join_set.spawn(async move {
+                            let value: stac::Value = store.get(url.path()).await?;
+                            Ok(value)
+                        });
+                    }
+                    while let Some(result) = join_set.join_next().await {
+                        let value = result??;
+                        values.push_back(value);
+                    }
+                }
+                Item(mut item) => {
+                    if let Some(self_href) = item.self_href().cloned() {
+                        item.make_assets_absolute(self_href)?;
+                    }
+                    yield item;
+                }
+                ItemCollection(item_collection) => {
+                    for mut item in item_collection.items {
+                        if let Some(self_href) = item.self_href().cloned() {
+                            item.make_assets_absolute(self_href)?;
+                        }
+                        yield item;
+                    }
+                }
+            }
+        }
     }
 }
 
