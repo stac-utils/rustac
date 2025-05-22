@@ -39,10 +39,10 @@ impl Format {
     ///
     /// ```
     /// use stac_io::Format;
-    /// assert_eq!(Format::json(), "json");
-    /// assert_eq!(Format::ndjson(), "ndjson");
+    /// assert_eq!(Format::json().extension(), "json");
+    /// assert_eq!(Format::ndjson().extension(), "ndjson");
     /// #[cfg(feature = "geoparquet")]
-    /// assert_eq!(Format::geoparquet(), "geoparquet");
+    /// assert_eq!(Format::geoparquet().extension(), "parquet");
     /// ```
     pub fn extension(&self) -> &'static str {
         match self {
