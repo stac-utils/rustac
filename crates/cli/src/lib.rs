@@ -18,7 +18,10 @@ use std::{
 };
 use tokio::{io::AsyncReadExt, net::TcpListener, runtime::Handle, task::JoinSet};
 use tracing::metadata::Level;
-use tracing_subscriber::EnvFilter;
+use tracing_indicatif::IndicatifLayer;
+use tracing_subscriber::{
+    fmt::writer::MakeWriterExt, layer::SubscriberExt, util::SubscriberInitExt,
+};
 use url::Url;
 
 const DEFAULT_COLLECTION_ID: &str = "default-collection-id";
@@ -285,11 +288,16 @@ impl Rustac {
     /// is setting up the appropriate logging (e.g. Python).
     pub async fn run(self, init_tracing_subscriber: bool) -> Result<()> {
         if init_tracing_subscriber {
-            tracing_subscriber::fmt()
-                .with_env_filter(EnvFilter::from_default_env())
-                .with_max_level(self.log_level())
-                .with_writer(std::io::stderr)
-                .pretty()
+            let indicatif_layer = IndicatifLayer::new();
+            tracing_subscriber::registry()
+                .with(
+                    tracing_subscriber::fmt::layer().with_writer(
+                        indicatif_layer
+                            .get_stderr_writer()
+                            .with_max_level(self.log_level().unwrap_or(Level::WARN)),
+                    ),
+                )
+                .with(indicatif_layer)
                 .init();
         }
         match self.command {

@@ -1,7 +1,8 @@
 use crate::{Format, Readable, Result, Writeable};
 use object_store::{ObjectStore, ObjectStoreScheme, PutResult, path::Path};
 use stac::Href;
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
+use tracing::instrument;
 use url::Url;
 
 /// Parses an href into a [StacStore] and a [Path].
@@ -126,12 +127,12 @@ impl StacStore {
     }
 
     /// Gets a STAC value from the store in a specific format.
-    pub async fn get_format<T>(&self, path: impl Into<Path>, format: Format) -> Result<T>
+    #[instrument(skip(self))]
+    pub async fn get_format<T>(&self, path: impl Into<Path> + Debug, format: Format) -> Result<T>
     where
         T: Readable,
     {
         let path = path.into();
-        tracing::debug!("getting {path} in format {format}");
         let get_result = self.store.get(&path).await?;
         let bytes = get_result.bytes().await?;
         let mut value: T = format.from_bytes(bytes)?;
@@ -142,7 +143,7 @@ impl StacStore {
     /// Puts a STAC value to the store.
     pub async fn put<T>(&self, path: impl Into<Path>, value: T) -> Result<PutResult>
     where
-        T: Writeable,
+        T: Writeable + Debug,
     {
         let path = path.into();
         let format = Format::infer_from_href(path.as_ref()).unwrap_or_default();
@@ -150,14 +151,15 @@ impl StacStore {
     }
 
     /// Puts a STAC value to the store in a specific format.
+    #[instrument(skip(self))]
     pub async fn put_format<T>(
         &self,
-        path: impl Into<Path>,
+        path: impl Into<Path> + Debug,
         value: T,
         format: Format,
     ) -> Result<PutResult>
     where
-        T: Writeable,
+        T: Writeable + Debug,
     {
         let path = path.into();
         let bytes = format.into_vec(value)?;
