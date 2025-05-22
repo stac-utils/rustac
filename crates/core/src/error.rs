@@ -21,7 +21,7 @@ pub enum Error {
     /// [geoarrow_array::error::GeoArrowError]
     #[error(transparent)]
     #[cfg(feature = "geoarrow")]
-    GeoArrow(#[from] geoarrow_array::error::GeoArrowError),
+    GeoArrow(#[from] geoarrow_schema::error::GeoArrowError),
 
     /// [geojson::Error]
     #[error(transparent)]

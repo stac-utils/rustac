@@ -39,8 +39,7 @@ const TOP_LEVEL_KEYS: [&str; 10] = [
 ];
 
 use crate::Error;
-use arrow_array::RecordBatchReader;
-use arrow_array::{cast::*, types::*, *};
+use arrow_array::{RecordBatchReader, cast::*, types::*, *};
 use arrow_cast::display::{ArrayFormatter, FormatOptions};
 use arrow_json::JsonSerializable;
 use arrow_schema::*;
@@ -49,9 +48,10 @@ use geo_traits::to_geo::{
     ToGeoGeometry, ToGeoGeometryCollection, ToGeoLineString, ToGeoMultiLineString, ToGeoMultiPoint,
     ToGeoMultiPolygon, ToGeoPoint, ToGeoPolygon, ToGeoRect,
 };
-use geoarrow_array::array::from_arrow_array;
-use geoarrow_array::cast::AsGeoArrowArray;
-use geoarrow_array::{ArrayAccessor, GeoArrowArray, GeoArrowType};
+use geoarrow_array::{
+    GeoArrowArray, GeoArrowArrayAccessor, array::from_arrow_array, cast::AsGeoArrowArray,
+};
+use geoarrow_schema::GeoArrowType;
 use serde_json::{Value, json, map::Map as JsonMap};
 use std::{iter, sync::Arc};
 
@@ -469,6 +469,8 @@ fn set_geometry_column_for_json_rows(
             LargeWkb(_) => geojson::Value::from(&array.as_wkb::<i64>().value(i)?.to_geometry()),
             Wkt(_) => geojson::Value::from(&array.as_wkt::<i32>().value(i)?.to_geometry()),
             LargeWkt(_) => geojson::Value::from(&array.as_wkt::<i64>().value(i)?.to_geometry()),
+            WktView(_) => geojson::Value::from(&array.as_wkt_view().value(i)?.to_geometry()),
+            WkbView(_) => geojson::Value::from(&array.as_wkb_view().value(i)?.to_geometry()),
         };
         let _ = row.insert(
             col_name.to_string(),

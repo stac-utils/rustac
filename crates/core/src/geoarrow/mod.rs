@@ -8,11 +8,11 @@ use arrow_json::ReaderBuilder;
 use arrow_schema::{DataType, Field, SchemaBuilder, SchemaRef, TimeUnit};
 use geo_types::Geometry;
 use geoarrow_array::{
-    GeoArrowArray, GeoArrowType,
+    GeoArrowArray,
     array::{WkbArray, from_arrow_array},
     builder::GeometryBuilder,
 };
-use geoarrow_schema::{CoordType, GeometryType, Metadata};
+use geoarrow_schema::{CoordType, GeoArrowType, GeometryType, Metadata};
 use serde_json::{Value, json};
 use std::{collections::HashMap, sync::Arc};
 
@@ -322,7 +322,7 @@ pub fn add_wkb_metadata(mut record_batch: RecordBatch, column_name: &str) -> Res
 mod tests {
     use super::Table;
     use crate::{Item, ItemCollection};
-    use geoarrow_geoparquet::GeoParquetRecordBatchReaderBuilder;
+    use geoparquet::GeoParquetRecordBatchReaderBuilder;
     use std::fs::File;
 
     #[test]

@@ -23,8 +23,8 @@ geoarrow = [
     "dep:geo-traits",
     "dep:geo-types",
 ]
-geoparquet = ["geoarrow", "dep:geoarrow-geoparquet", "dep:parquet"]
-geoparquet-compression = ["geoparquet", "geoarrow-geoparquet/compression"]
+geoparquet = ["geoarrow", "dep:geoparquet", "dep:parquet"]
+geoparquet-compression = ["geoparquet", "geoparquet/compression"]
 
 [dependencies]
 arrow-array = { workspace = true, optional = true, features = ["chrono-tz"] }
@@ -37,9 +37,9 @@ geo = { workspace = true, optional = true }
 geo-traits = { workspace = true, optional = true }
 geo-types = { workspace = true, optional = true }
 geoarrow-array = { workspace = true, optional = true }
-geoarrow-geoparquet = { workspace = true, optional = true }
 geoarrow-schema = { workspace = true, optional = true }
 geojson.workspace = true
+geoparquet = { workspace = true, optional = true }
 indexmap.workspace = true
 log.workspace = true
 mime.workspace = true
