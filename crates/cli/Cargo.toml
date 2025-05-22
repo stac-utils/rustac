@@ -21,8 +21,8 @@ anyhow.workspace = true
 async-stream.workspace = true
 axum.workspace = true
 clap = { workspace = true, features = ["derive"] }
-futures-core = "0.3.31"
-futures-util = "0.3.31"
+futures-core.workspace = true
+futures-util.workspace = true
 serde_json.workspace = true
 stac.workspace = true
 stac-api = { workspace = true, features = ["client"] }
@@ -41,7 +41,7 @@ tokio = { workspace = true, features = [
     "fs",
 ] }
 tracing.workspace = true
-tracing-indicatif = "0.3.9"
+tracing-indicatif.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 url.workspace = true
 
