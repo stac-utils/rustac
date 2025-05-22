@@ -2,86 +2,87 @@ use crate::{Format, Readable, Result, Writeable};
 use object_store::{ObjectStore, ObjectStoreScheme, PutResult, path::Path};
 use stac::Href;
 use std::sync::Arc;
+use url::Url;
 
 /// Parses an href into a [StacStore] and a [Path].
-pub fn parse_href(href: impl AsRef<Href>) -> Result<(StacStore, Path)> {
+pub fn parse_href(href: impl Into<Href>) -> Result<(StacStore, Path)> {
     parse_href_opts(href, [] as [(&str, &str); 0])
 }
 
 /// Parses an href and options into [StacStore] and a [Path].
 ///
 /// Relative string hrefs are made absolute `file://` hrefs relative to the current directory.`
-pub fn parse_href_opts<I, K, V>(href: impl AsRef<Href>, options: I) -> Result<(StacStore, Path)>
+pub fn parse_href_opts<I, K, V>(href: impl Into<Href>, options: I) -> Result<(StacStore, Path)>
 where
     I: IntoIterator<Item = (K, V)>,
     K: AsRef<str>,
     V: Into<String>,
 {
-    let parse = || -> Result<(Box<dyn ObjectStore>, Path)> {
-        match href.as_ref() {
-            Href::Url(url) => {
-                tracing::debug!("parsing url={url}");
-                // It's technically inefficient to parse it twice, but we're doing this to
-                // then do IO so who cares.
-                let (scheme, path) =
-                    ObjectStoreScheme::parse(url).map_err(object_store::Error::from)?;
-
-                #[cfg(feature = "store-aws")]
-                if matches!(scheme, ObjectStoreScheme::AmazonS3) {
-                    let mut builder = object_store::aws::AmazonS3Builder::from_env();
-                    for (key, value) in options {
-                        builder = builder.with_config(key.as_ref().parse()?, value);
-                    }
-                    return Ok((Box::new(builder.with_url(url.to_string()).build()?), path));
-                }
-
-                #[cfg(feature = "store-azure")]
-                if matches!(scheme, ObjectStoreScheme::AmazonS3) {
-                    let mut builder = object_store::azure::MicrosoftAzureBuilder::from_env();
-                    for (key, value) in options {
-                        builder = builder.with_config(key.as_ref().parse()?, value);
-                    }
-                    return Ok((Box::new(builder.with_url(url.to_string()).build()?), path));
-                }
-
-                #[cfg(feature = "store-gcp")]
-                if matches!(scheme, ObjectStoreScheme::GoogleCloudStorage) {
-                    let mut builder = object_store::gcp::GoogleCloudStorageBuilder::from_env();
-                    for (key, value) in options {
-                        builder = builder.with_config(key.as_ref().parse()?, value);
-                    }
-                    return Ok((Box::new(builder.with_url(url.to_string()).build()?), path));
-                }
-
-                let pair = object_store::parse_url_opts(url, options)?;
-                Ok(pair)
-            }
-            Href::String(s) => {
-                if s.starts_with("/") {
-                    let pair =
-                        object_store::parse_url_opts(&format!("file://{s}").parse()?, options)?;
-                    Ok(pair)
-                } else {
-                    let s = std::env::current_dir()?.join(s);
-                    let pair = object_store::parse_url_opts(
-                        &format!("file://{}", s.display()).parse()?,
-                        options,
-                    )?;
-                    Ok(pair)
-                }
-            }
+    let mut url = match href.into() {
+        Href::Url(url) => url,
+        Href::String(s) => {
+            let s = if s.starts_with("/") {
+                format!("file://{s}")
+            } else {
+                let path_buf = std::fs::canonicalize(s)?;
+                format!("file://{}", path_buf.display())
+            };
+            Url::parse(&s)?
         }
     };
+    let parse = || -> Result<(Box<dyn ObjectStore>, Path)> {
+        tracing::debug!("parsing url={url}");
+        // It's technically inefficient to parse it twice, but we're doing this to
+        // then do IO so who cares.
+        let (scheme, path) = ObjectStoreScheme::parse(&url).map_err(object_store::Error::from)?;
+
+        #[cfg(feature = "store-aws")]
+        if matches!(scheme, ObjectStoreScheme::AmazonS3) {
+            let mut builder = object_store::aws::AmazonS3Builder::from_env();
+            for (key, value) in options {
+                builder = builder.with_config(key.as_ref().parse()?, value);
+            }
+            return Ok((Box::new(builder.with_url(url.to_string()).build()?), path));
+        }
+
+        #[cfg(feature = "store-azure")]
+        if matches!(scheme, ObjectStoreScheme::AmazonS3) {
+            let mut builder = object_store::azure::MicrosoftAzureBuilder::from_env();
+            for (key, value) in options {
+                builder = builder.with_config(key.as_ref().parse()?, value);
+            }
+            return Ok((Box::new(builder.with_url(url.to_string()).build()?), path));
+        }
+
+        #[cfg(feature = "store-gcp")]
+        if matches!(scheme, ObjectStoreScheme::GoogleCloudStorage) {
+            let mut builder = object_store::gcp::GoogleCloudStorageBuilder::from_env();
+            for (key, value) in options {
+                builder = builder.with_config(key.as_ref().parse()?, value);
+            }
+            return Ok((Box::new(builder.with_url(url.to_string()).build()?), path));
+        }
+
+        let pair = object_store::parse_url_opts(&url, options)?;
+        Ok(pair)
+    };
     let (store, path) = parse()?;
-    Ok((store.into(), path))
+    url.set_path("");
+    Ok((StacStore::new(Arc::new(store), url), path))
 }
 
 /// Reads STAC from an [ObjectStore].
 #[derive(Debug)]
-pub struct StacStore(Arc<dyn ObjectStore>);
+pub struct StacStore {
+    store: Arc<dyn ObjectStore>,
+    root: Url,
+}
 
 impl StacStore {
-    /// Creates a new [StacStore] from an [ObjectStore].
+    /// Creates a new [StacStore] from an [ObjectStore] and a root href.
+    ///
+    /// The root href is used to set the self href on all read STAC values,
+    /// since we can't get that from the store.
     ///
     /// # Examples
     ///
@@ -90,10 +91,13 @@ impl StacStore {
     /// use stac_io::StacStore;
     /// use std::sync::Arc;
     ///
-    /// let stac_store = StacStore::new(Arc::new(LocalFileSystem::new()));
+    /// let stac_store = StacStore::new(Arc::new(LocalFileSystem::new()), "file://".parse().unwrap());
     /// ```
-    pub fn new(store: Arc<dyn ObjectStore>) -> StacStore {
-        StacStore(Arc::new(store))
+    pub fn new(store: Arc<dyn ObjectStore>, root: Url) -> StacStore {
+        StacStore {
+            store: Arc::new(store),
+            root,
+        }
     }
 
     /// Gets a STAC value from the store.
@@ -127,9 +131,10 @@ impl StacStore {
         T: Readable,
     {
         let path = path.into();
-        let get_result = self.0.get(&path).await?;
+        let get_result = self.store.get(&path).await?;
         let bytes = get_result.bytes().await?;
-        let value: T = format.from_bytes(bytes)?;
+        let mut value: T = format.from_bytes(bytes)?;
+        value.set_self_href(self.root.join(path.as_ref())?);
         Ok(value)
     }
 
@@ -155,31 +160,37 @@ impl StacStore {
     {
         let path = path.into();
         let bytes = format.into_vec(value)?;
-        let put_result = self.0.put(&path, bytes.into()).await?;
+        let put_result = self.store.put(&path, bytes.into()).await?;
         Ok(put_result)
-    }
-}
-
-impl<T> From<T> for StacStore
-where
-    T: ObjectStore,
-{
-    fn from(value: T) -> Self {
-        StacStore(Arc::new(value))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::StacStore;
-    use object_store::local::LocalFileSystem;
-    use stac::Item;
+    use stac::{Item, SelfHref};
 
     #[tokio::test]
     async fn get_local() {
-        let store = StacStore::from(
-            LocalFileSystem::new_with_prefix(std::env::current_dir().unwrap()).unwrap(),
+        let (store, path) = super::parse_href("examples/simple-item.json").unwrap();
+        assert_eq!(
+            path,
+            std::fs::canonicalize("examples/simple-item.json")
+                .unwrap()
+                .to_string_lossy()
+                .into_owned()
+                .strip_prefix("/")
+                .unwrap()
+                .into()
         );
-        let _: Item = store.get("examples/simple-item.json").await.unwrap();
+        let item: Item = store.get(path).await.unwrap();
+        assert_eq!(
+            item.self_href().unwrap().to_string(),
+            format!(
+                "file://{}",
+                std::fs::canonicalize("examples/simple-item.json")
+                    .unwrap()
+                    .display()
+            )
+        )
     }
 }
