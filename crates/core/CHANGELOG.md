@@ -12,10 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `Clone` for `Container` ([#666](https://github.com/stac-utils/rustac/pull/666))
 - `Serialize` for `Container` ([#667](https://github.com/stac-utils/rustac/pull/667))
 - More permissive datetime interval parsing ([#715](https://github.com/stac-utils/rustac/pull/715))
-- `Format` methods for providing your own object store ([#730](https://github.com/stac-utils/rustac/pull/730))
 - `type` field to **stac-geoparquet** writes ([#736](https://github.com/stac-utils/rustac/pull/736))
 - `SelfHref::set_self_href` and `SelfHref::clear_self_href` ([#746](https://github.com/stac-utils/rustac/pull/746))
 - `Assets::make_assets_absolute` ([#753](https://github.com/stac-utils/rustac/pull/753))
+- `Format::extension` ([#756](https://github.com/stac-utils/rustac/pull/756))
 
 ### Changed
 
@@ -27,6 +27,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 
 - Support geometry columns other than "geometry" for **stac-geoparquet** ([#723](https://github.com/stac-utils/rustac/pull/723), [#727](https://github.com/stac-utils/rustac/pull/727))
+
+### Removed
+
+- IO (moved to **stac-io**) ([#739](https://github.com/stac-utils/rustac/pull/739))
 
 ## [0.12.0] - 2025-01-31
 

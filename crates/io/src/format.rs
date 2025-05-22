@@ -33,6 +33,26 @@ impl Format {
         href.rsplit_once('.').and_then(|(_, ext)| ext.parse().ok())
     }
 
+    /// Returns this format's file extension.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac_io::Format;
+    /// assert_eq!(Format::json().extension(), "json");
+    /// assert_eq!(Format::ndjson().extension(), "ndjson");
+    /// #[cfg(feature = "geoparquet")]
+    /// assert_eq!(Format::geoparquet().extension(), "parquet");
+    /// ```
+    pub fn extension(&self) -> &'static str {
+        match self {
+            Format::Json(_) => "json",
+            Format::NdJson => "ndjson",
+            #[cfg(feature = "geoparquet")]
+            Format::Geoparquet(_) => "parquet",
+        }
+    }
+
     /// Returns true if this is a geoparquet href.
     #[cfg(feature = "geoparquet")]
     pub fn is_geoparquet_href(href: &str) -> bool {
