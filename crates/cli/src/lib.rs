@@ -811,7 +811,7 @@ mod tests {
         command
             .arg("translate")
             .arg("examples/simple-item.json")
-            .arg(format!("{}simple-item.json", temp_dir.display()))
+            .arg(temp_dir.join("simple-item.json"))
             .assert()
             .success();
     }
