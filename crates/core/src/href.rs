@@ -1,3 +1,5 @@
+//! Utilities and structures for working with hrefs.
+
 use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -238,7 +240,8 @@ impl AsRef<Href> for Href {
     }
 }
 
-fn make_absolute(href: &str, base: &str) -> String {
+/// Makes an href absolute relative to a
+pub fn make_absolute(href: &str, base: &str) -> String {
     if href.starts_with('/') {
         href.to_string()
     } else {
