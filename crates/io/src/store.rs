@@ -25,14 +25,15 @@ where
             let s = if s.starts_with("/") {
                 format!("file://{s}")
             } else {
-                let path_buf = std::fs::canonicalize(s)?;
-                format!("file://{}", path_buf.display())
+                let current_dir = std::env::current_dir()?;
+                let s =
+                    stac::href::make_absolute(&s, &format!("{}/", current_dir.to_string_lossy()));
+                format!("file://{}", s)
             };
             Url::parse(&s)?
         }
     };
     let parse = || -> Result<(Box<dyn ObjectStore>, Path)> {
-        tracing::debug!("parsing url={url}");
         // It's technically inefficient to parse it twice, but we're doing this to
         // then do IO so who cares.
         let (scheme, path) = ObjectStoreScheme::parse(&url).map_err(object_store::Error::from)?;
@@ -68,6 +69,7 @@ where
         Ok(pair)
     };
     let (store, path) = parse()?;
+    tracing::debug!("{url} parsed into path {path}");
     url.set_path("");
     Ok((StacStore::new(Arc::new(store), url), path))
 }

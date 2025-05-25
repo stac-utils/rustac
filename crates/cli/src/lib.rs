@@ -805,6 +805,17 @@ mod tests {
             .success();
     }
 
+    #[rstest]
+    fn translate_to_file(mut command: Command) {
+        let temp_dir = tempfile::env::temp_dir();
+        command
+            .arg("translate")
+            .arg("examples/simple-item.json")
+            .arg(temp_dir.join("simple-item.json"))
+            .assert()
+            .success();
+    }
+
     #[test]
     fn input_format() {
         let rustac = Rustac::parse_from(["rustac", "translate"]);
