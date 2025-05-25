@@ -68,6 +68,7 @@ where
         Ok(pair)
     };
     let (store, path) = parse()?;
+    tracing::debug!("url {url} parsed into path {path}");
     url.set_path("");
     Ok((StacStore::new(Arc::new(store), url), path))
 }
