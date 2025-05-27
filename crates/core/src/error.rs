@@ -18,10 +18,10 @@ pub enum Error {
     #[error("{0} is not enabled")]
     FeatureNotEnabled(&'static str),
 
-    /// [geoarrow_array::error::GeoArrowError]
+    /// [geoarrow_schema::error::GeoArrowError]
     #[error(transparent)]
     #[cfg(feature = "geoarrow")]
-    GeoArrow(#[from] geoarrow_array::error::GeoArrowError),
+    GeoArrow(#[from] geoarrow_schema::error::GeoArrowError),
 
     /// [geojson::Error]
     #[error(transparent)]

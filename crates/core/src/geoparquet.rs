@@ -5,7 +5,7 @@ use crate::{
     geoarrow::{Table, VERSION, VERSION_KEY},
 };
 use bytes::Bytes;
-use geoarrow_geoparquet::{GeoParquetRecordBatchReaderBuilder, GeoParquetWriterOptions};
+use geoparquet::{GeoParquetRecordBatchReaderBuilder, GeoParquetWriterOptions};
 use parquet::{
     file::{properties::WriterProperties, reader::ChunkReader},
     format::KeyValue,
@@ -53,7 +53,7 @@ pub fn into_writer<W>(writer: W, item_collection: impl Into<ItemCollection>) -> 
 where
     W: Write + Send,
 {
-    into_writer_with_options(writer, item_collection, &Default::default())
+    into_writer_with_options(writer, item_collection, Default::default())
 }
 
 /// Writes a [ItemCollection] to a [std::io::Write] as
@@ -89,7 +89,7 @@ where
         }]))
         .build();
     options.writer_properties = Some(writer_properties);
-    into_writer_with_options(writer, item_collection, &options)
+    into_writer_with_options(writer, item_collection, options)
 }
 
 /// Writes a [ItemCollection] to a [std::io::Write] as
@@ -103,18 +103,25 @@ where
 ///
 /// let item: Item = stac::read("examples/simple-item.json").unwrap();
 /// let mut cursor = Cursor::new(Vec::new());
-/// stac::geoparquet::into_writer_with_options(&mut cursor, vec![item], &Default::default()).unwrap();
+/// stac::geoparquet::into_writer_with_options(&mut cursor, vec![item], Default::default()).unwrap();
 /// ```
 pub fn into_writer_with_options<W>(
     writer: W,
     item_collection: impl Into<ItemCollection>,
-    options: &GeoParquetWriterOptions,
+    mut options: GeoParquetWriterOptions,
 ) -> Result<()>
 where
     W: Write + Send,
 {
+    if let Some(primary_column) = options.primary_column.as_deref() {
+        if primary_column != "geometry" {
+            log::warn!("primary column not set to 'geometry'");
+        }
+    } else {
+        options.primary_column = Some("geometry".to_string());
+    }
     let table = Table::from_item_collection(item_collection)?;
-    geoarrow_geoparquet::write_geoparquet(Box::new(table.into_reader()), writer, options)?;
+    geoparquet::write_geoparquet(Box::new(table.into_reader()), writer, &options)?;
     Ok(())
 }
 /// Create a STAC object from geoparquet data.
@@ -255,6 +262,7 @@ impl IntoGeoparquet for serde_json::Value {
 mod tests {
     use crate::{FromGeoparquet, Item, ItemCollection, SelfHref, Value};
     use bytes::Bytes;
+    use parquet::file::reader::{FileReader, SerializedFileReader};
     use std::{
         fs::File,
         io::{Cursor, Read},
@@ -294,6 +302,27 @@ mod tests {
         let bytes = Bytes::from(cursor.into_inner());
         let item_collection = super::from_reader(bytes).unwrap();
         assert_eq!(item_collection.items.len(), 2);
+    }
+
+    #[test]
+    fn geometry_primary_column() {
+        // https://github.com/stac-utils/rustac/issues/755
+        let item_collection: ItemCollection = crate::read("data/multi-polygons.json").unwrap();
+        let mut cursor = Cursor::new(Vec::new());
+        super::into_writer(&mut cursor, item_collection).unwrap();
+        let bytes = Bytes::from(cursor.into_inner());
+        let reader = SerializedFileReader::new(bytes).unwrap();
+        let key_value = reader
+            .metadata()
+            .file_metadata()
+            .key_value_metadata()
+            .unwrap()
+            .into_iter()
+            .find(|key_value| key_value.key == "geo")
+            .unwrap();
+        let value: serde_json::Value =
+            serde_json::from_str(key_value.value.as_deref().unwrap()).unwrap();
+        assert_eq!(value["primary_column"], "geometry");
     }
 
     #[test]

@@ -16,9 +16,9 @@ pub enum Error {
     #[error(transparent)]
     DuckDB(#[from] duckdb::Error),
 
-    /// [geoarrow_array::error::GeoArrowError]
+    /// [geoarrow_schema::error::GeoArrowError]
     #[error(transparent)]
-    GeoArrow(#[from] geoarrow_array::error::GeoArrowError),
+    GeoArrow(#[from] geoarrow_schema::error::GeoArrowError),
 
     /// [serde_json::Error]
     #[error(transparent)]

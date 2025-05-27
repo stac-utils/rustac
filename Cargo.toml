@@ -52,11 +52,11 @@ futures = "0.3.31"
 futures-core = "0.3.31"
 futures-util = "0.3.31"
 geo = "0.30.0"
-geo-traits = "0.2.0"
-geo-types = "0.7.15"
-geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "17bf33e4cf78b060afa08ca9560dc4efd73c2c76" }
-geoarrow-geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "17bf33e4cf78b060afa08ca9560dc4efd73c2c76" }
-geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "17bf33e4cf78b060afa08ca9560dc4efd73c2c76" }
+geo-traits = "0.3.0"
+geo-types = "0.7.16"
+geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "d27500849c6cee019535d6749991d1fd122baecf" }
+geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "d27500849c6cee019535d6749991d1fd122baecf" }
+geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs/", rev = "d27500849c6cee019535d6749991d1fd122baecf" }
 geojson = "0.24.1"
 getrandom = { version = "0.3.3", features = ["wasm_js"] }
 http = "1.1"

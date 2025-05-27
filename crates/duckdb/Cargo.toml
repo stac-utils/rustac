@@ -21,7 +21,7 @@ chrono.workspace = true
 cql2.workspace = true
 duckdb.workspace = true
 geo.workspace = true
-geoarrow-array = { workspace = true }
+geoarrow-schema = { workspace = true }
 geojson.workspace = true
 getrandom.workspace = true
 log.workspace = true
