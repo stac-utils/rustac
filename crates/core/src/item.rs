@@ -1,6 +1,6 @@
 //! STAC Items.
 
-use crate::{Asset, Assets, Bbox, Error, Fields, Href, Link, Result, STAC_VERSION, Version};
+use crate::{Asset, Assets, Bbox, Error, Fields, Link, Result, STAC_VERSION, Version};
 use chrono::{DateTime, FixedOffset, NaiveDateTime, Utc};
 use geojson::{Feature, Geometry, feature::Id};
 use indexmap::IndexMap;
@@ -115,7 +115,7 @@ pub struct Item {
     pub additional_fields: Map<String, Value>,
 
     #[serde(skip)]
-    self_href: Option<Href>,
+    self_href: Option<String>,
 }
 
 /// A [FlatItem] has all of its properties at the top level.
@@ -310,11 +310,11 @@ impl Builder {
     pub fn build(self) -> Result<Item> {
         let mut item = Item::new(self.id);
         for (key, mut asset) in self.assets {
-            if let Href::String(ref s) = asset.href {
-                if self.canonicalize_paths {
-                    asset.href =
-                        Href::String(Path::new(s).canonicalize()?.to_string_lossy().into_owned());
-                }
+            if self.canonicalize_paths {
+                asset.href = Path::new(&asset.href)
+                    .canonicalize()?
+                    .to_string_lossy()
+                    .into_owned();
             }
             let _ = item.assets.insert(key, asset);
         }

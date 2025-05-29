@@ -7,7 +7,7 @@ use async_stream::try_stream;
 use clap::{Parser, Subcommand};
 use futures_core::TryStream;
 use futures_util::{TryStreamExt, pin_mut};
-use stac::{Assets, Collection, Href, Item, Links, Migrate, SelfHref, geoparquet::Compression};
+use stac::{Assets, Collection, Item, Links, Migrate, SelfHref, geoparquet::Compression};
 use stac_api::{GetItems, GetSearch, Search};
 use stac_io::{Format, StacStore, Validate};
 use stac_server::Backend;
@@ -527,7 +527,7 @@ impl Rustac {
         let href = href.and_then(|s| if s == "-" { None } else { Some(s) });
         let format = self.input_format(href);
         if let Some(href) = href {
-            let (store, path) = stac_io::parse_href_opts(Href::from(href), self.opts())?;
+            let (store, path) = stac_io::parse_href_opts(href, self.opts())?;
             let value: stac::Value = store.get_format(path, format).await?;
             Ok(value)
         } else {
@@ -542,7 +542,7 @@ impl Rustac {
         let href = href.and_then(|s| if s == "-" { None } else { Some(s) });
         let format = self.output_format(href);
         if let Some(href) = href {
-            let (store, path) = stac_io::parse_href_opts(Href::from(href), self.opts())?;
+            let (store, path) = stac_io::parse_href_opts(href, self.opts())?;
             let _ = match value {
                 Value::Json(json) => store.put_format(path, json, format).await?,
                 Value::Stac(stac) => store.put_format(path, stac, format).await?,
@@ -742,7 +742,7 @@ async fn crawl(value: stac::Value, store: StacStore) -> impl TryStream<Item = Re
                         .cloned()
                     {
                         let store = store.clone();
-                        let url = Url::try_from(link.href)?;
+                        let url = Url::parse(&link.href)?;
                         join_set.spawn(async move {
                             let value: stac::Value = store.get(url.path()).await?;
                             Ok(value)
@@ -754,15 +754,17 @@ async fn crawl(value: stac::Value, store: StacStore) -> impl TryStream<Item = Re
                     }
                 }
                 Item(mut item) => {
-                    if let Some(self_href) = item.self_href().cloned() {
-                        item.make_assets_absolute(self_href)?;
+                    if let Some(self_href) = item.self_href() {
+                        let self_href=  self_href.to_string();
+                        item.make_assets_absolute(&self_href)?;
                     }
                     yield item;
                 }
                 ItemCollection(item_collection) => {
                     for mut item in item_collection.items {
-                        if let Some(self_href) = item.self_href().cloned() {
-                            item.make_assets_absolute(self_href)?;
+                        if let Some(self_href) = item.self_href() {
+                            let self_href = self_href.to_string();
+                            item.make_assets_absolute(&self_href)?;
                         }
                         yield item;
                     }

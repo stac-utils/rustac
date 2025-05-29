@@ -1,4 +1,4 @@
-use crate::{Error, Href, Link, Result, STAC_VERSION, Version};
+use crate::{Error, Link, Result, STAC_VERSION, Version};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use stac_derive::{Fields, Links, Migrate, SelfHref};
@@ -77,7 +77,7 @@ pub struct Catalog {
     pub additional_fields: Map<String, Value>,
 
     #[serde(skip)]
-    self_href: Option<Href>,
+    self_href: Option<String>,
 }
 
 impl Catalog {

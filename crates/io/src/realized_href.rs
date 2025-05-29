@@ -1,4 +1,3 @@
-use stac::Href;
 use std::path::PathBuf;
 use url::Url;
 
@@ -12,19 +11,18 @@ pub enum RealizedHref {
     Url(Url),
 }
 
-impl From<Href> for RealizedHref {
-    fn from(href: Href) -> RealizedHref {
-        match href {
-            Href::Url(url) => {
-                if url.scheme() == "file" {
-                    url.to_file_path()
-                        .map(RealizedHref::PathBuf)
-                        .unwrap_or_else(|_| RealizedHref::Url(url))
-                } else {
-                    RealizedHref::Url(url)
-                }
+impl From<&str> for RealizedHref {
+    fn from(s: &str) -> RealizedHref {
+        if let Ok(url) = Url::parse(s) {
+            if url.scheme() == "file" {
+                url.to_file_path()
+                    .map(RealizedHref::PathBuf)
+                    .unwrap_or_else(|_| RealizedHref::Url(url))
+            } else {
+                RealizedHref::Url(url)
             }
-            Href::String(s) => RealizedHref::PathBuf(PathBuf::from(s)),
+        } else {
+            RealizedHref::PathBuf(PathBuf::from(s))
         }
     }
 }

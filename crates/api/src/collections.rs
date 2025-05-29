@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use stac::{Collection, Href, Link};
+use stac::{Collection, Link};
 use stac_derive::{Links, SelfHref};
 
 /// Object containing an array of collections and an array of links.
@@ -17,7 +17,7 @@ pub struct Collections {
     pub additional_fields: Map<String, Value>,
 
     #[serde(skip)]
-    self_href: Option<Href>,
+    self_href: Option<String>,
 }
 
 impl From<Vec<Collection>> for Collections {

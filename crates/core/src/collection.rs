@@ -1,5 +1,5 @@
 use crate::{
-    Asset, Assets, Bbox, Error, Href, Item, ItemAsset, Link, Links, Migrate, Result, STAC_VERSION,
+    Asset, Assets, Bbox, Error, Item, ItemAsset, Link, Links, Migrate, Result, STAC_VERSION,
     SelfHref, Version,
 };
 use chrono::{DateTime, Utc};
@@ -119,7 +119,7 @@ pub struct Collection {
     pub additional_fields: Map<String, Value>,
 
     #[serde(skip)]
-    self_href: Option<Href>,
+    self_href: Option<String>,
 }
 
 /// This object provides information about a provider.
@@ -246,7 +246,7 @@ impl Collection {
 
     /// Creates a new collection with its extents set to match the item's.
     ///
-    /// Also, adds an `item` link if the item has a [Href] or a `item`.
+    /// Also, adds an `item` link if the item has a href or a `item`.
     ///
     /// # Examples
     ///
@@ -276,8 +276,11 @@ impl Collection {
     }
 
     fn maybe_add_item_link(&mut self, item: &Item) -> Option<&Link> {
-        if let Some(href) = item.self_href().or(item.self_link().map(|link| &link.href)) {
-            self.links.push(Link::item(href.clone()));
+        if let Some(href) = item
+            .self_href()
+            .or(item.self_link().map(|link| link.href.as_str()))
+        {
+            self.links.push(Link::item(href));
             self.links.last()
         } else {
             None
@@ -289,7 +292,7 @@ impl Collection {
     /// This method does a couple of things:
     ///
     /// 1. Updates this collection's extents to contain the item's spatial and temporal bounds
-    /// 2. If the item has a [Href] or a `self` link, adds a `item` link
+    /// 2. If the item has a href or a `self` link, adds a `item` link
     ///
     /// Note that collections are created, by default, with global bounds and no
     /// temporal extent, so you'll want to set those (e.g. with

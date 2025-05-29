@@ -136,7 +136,7 @@ mod tests {
         let tempdir = TempDir::new().unwrap();
         let item = Item::new("an-id");
         super::write(tempdir.path().join("item.json"), item).unwrap();
-        let item: Item = super::read(tempdir.path().join("item.json")).unwrap();
+        let item: Item = super::read(tempdir.path().join("item.json").to_string_lossy()).unwrap();
         assert_eq!(item.id, "an-id");
     }
 }

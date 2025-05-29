@@ -1,5 +1,5 @@
 use crate::{
-    Catalog, Collection, Error, Href, Item, ItemCollection, Link, Links, Migrate, Result, SelfHref,
+    Catalog, Collection, Error, Item, ItemCollection, Link, Links, Migrate, Result, SelfHref,
     Version,
 };
 use serde::{Deserialize, Serialize};
@@ -188,7 +188,7 @@ impl Value {
 }
 
 impl SelfHref for Value {
-    fn self_href(&self) -> Option<&Href> {
+    fn self_href(&self) -> Option<&str> {
         use Value::*;
         match self {
             Catalog(catalog) => catalog.self_href(),
@@ -198,7 +198,7 @@ impl SelfHref for Value {
         }
     }
 
-    fn self_href_mut(&mut self) -> &mut Option<Href> {
+    fn self_href_mut(&mut self) -> &mut Option<String> {
         use Value::*;
         match self {
             Catalog(catalog) => catalog.self_href_mut(),
