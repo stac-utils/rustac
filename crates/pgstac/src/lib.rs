@@ -330,7 +330,7 @@ pub(crate) mod tests {
     use geojson::{Geometry, Value};
     use rstest::{fixture, rstest};
     use serde_json::{Map, json};
-    use stac::{Collection, Href, Item};
+    use stac::{Collection, Item};
     use stac_api::{Fields, Filter, Search, Sortby};
     use std::{
         ops::Deref,
@@ -906,8 +906,7 @@ pub(crate) mod tests {
         search.items.limit = Some(1);
         let page = client.search(search.clone()).await.unwrap();
         if client.pgstac_version().await.unwrap().starts_with("0.9") {
-            let next_link = page.links.iter().find(|link| link.rel == "next").unwrap();
-            assert!(matches!(next_link.href, Href::Url(_)));
+            let _ = page.links.iter().find(|link| link.rel == "next").unwrap();
         }
     }
 

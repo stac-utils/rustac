@@ -1,4 +1,3 @@
-use stac::Href;
 use thiserror::Error;
 
 /// Crate-specific error enum
@@ -9,7 +8,7 @@ pub enum Error {
     #[error("error when getting href={href}: {message}")]
     Get {
         /// The href that we were trying to get.
-        href: Href,
+        href: String,
 
         /// The underling error message.
         message: String,

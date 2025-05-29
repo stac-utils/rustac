@@ -1,6 +1,6 @@
 use crate::{Error, Readable, RealizedHref, Result, Writeable};
 use bytes::Bytes;
-use stac::{Href, SelfHref};
+use stac::SelfHref;
 use std::{fmt::Display, path::Path, str::FromStr};
 
 /// The format of STAC data.
@@ -70,9 +70,9 @@ impl Format {
     /// let item: Item = Format::json().read("examples/simple-item.json").unwrap();
     /// ```
     #[allow(unused_variables)]
-    pub fn read<T: Readable + SelfHref>(&self, href: impl Into<Href>) -> Result<T> {
-        let mut href = href.into();
-        let mut value: T = match href.clone().into() {
+    pub fn read<T: Readable + SelfHref>(&self, href: impl ToString) -> Result<T> {
+        let mut href = href.to_string();
+        let mut value: T = match href.as_str().into() {
             RealizedHref::Url(url) => {
                 #[cfg(feature = "reqwest")]
                 {
@@ -87,7 +87,7 @@ impl Format {
             RealizedHref::PathBuf(path) => {
                 let path = path.canonicalize()?;
                 let value = self.from_path(&path)?;
-                href = path.as_path().into();
+                href = path.as_path().to_string_lossy().into_owned();
                 value
             }
         };

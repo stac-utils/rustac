@@ -153,6 +153,24 @@ pub fn make_relative(href: &str, base: &str) -> String {
     relative
 }
 
+/// Converts this href to a Url.
+///
+/// Handles adding a `file://` prefix and making it absolute, if needed.
+pub fn make_url(href: &str) -> Result<Url> {
+    if let Ok(url) = Url::parse(href) {
+        Ok(url)
+    } else {
+        let url = if href.starts_with("/") {
+            Url::parse(&format!("file://{href}"))
+        } else {
+            let current_dir = std::env::current_dir()?;
+            let url = make_url(&format!("{}/", current_dir.to_string_lossy()))?;
+            url.join(href)
+        }?;
+        Ok(url)
+    }
+}
+
 fn normalize_path(path: &str) -> String {
     let mut parts = if path.starts_with('/') {
         Vec::new()

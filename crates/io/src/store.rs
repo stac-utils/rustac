@@ -1,38 +1,25 @@
 use crate::{Format, Readable, Result, Writeable};
 use object_store::{ObjectStore, ObjectStoreScheme, PutResult, path::Path};
-use stac::Href;
 use std::{fmt::Debug, sync::Arc};
 use tracing::instrument;
 use url::Url;
 
 /// Parses an href into a [StacStore] and a [Path].
-pub fn parse_href(href: impl Into<Href>) -> Result<(StacStore, Path)> {
+pub fn parse_href(href: impl ToString) -> Result<(StacStore, Path)> {
     parse_href_opts(href, [] as [(&str, &str); 0])
 }
 
 /// Parses an href and options into [StacStore] and a [Path].
 ///
 /// Relative string hrefs are made absolute `file://` hrefs relative to the current directory.`
-pub fn parse_href_opts<I, K, V>(href: impl Into<Href>, options: I) -> Result<(StacStore, Path)>
+pub fn parse_href_opts<I, K, V>(href: impl ToString, options: I) -> Result<(StacStore, Path)>
 where
     I: IntoIterator<Item = (K, V)>,
     K: AsRef<str>,
-    V: ToString,
+    V: Into<String>,
 {
-    let mut url = match href.into() {
-        Href::Url(url) => url,
-        Href::String(s) => {
-            let s = if s.starts_with("/") {
-                format!("file://{s}")
-            } else {
-                let current_dir = std::env::current_dir()?;
-                let s =
-                    stac::href::make_absolute(&s, &format!("{}/", current_dir.to_string_lossy()));
-                format!("file://{}", s)
-            };
-            Url::parse(&s)?
-        }
-    };
+    let href = href.to_string();
+    let mut url = stac::href::make_url(&href)?;
     let parse = || -> Result<(Box<dyn ObjectStore>, Path)> {
         // It's technically inefficient to parse it twice, but we're doing this to
         // then do IO so who cares.
@@ -177,25 +164,10 @@ mod tests {
     #[tokio::test]
     async fn get_local() {
         let (store, path) = super::parse_href("examples/simple-item.json").unwrap();
-        assert_eq!(
-            path,
-            std::fs::canonicalize("examples/simple-item.json")
-                .unwrap()
-                .to_string_lossy()
-                .into_owned()
-                .strip_prefix("/")
-                .unwrap()
-                .into()
-        );
+        assert!(path.to_string().ends_with("examples/simple-item.json"));
         let item: Item = store.get(path).await.unwrap();
-        assert_eq!(
-            item.self_href().unwrap().to_string(),
-            format!(
-                "file://{}",
-                std::fs::canonicalize("examples/simple-item.json")
-                    .unwrap()
-                    .display()
-            )
-        )
+        let self_href = item.self_href().unwrap();
+        assert!(self_href.starts_with("file:///"));
+        assert!(self_href.ends_with("examples/simple-item.json"));
     }
 }

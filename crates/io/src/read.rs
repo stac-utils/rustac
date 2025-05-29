@@ -1,5 +1,5 @@
 use crate::{Format, Readable, Result};
-use stac::{Href, SelfHref};
+use stac::SelfHref;
 
 /// Reads a STAC value from an href.
 ///
@@ -11,8 +11,8 @@ use stac::{Href, SelfHref};
 /// ```
 /// let item: stac::Item = stac_io::read("examples/simple-item.json").unwrap();
 /// ```
-pub fn read<T: SelfHref + Readable>(href: impl Into<Href>) -> Result<T> {
-    let href = href.into();
-    let format = Format::infer_from_href(href.as_str()).unwrap_or_default();
+pub fn read<T: SelfHref + Readable>(href: impl ToString) -> Result<T> {
+    let href = href.to_string();
+    let format = Format::infer_from_href(&href).unwrap_or_default();
     format.read(href)
 }

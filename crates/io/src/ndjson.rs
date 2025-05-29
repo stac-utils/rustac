@@ -55,7 +55,7 @@ impl FromNdjsonPath for ItemCollection {
             items.push(serde_json::from_str(&line?)?);
         }
         let mut item_collection = ItemCollection::from(items);
-        item_collection.set_self_href(path);
+        item_collection.set_self_href(path.to_string_lossy());
         Ok(item_collection)
     }
 }
@@ -129,7 +129,6 @@ mod tests {
             item_collection
                 .self_href()
                 .unwrap()
-                .as_str()
                 .ends_with("data/items.ndjson")
         );
     }
