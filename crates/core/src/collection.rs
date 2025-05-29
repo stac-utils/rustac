@@ -246,7 +246,7 @@ impl Collection {
 
     /// Creates a new collection with its extents set to match the item's.
     ///
-    /// Also, adds an `item` link if the item has a [Href] or a `item`.
+    /// Also, adds an `item` link if the item has a href or a `item`.
     ///
     /// # Examples
     ///
@@ -292,7 +292,7 @@ impl Collection {
     /// This method does a couple of things:
     ///
     /// 1. Updates this collection's extents to contain the item's spatial and temporal bounds
-    /// 2. If the item has a [Href] or a `self` link, adds a `item` link
+    /// 2. If the item has a href or a `self` link, adds a `item` link
     ///
     /// Note that collections are created, by default, with global bounds and no
     /// temporal extent, so you'll want to set those (e.g. with
