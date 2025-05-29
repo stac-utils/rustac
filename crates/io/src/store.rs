@@ -65,7 +65,7 @@ where
 #[derive(Debug, Clone)]
 pub struct StacStore {
     store: Arc<dyn ObjectStore>,
-    root: Url,
+    root: Option<Url>,
 }
 
 impl StacStore {
@@ -86,7 +86,7 @@ impl StacStore {
     pub fn new(store: Arc<dyn ObjectStore>, root: Url) -> StacStore {
         StacStore {
             store: Arc::new(store),
-            root,
+            root: Some(root),
         }
     }
 
@@ -112,7 +112,9 @@ impl StacStore {
         let get_result = self.store.get(&path).await?;
         let bytes = get_result.bytes().await?;
         let mut value: T = format.from_bytes(bytes)?;
-        value.set_self_href(self.root.join(path.as_ref())?);
+        if let Some(root) = self.root.as_ref() {
+            value.set_self_href(root.join(path.as_ref())?);
+        }
         Ok(value)
     }
 
@@ -151,6 +153,18 @@ impl StacStore {
         };
         let path = result.map_err(object_store::Error::from)?;
         Ok(path)
+    }
+}
+
+impl<T> From<T> for StacStore
+where
+    T: ObjectStore,
+{
+    fn from(store: T) -> Self {
+        StacStore {
+            store: Arc::new(store),
+            root: None,
+        }
     }
 }
 
