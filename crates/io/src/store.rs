@@ -158,13 +158,11 @@ impl StacStore {
 
 impl<T> From<T> for StacStore
 where
-    T: ObjectStore,
+    T: Into<Arc<dyn ObjectStore>>,
 {
     fn from(store: T) -> Self {
-        StacStore {
-            store: Arc::new(store),
-            root: None,
-        }
+        let store: Arc<dyn ObjectStore> = store.into();
+        StacStore { store, root: None }
     }
 }
 
