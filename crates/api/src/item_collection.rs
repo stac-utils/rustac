@@ -1,7 +1,7 @@
 use crate::{Item, Result};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
-use stac::{Href, Link};
+use stac::Link;
 use stac_derive::{Links, SelfHref};
 
 const ITEM_COLLECTION_TYPE: &str = "FeatureCollection";
@@ -95,7 +95,7 @@ pub struct ItemCollection {
     pub last: Option<Map<String, Value>>,
 
     #[serde(skip)]
-    self_href: Option<Href>,
+    self_href: Option<String>,
 }
 
 /// The search-related metadata for the [ItemCollection].
