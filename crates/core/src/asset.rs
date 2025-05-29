@@ -1,4 +1,4 @@
-use crate::{Band, DataType, Href, Result, Statistics};
+use crate::{Band, DataType, Result, Statistics};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -10,7 +10,7 @@ pub struct Asset {
     /// URI to the asset object.
     ///
     /// Relative and absolute URIs are both allowed.
-    pub href: Href,
+    pub href: String,
 
     /// The displayed title for clients and users.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -114,9 +114,9 @@ pub trait Assets {
     fn assets_mut(&mut self) -> &mut IndexMap<String, Asset>;
 
     /// Makes all asset hrefs absolute.
-    fn make_assets_absolute(&mut self, base: impl AsRef<Href>) -> Result<()> {
+    fn make_assets_absolute(&mut self, base: &str) -> Result<()> {
         for asset in self.assets_mut().values_mut() {
-            asset.href = asset.href.into_absolute(&base)?;
+            asset.href = crate::href::make_absolute(&asset.href, base)?.into();
         }
         Ok(())
     }
@@ -132,9 +132,9 @@ impl Asset {
     /// let asset = Asset::new("an-href");
     /// assert_eq!(asset.href, "an-href");
     /// ```
-    pub fn new(href: impl Into<Href>) -> Asset {
+    pub fn new(href: impl ToString) -> Asset {
         Asset {
-            href: href.into(),
+            href: href.to_string(),
             title: None,
             description: None,
             r#type: None,
@@ -183,7 +183,7 @@ impl<'a> From<&'a str> for Asset {
 #[cfg(test)]
 mod tests {
     use super::{Asset, Assets};
-    use crate::{Href, Item};
+    use crate::Item;
 
     #[test]
     fn new() {
@@ -210,8 +210,7 @@ mod tests {
         let asset = Asset::new("an-href");
         let mut item = Item::new("an-item");
         let _ = item.assets.insert("data".into(), asset);
-        item.make_assets_absolute(Href::from("http://rustac.test"))
-            .unwrap();
+        item.make_assets_absolute("http://rustac.test").unwrap();
         assert_eq!(item.assets["data"].href, "http://rustac.test/an-href");
     }
 }

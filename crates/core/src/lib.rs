@@ -142,7 +142,7 @@ pub use fields::Fields;
 pub use geojson::Geometry;
 #[cfg(feature = "geoparquet")]
 pub use geoparquet::{FromGeoparquet, IntoGeoparquet};
-pub use href::{Href, SelfHref};
+pub use href::SelfHref;
 pub use item::{FlatItem, Item, Properties};
 pub use item_asset::ItemAsset;
 pub use item_collection::ItemCollection;

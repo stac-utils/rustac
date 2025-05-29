@@ -17,7 +17,7 @@ pub fn parse_href_opts<I, K, V>(href: impl Into<Href>, options: I) -> Result<(St
 where
     I: IntoIterator<Item = (K, V)>,
     K: AsRef<str>,
-    V: Into<String>,
+    V: ToString,
 {
     let mut url = match href.into() {
         Href::Url(url) => url,

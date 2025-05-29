@@ -1,27 +1,8 @@
 //! Utilities and structures for working with hrefs.
 
-use crate::{Error, Result};
-use serde::{Deserialize, Serialize};
-use std::{
-    fmt::Display,
-    path::{Path, PathBuf},
-};
+use crate::Result;
+use std::borrow::Cow;
 use url::Url;
-
-/// An href.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum Href {
-    /// A url href.
-    ///
-    /// This _can_ have a `file:` scheme.
-    Url(Url),
-
-    /// A string href.
-    ///
-    /// This is expected to have `/` delimiters. Windows-style `\` delimiters are not supported.
-    String(String),
-}
 
 /// Implemented by all three STAC objects, the [SelfHref] trait allows getting
 /// and setting an object's href.
@@ -51,7 +32,7 @@ pub trait SelfHref {
     /// let item: Item = stac::read("examples/simple-item.json").unwrap();
     /// assert!(item.self_href().unwrap().to_string().ends_with("simple-item.json"));
     /// ```
-    fn self_href(&self) -> Option<&Href>;
+    fn self_href(&self) -> Option<&str>;
 
     /// Returns a mutable reference to this object's self href.
     ///
@@ -63,11 +44,11 @@ pub trait SelfHref {
     /// let mut item = Item::new("an-id");
     /// *item.self_href_mut() = Option::Some("./a/relative/path.json".into());
     /// ```
-    fn self_href_mut(&mut self) -> &mut Option<Href>;
+    fn self_href_mut(&mut self) -> &mut Option<String>;
 
     /// Sets this object's self href.
-    fn set_self_href(&mut self, href: impl Into<Href>) {
-        *self.self_href_mut() = Some(href.into())
+    fn set_self_href(&mut self, href: impl ToString) {
+        *self.self_href_mut() = Some(href.to_string())
     }
 
     /// Clear's this object's self href.
@@ -76,203 +57,40 @@ pub trait SelfHref {
     }
 }
 
-impl Href {
-    /// Convert this href into an absolute href using the given base.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stac::Href;
-    ///
-    /// let href = Href::from("./a/b.json").into_absolute(Href::from("/c/d/e.json")).unwrap();
-    /// assert_eq!(href, "/c/d/a/b.json");
-    /// ```
-    pub fn into_absolute(&self, base: impl AsRef<Href>) -> Result<Href> {
-        let base = base.as_ref();
-        tracing::debug!("making href={self} absolute with base={base}");
-        match base {
-            Href::Url(url) => url.join(self.as_str()).map(Href::Url).map_err(Error::from),
-            Href::String(s) => Ok(Href::String(make_absolute(self.as_str(), s))),
-        }
-    }
-
-    /// Convert this href into an relative href using to the given base.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use stac::Href;
-    ///
-    /// let href = Href::from("/a/b/c.json").into_relative(Href::from("/a/d.json")).unwrap();
-    /// assert_eq!(href, "./b/c.json");
-    /// ```
-    pub fn into_relative(&self, base: impl AsRef<Href>) -> Result<Href> {
-        let base = base.as_ref();
-        tracing::debug!("making href={self} relative with base={base}");
-        match base {
-            Href::Url(base) => match self {
-                Href::Url(url) => Ok(base
-                    .make_relative(url)
-                    .map(Href::String)
-                    .unwrap_or_else(|| self.clone())),
-                Href::String(s) => {
-                    let url = s.parse()?;
-                    Ok(base
-                        .make_relative(&url)
-                        .map(Href::String)
-                        .unwrap_or_else(|| self.clone()))
-                }
-            },
-            Href::String(s) => Ok(Href::String(make_relative(self.as_str(), s))),
-        }
-    }
-
-    /// Returns true if this href is absolute.
-    ///
-    /// Urls are always absolute. Strings are absolute if they start with a `/`.
-    pub fn is_absolute(&self) -> bool {
-        match self {
-            Href::Url(_) => true,
-            Href::String(s) => s.starts_with('/'),
-        }
-    }
-
-    /// Returns this href as a str.
-    pub fn as_str(&self) -> &str {
-        match self {
-            Href::Url(url) => url.as_str(),
-            Href::String(s) => s.as_str(),
-        }
-    }
+/// Returns `true` if the href is absolute.
+///
+/// An href is absolute if it can be parsed to a url or starts with a `/`.
+pub fn is_absolute(href: &str) -> bool {
+    Url::parse(href).is_ok() || href.starts_with('/')
 }
 
-impl Display for Href {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Href::Url(url) => url.fmt(f),
-            Href::String(s) => s.fmt(f),
-        }
-    }
-}
-
-impl From<&str> for Href {
-    fn from(value: &str) -> Self {
-        if let Ok(url) = Url::parse(value) {
-            Href::Url(url)
-        } else {
-            Href::String(value.to_string())
-        }
-    }
-}
-
-impl From<String> for Href {
-    fn from(value: String) -> Self {
-        if let Ok(url) = Url::parse(&value) {
-            Href::Url(url)
-        } else {
-            Href::String(value)
-        }
-    }
-}
-
-impl TryFrom<Href> for Url {
-    type Error = Error;
-    fn try_from(value: Href) -> Result<Self> {
-        match value {
-            Href::Url(url) => Ok(url),
-            Href::String(mut s) => {
-                if !s.starts_with("/") {
-                    s = std::env::current_dir()?
-                        .join(s)
-                        .to_string_lossy()
-                        .into_owned();
-                }
-                let url = Url::parse(&format!("file://{s}"))?;
-                Ok(url)
-            }
-        }
-    }
-}
-
-impl From<Url> for Href {
-    fn from(value: Url) -> Self {
-        Href::Url(value)
-    }
-}
-
-impl From<&Path> for Href {
-    fn from(value: &Path) -> Self {
-        #[cfg(target_os = "windows")]
-        if let Ok(url) = Url::from_file_path(value) {
-            Href::Url(url)
-        } else {
-            Href::String(value.to_string_lossy().into_owned())
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            Href::String(value.to_string_lossy().into_owned())
-        }
-    }
-}
-
-impl From<PathBuf> for Href {
-    fn from(value: PathBuf) -> Self {
-        #[cfg(target_os = "windows")]
-        if let Ok(url) = Url::from_file_path(&value) {
-            Href::Url(url)
-        } else {
-            Href::String(value.to_string_lossy().into_owned())
-        }
-        #[cfg(not(target_os = "windows"))]
-        Href::String(value.to_string_lossy().into_owned())
-    }
-}
-
-impl PartialEq<&str> for Href {
-    fn eq(&self, other: &&str) -> bool {
-        self.as_str().eq(*other)
-    }
-}
-
-impl AsRef<Href> for Href {
-    fn as_ref(&self) -> &Href {
-        self
-    }
-}
-
-/// Makes an href absolute relative to a
-pub fn make_absolute(href: &str, base: &str) -> String {
-    if href.starts_with('/') {
-        href.to_string()
+/// Makes an href absolute relative to a base.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(stac::href::make_absolute("./item.json", "/a/b").unwrap(), "/a/item.json");
+/// assert_eq!(stac::href::make_absolute("./item.json", "/a/b/").unwrap(), "/a/b/item.json");
+/// assert_eq!(stac::href::make_absolute("http://stac.test/item.json", "/a/b/").unwrap(), "http://stac.test/item.json");
+/// ```
+pub fn make_absolute<'a>(href: &'a str, base: &str) -> Result<Cow<'a, str>> {
+    if is_absolute(href) {
+        Ok(href.into())
+    } else if let Ok(url) = Url::parse(base) {
+        let url = url.join(href)?;
+        Ok(url.to_string().into())
     } else {
         let (base, _) = base.split_at(base.rfind('/').unwrap_or(0));
         if base.is_empty() {
-            normalize_path(href)
+            Ok(normalize_path(href).into())
         } else {
-            normalize_path(&format!("{}/{}", base, href))
+            Ok(normalize_path(&format!("{}/{}", base, href)).into())
         }
     }
 }
 
-fn normalize_path(path: &str) -> String {
-    let mut parts = if path.starts_with('/') {
-        Vec::new()
-    } else {
-        vec![""]
-    };
-    for part in path.split('/') {
-        match part {
-            "." => {}
-            ".." => {
-                let _ = parts.pop();
-            }
-            s => parts.push(s),
-        }
-    }
-    parts.join("/")
-}
-
-fn make_relative(href: &str, base: &str) -> String {
+/// Makes an href relative to a base.
+pub fn make_relative(href: &str, base: &str) -> String {
     // Cribbed from `Url::make_relative`
     let mut relative = String::new();
 
@@ -335,16 +153,20 @@ fn make_relative(href: &str, base: &str) -> String {
     relative
 }
 
-#[cfg(test)]
-mod tests {
-    use super::Href;
-    use url::Url;
-
-    #[test]
-    fn href_to_url() {
-        let href = Href::from("examples/simple-item.json");
-        let url: Url = href.try_into().unwrap();
-        assert_eq!(url.scheme(), "file");
-        assert!(url.path().ends_with("examples/simple-item.json"));
+fn normalize_path(path: &str) -> String {
+    let mut parts = if path.starts_with('/') {
+        Vec::new()
+    } else {
+        vec![""]
+    };
+    for part in path.split('/') {
+        match part {
+            "." => {}
+            ".." => {
+                let _ = parts.pop();
+            }
+            s => parts.push(s),
+        }
     }
+    parts.join("/")
 }

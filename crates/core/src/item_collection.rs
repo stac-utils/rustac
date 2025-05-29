@@ -1,4 +1,4 @@
-use crate::{Error, Href, Item, Link, Migrate, Result, Version};
+use crate::{Error, Item, Link, Migrate, Result, Version};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use stac_derive::{Links, SelfHref};
@@ -53,7 +53,7 @@ pub struct ItemCollection {
     pub additional_fields: Map<String, Value>,
 
     #[serde(skip)]
-    self_href: Option<Href>,
+    self_href: Option<String>,
 }
 
 impl From<Vec<Item>> for ItemCollection {

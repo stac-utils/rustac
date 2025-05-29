@@ -1,6 +1,6 @@
 //! Links.
 
-use crate::{Error, Href, Result, SelfHref, mime::APPLICATION_GEOJSON};
+use crate::{Error, Result, SelfHref, mime::APPLICATION_GEOJSON};
 use mime::APPLICATION_JSON;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -37,7 +37,7 @@ pub struct Link {
     /// The actual link in the format of an URL.
     ///
     /// Relative and absolute links are both allowed.
-    pub href: Href,
+    pub href: String,
 
     /// Relationship between the current document and the linked document.
     ///
@@ -219,7 +219,8 @@ pub trait Links: SelfHref {
 
     /// Makes all relative links absolute with respect to this object's self href.
     fn make_links_absolute(&mut self) -> Result<()> {
-        if let Some(href) = self.self_href().cloned() {
+        if let Some(href) = self.self_href() {
+            let href = href.to_string();
             for link in self.links_mut() {
                 link.make_absolute(&href)?;
             }
@@ -231,9 +232,10 @@ pub trait Links: SelfHref {
 
     /// Makes all links relative with respect to this object's self href.
     fn make_links_relative(&mut self) -> Result<()> {
-        if let Some(href) = self.self_href().cloned() {
+        if let Some(href) = self.self_href() {
+            let href = href.to_string();
             for link in self.links_mut() {
-                link.make_relative(&href)?;
+                link.make_relative(&href);
             }
             Ok(())
         } else {
@@ -289,9 +291,9 @@ impl Link {
     /// assert_eq!(link.href, "an-href");
     /// assert_eq!(link.rel, "a-rel");
     /// ```
-    pub fn new(href: impl Into<Href>, rel: impl ToString) -> Link {
+    pub fn new(href: impl ToString, rel: impl ToString) -> Link {
         Link {
-            href: href.into(),
+            href: href.to_string(),
             rel: rel.to_string(),
             r#type: None,
             title: None,
@@ -401,7 +403,7 @@ impl Link {
     /// assert!(link.is_root());
     /// assert_eq!(link.r#type.as_ref().unwrap(), ::mime::APPLICATION_JSON.as_ref());
     /// ```
-    pub fn root(href: impl Into<Href>) -> Link {
+    pub fn root(href: impl ToString) -> Link {
         Link::new(href, ROOT_REL).json()
     }
 
@@ -415,7 +417,7 @@ impl Link {
     /// assert!(link.is_self());
     /// assert_eq!(link.r#type.as_ref().unwrap(), ::mime::APPLICATION_JSON.as_ref());
     /// ```
-    pub fn self_(href: impl Into<Href>) -> Link {
+    pub fn self_(href: impl ToString) -> Link {
         Link::new(href, SELF_REL).json()
     }
 
@@ -429,7 +431,7 @@ impl Link {
     /// assert!(link.is_child());
     /// assert_eq!(link.r#type.as_ref().unwrap(), ::mime::APPLICATION_JSON.as_ref());
     /// ```
-    pub fn child(href: impl Into<Href>) -> Link {
+    pub fn child(href: impl ToString) -> Link {
         Link::new(href, CHILD_REL).json()
     }
 
@@ -443,7 +445,7 @@ impl Link {
     /// assert!(link.is_item());
     /// assert_eq!(link.r#type.as_ref().unwrap(), ::mime::APPLICATION_JSON.as_ref());
     /// ```
-    pub fn item(href: impl Into<Href>) -> Link {
+    pub fn item(href: impl ToString) -> Link {
         Link::new(href, ITEM_REL).json()
     }
 
@@ -457,7 +459,7 @@ impl Link {
     /// assert!(link.is_parent());
     /// assert_eq!(link.r#type.as_ref().unwrap(), ::mime::APPLICATION_JSON.as_ref());
     /// ```
-    pub fn parent(href: impl Into<Href>) -> Link {
+    pub fn parent(href: impl ToString) -> Link {
         Link::new(href, PARENT_REL).json()
     }
 
@@ -471,7 +473,7 @@ impl Link {
     /// assert!(link.is_collection());
     /// assert_eq!(link.r#type.as_ref().unwrap(), ::mime::APPLICATION_JSON.as_ref());
     /// ```
-    pub fn collection(href: impl Into<Href>) -> Link {
+    pub fn collection(href: impl ToString) -> Link {
         Link::new(href, COLLECTION_REL).json()
     }
 
@@ -610,7 +612,7 @@ impl Link {
     /// assert!(!Link::new("./not/an/absolute/path", "rel").is_absolute());
     /// ```
     pub fn is_absolute(&self) -> bool {
-        self.href.is_absolute()
+        crate::href::is_absolute(&self.href)
     }
 
     /// Returns true if this link's href is a relative path.
@@ -625,7 +627,7 @@ impl Link {
     /// assert!(Link::new("./not/an/absolute/path", "rel").is_relative());
     /// ```
     pub fn is_relative(&self) -> bool {
-        !self.href.is_absolute()
+        !crate::href::is_absolute(&self.href)
     }
 
     /// Sets the method attribute on this link.
@@ -671,21 +673,20 @@ impl Link {
     /// # Examples
     ///
     /// ```
-    /// use stac::{Link, Href};
+    /// use stac::Link;
     ///
     /// let mut link = Link::new("./b/item.json", "rel");
-    /// link.make_absolute(Href::from("/a/base/catalog.json")).unwrap();
+    /// link.make_absolute("a/base/catalog.json").unwrap();
     /// assert_eq!(link.href, "/a/base/b/item.json")
     /// ```
-    pub fn make_absolute(&mut self, base: impl AsRef<Href>) -> Result<()> {
-        self.href = self.href.into_absolute(base)?;
+    pub fn make_absolute(&mut self, base: &str) -> Result<()> {
+        self.href = crate::href::make_absolute(&self.href, base)?.into_owned();
         Ok(())
     }
 
     /// Makes this link relative
-    pub fn make_relative(&mut self, base: impl AsRef<Href>) -> Result<()> {
-        self.href = self.href.into_relative(base)?;
-        Ok(())
+    pub fn make_relative(&mut self, base: &str) {
+        self.href = crate::href::make_relative(&self.href, base);
     }
 }
 

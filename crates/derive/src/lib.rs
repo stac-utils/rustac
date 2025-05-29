@@ -8,10 +8,10 @@ pub fn self_href_derive(input: TokenStream) -> TokenStream {
     let name = input.ident;
     let expanded = quote! {
         impl ::stac::SelfHref for #name {
-            fn self_href(&self) -> Option<&::stac::Href> {
-                self.self_href.as_ref()
+            fn self_href(&self) -> Option<&str> {
+                self.self_href.as_deref()
             }
-            fn self_href_mut(&mut self) -> &mut Option<::stac::Href> {
+            fn self_href_mut(&mut self) -> &mut Option<String> {
                 &mut self.self_href
             }
         }

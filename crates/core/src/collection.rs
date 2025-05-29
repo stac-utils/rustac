@@ -1,5 +1,5 @@
 use crate::{
-    Asset, Assets, Bbox, Error, Href, Item, ItemAsset, Link, Links, Migrate, Result, STAC_VERSION,
+    Asset, Assets, Bbox, Error, Item, ItemAsset, Link, Links, Migrate, Result, STAC_VERSION,
     SelfHref, Version,
 };
 use chrono::{DateTime, Utc};
@@ -119,7 +119,7 @@ pub struct Collection {
     pub additional_fields: Map<String, Value>,
 
     #[serde(skip)]
-    self_href: Option<Href>,
+    self_href: Option<String>,
 }
 
 /// This object provides information about a provider.
@@ -276,8 +276,11 @@ impl Collection {
     }
 
     fn maybe_add_item_link(&mut self, item: &Item) -> Option<&Link> {
-        if let Some(href) = item.self_href().or(item.self_link().map(|link| &link.href)) {
-            self.links.push(Link::item(href.clone()));
+        if let Some(href) = item
+            .self_href()
+            .or(item.self_link().map(|link| link.href.as_str()))
+        {
+            self.links.push(Link::item(href));
             self.links.last()
         } else {
             None
