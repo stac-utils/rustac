@@ -425,7 +425,7 @@ mod tests {
     use rstest::{fixture, rstest};
     use stac::Bbox;
     use stac_api::{Search, Sortby};
-    use stac_io::Validate;
+    use stac_validate::Validate;
 
     #[fixture]
     #[once]

@@ -10,15 +10,17 @@ members = [
     "crates/io",
     "crates/pgstac",
     "crates/server",
+    "crates/validate",
     "crates/wasm",
 ]
 default-members = [
     "crates/api",
     "crates/core",
-    "crates/io",
     "crates/derive",
     "crates/extensions",
+    "crates/io",
     "crates/server",
+    "crates/validate",
 ]
 
 [workspace.package]
@@ -85,6 +87,7 @@ stac-duckdb = { version = "0.1.1", path = "crates/duckdb" }
 stac-extensions = { version = "0.1.0", path = "crates/extensions" }
 stac-io = { version = "0.1.0", path = "crates/io" }
 stac-server = { version = "0.3.2", path = "crates/server" }
+stac-validate = { version = "0.4.0", path = "crates/validate" }
 syn = "2.0"
 tempfile = "3.16"
 thiserror = "2.0"

@@ -19,7 +19,6 @@ store-azure = ["store", "object_store/azure"]
 store-gcp = ["store", "object_store/gcp"]
 store-http = ["store", "object_store/http"]
 store-all = ["store-aws", "store-azure", "store-gcp", "store-http"]
-validate = ["dep:jsonschema", "dep:fluent-uri", "reqwest"]
 
 [dependencies]
 bytes.workspace = true
@@ -40,14 +39,6 @@ rstest.workspace = true
 tempfile.workspace = true
 tokio.workspace = true
 tokio-test.workspace = true
-
-[[test]]
-name = "examples"
-required-features = ["validate"]
-
-[[test]]
-name = "migrate"
-required-features = ["validate"]
 
 [[test]]
 name = "aws"
