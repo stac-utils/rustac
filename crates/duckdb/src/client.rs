@@ -316,7 +316,7 @@ impl Client {
         if let Some(filter) = search.items.filter {
             let expr: Expr = filter.try_into()?;
             if expr_properties_match(&expr, &column_names) {
-                let sql = expr.to_ducksql()?;
+                let sql = expr.to_ducksql().map_err(Box::new)?;
                 wheres.push(sql);
             } else {
                 return Ok(Vec::new());
@@ -425,7 +425,7 @@ mod tests {
     use rstest::{fixture, rstest};
     use stac::Bbox;
     use stac_api::{Search, Sortby};
-    use stac_io::Validate;
+    use stac_validate::Validate;
 
     #[fixture]
     #[once]

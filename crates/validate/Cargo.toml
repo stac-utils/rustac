@@ -1,0 +1,23 @@
+[package]
+name = "stac-validate"
+version = "0.4.0"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+categories.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+fluent-uri.workspace = true
+jsonschema.workspace = true
+reqwest = { workspace = true, features = ["blocking", "json"] }
+serde.workspace = true
+serde_json.workspace = true
+stac.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+stac-io.workspace = true
+tokio = { workspace = true, features = ["macros"] }

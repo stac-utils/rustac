@@ -25,7 +25,7 @@ impl Validator {
     /// # Examples
     ///
     /// ```
-    /// use stac_io::Validator;
+    /// use stac_validate::Validator;
     ///
     /// let validator = Validator::new().unwrap();
     /// ```
@@ -48,7 +48,7 @@ impl Validator {
     ///
     /// ```
     /// use stac::Item;
-    /// use stac_io::Validator;
+    /// use stac_validate::Validator;
     ///
     /// let item = Item::new("an-id");
     /// let mut validator = Validator::new().unwrap();
@@ -115,7 +115,7 @@ impl Validator {
                     return Ok(object);
                 }
                 _ => {
-                    return Err(Error::MissingField("type"));
+                    return Err(stac::Error::MissingField("type").into());
                 }
             }
         };
@@ -126,7 +126,7 @@ impl Validator {
             .map(|v| v.parse::<Version>())
             .transpose()
             .unwrap()
-            .ok_or(Error::MissingField("stac_version"))?;
+            .ok_or(stac::Error::MissingField("stac_version"))?;
 
         let uri = build_uri(r#type, &version);
         let validator = self.validator(uri)?;
@@ -207,7 +207,10 @@ impl Validator {
     fn ensure_validator(&mut self, uri: &Uri<String>) -> Result<()> {
         if !self.validators.contains_key(uri) {
             let response = reqwest::blocking::get(uri.as_str())?.error_for_status()?;
-            let validator = self.validation_options.build(&response.json()?)?;
+            let validator = self
+                .validation_options
+                .build(&response.json()?)
+                .map_err(Box::new)?;
             let _ = self.validators.insert(uri.clone(), validator);
         }
         Ok(())
@@ -380,14 +383,14 @@ mod tests {
 
     #[test]
     fn validate_simple_item() {
-        let item: Item = crate::read("examples/simple-item.json").unwrap();
+        let item: Item = stac_io::read("examples/simple-item.json").unwrap();
         item.validate().unwrap();
     }
 
     #[tokio::test]
     #[ignore = "can't validate in a tokio runtime yet: https://github.com/Stranger6667/jsonschema/issues/385"]
     async fn validate_inside_tokio_runtime() {
-        let item: Item = crate::read("examples/extended-item.json").unwrap();
+        let item: Item = stac_io::read("examples/extended-item.json").unwrap();
         item.validate().unwrap();
     }
 
@@ -403,7 +406,7 @@ mod tests {
 
     #[test]
     fn validate_collections() {
-        let collection: Collection = crate::read("examples/collection.json").unwrap();
+        let collection: Collection = stac_io::read("examples/collection.json").unwrap();
         let collections = json!({
             "collections": [collection]
         });

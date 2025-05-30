@@ -30,10 +30,10 @@ stac-duckdb.workspace = true
 stac-io = { workspace = true, features = [
     "store-all",
     "reqwest",
-    "validate",
     "geoparquet-compression",
 ] }
 stac-server = { workspace = true, features = ["axum", "duckdb"] }
+stac-validate.workspace = true
 tokio = { workspace = true, features = [
     "macros",
     "io-std",

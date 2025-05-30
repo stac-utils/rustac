@@ -8,16 +8,12 @@ mod read;
 mod realized_href;
 #[cfg(feature = "store")]
 mod store;
-#[cfg(feature = "validate")]
-mod validate;
 mod write;
 
 #[cfg(feature = "geoparquet")]
 pub use geoparquet::{FromGeoparquetPath, IntoGeoparquetPath};
 #[cfg(feature = "store")]
 pub use store::{StacStore, parse_href, parse_href_opts};
-#[cfg(feature = "validate")]
-pub use validate::{Validate, Validator};
 pub use {
     error::Error,
     format::Format,
