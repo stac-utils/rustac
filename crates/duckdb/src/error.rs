@@ -10,7 +10,7 @@ pub enum Error {
 
     /// [cql2::Error]
     #[error(transparent)]
-    Cql2(#[from] cql2::Error),
+    Cql2(#[from] Box<cql2::Error>),
 
     /// [duckdb::Error]
     #[error(transparent)]

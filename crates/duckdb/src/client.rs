@@ -316,7 +316,7 @@ impl Client {
         if let Some(filter) = search.items.filter {
             let expr: Expr = filter.try_into()?;
             if expr_properties_match(&expr, &column_names) {
-                let sql = expr.to_ducksql()?;
+                let sql = expr.to_ducksql().map_err(Box::new)?;
                 wheres.push(sql);
             } else {
                 return Ok(Vec::new());
