@@ -22,10 +22,10 @@ pub const VERSION_KEY: &str = "stac:geoparquet_version";
 /// The stac-geoparquet version.
 pub const VERSION: &str = "1.0.0";
 
-/// Other geoarrow geometry columns (other than "geometry")
-pub const OTHER_GEOMETRY_COLUMNS: [&str; 1] = ["proj:geometry"];
+/// Geometry columns.
+pub const GEOMETRY_COLUMNS: [&str; 2] = ["geometry", "proj:geometry"];
 
-/// Geoarrow datetime columns
+/// Datetime columns.
 pub const DATETIME_COLUMNS: [&str; 8] = [
     "datetime",
     "start_datetime",
@@ -37,7 +37,7 @@ pub const DATETIME_COLUMNS: [&str; 8] = [
     "unpublished",
 ];
 
-/// A geoarrow table.
+/// A **stac-geoarrow** table.
 ///
 /// `Table` existed in **geoarrow** v0.3 but was removed in v0.4. We preserve it
 /// here as a useful arrow-ish analog to [ItemCollection].
@@ -48,19 +48,6 @@ pub struct Table {
 }
 
 /// A builder for converting an [ItemCollection] to a [Table]
-///
-/// # Examples
-///
-/// ```
-/// use stac::geoarrow::TableBuilder;
-///
-/// let item = stac::read("examples/simple-item.json").unwrap();
-/// let builder = TableBuilder {
-///     item_collection: vec![item].into(),
-///     drop_invalid_attributes: false,
-/// };
-/// let table = builder.build().unwrap();
-/// ```
 #[derive(Debug)]
 pub struct TableBuilder {
     /// The item collection.
@@ -70,34 +57,43 @@ pub struct TableBuilder {
     ///
     /// If false, an invalid attribute will cause an error. If true, an invalid
     /// attribute will trigger a warning.
+    ///
+    /// Invalid attributes are values in `properties` that would conflict with a STAC-defined top-level key.
     pub drop_invalid_attributes: bool,
 }
 
 impl TableBuilder {
-    /// Builds a [Table]
+    /// Builds a [Table].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::geoarrow::TableBuilder;
+    ///
+    /// let item = stac::read("examples/simple-item.json").unwrap();
+    /// let builder = TableBuilder {
+    ///     item_collection: vec![item].into(),
+    ///     drop_invalid_attributes: false,
+    /// };
+    /// let table = builder.build().unwrap();
+    /// ```
     pub fn build(self) -> Result<Table> {
         let mut values = Vec::with_capacity(self.item_collection.items.len());
-        let geometry_type = GeometryType::new(Default::default()); // the choice of interleaved is arbitrary
-        let mut builder = GeometryBuilder::new(geometry_type.clone());
         let mut geometry_builders = HashMap::new();
-        for mut item in self.item_collection.items {
-            builder.push_geometry(
-                item.geometry
-                    .take()
-                    .and_then(|geometry| Geometry::try_from(geometry).ok())
-                    .as_ref(),
-            )?;
-            let flat_item = item.into_flat_item(self.drop_invalid_attributes)?;
-            let mut value = serde_json::to_value(flat_item)?;
+
+        for item in self.item_collection.items {
+            let mut value =
+                serde_json::to_value(item.into_flat_item(self.drop_invalid_attributes)?)?;
             {
                 let value = value
                     .as_object_mut()
                     .expect("a flat item should serialize to an object");
-                for key in OTHER_GEOMETRY_COLUMNS {
+                for key in GEOMETRY_COLUMNS {
                     if let Some(value) = value.remove(key) {
-                        let entry = geometry_builders
-                            .entry(key)
-                            .or_insert_with(|| GeometryBuilder::new(geometry_type.clone()));
+                        let entry = geometry_builders.entry(key).or_insert_with(|| {
+                            let geometry_type = GeometryType::new(Default::default());
+                            GeometryBuilder::new(geometry_type)
+                        });
                         let geometry =
                             geojson::Geometry::from_json_value(value).map_err(Box::new)?;
                         entry.push_geometry(Some(
@@ -105,38 +101,17 @@ impl TableBuilder {
                         ))?;
                     }
                 }
-                let _ = value.remove("geometry");
                 if let Some(bbox) = value.remove("bbox") {
-                    let bbox = bbox
-                        .as_array()
-                        .expect("STAC items should always have a list as their bbox");
-                    if bbox.len() == 4 {
-                        let _ = value.insert("bbox".into(), json!({
-                        "xmin": bbox[0].as_number().expect("all bbox values should be a number"),
-                        "ymin": bbox[1].as_number().expect("all bbox values should be a number"),
-                        "xmax": bbox[2].as_number().expect("all bbox values should be a number"),
-                        "ymax": bbox[3].as_number().expect("all bbox values should be a number"),
-                    }));
-                    } else if bbox.len() == 6 {
-                        let _ = value.insert("bbox".into(), json!({
-                        "xmin": bbox[0].as_number().expect("all bbox values should be a number"),
-                        "ymin": bbox[1].as_number().expect("all bbox values should be a number"),
-                        "zmin": bbox[2].as_number().expect("all bbox values should be a number"),
-                        "xmax": bbox[3].as_number().expect("all bbox values should be a number"),
-                        "ymax": bbox[4].as_number().expect("all bbox values should be a number"),
-                        "zmax": bbox[5].as_number().expect("all bbox values should be a number"),
-                    }));
-                    } else {
-                        return Err(Error::InvalidBbox(
-                            bbox.iter().filter_map(|v| v.as_f64()).collect(),
-                        ));
-                    }
+                    let bbox = convert_bbox(bbox)?;
+                    let _ = value.insert("bbox".to_string(), bbox);
                 }
             }
             values.push(value);
         }
 
-        // Decode JSON
+        // If `collect_field_types_from_object`
+        // (https://github.com/apache/arrow-rs/blob/950f4d067c146edeb8b75bd35ac09fdfbfea32a9/arrow-json/src/reader/schema.rs#L386-L389)
+        // were public, we could use that and reduce the number of passes.
         let schema = arrow_json::reader::infer_json_schema_from_iterator(values.iter().map(Ok))?;
         let mut schema_builder = SchemaBuilder::new();
         for field in schema.fields().iter() {
@@ -155,23 +130,14 @@ impl TableBuilder {
         let schema = Arc::new(schema_builder.finish());
         let mut decoder = ReaderBuilder::new(schema.clone()).build_decoder()?;
         decoder.serialize(&values)?;
-
-        // Build the table
         let record_batch = decoder.flush()?.ok_or(Error::NoItems)?;
         let mut schema_builder = SchemaBuilder::from(schema.fields());
         let mut columns = record_batch.columns().to_vec();
-
-        let geometry_array = builder.finish();
-        columns.push(geometry_array.to_array_ref());
-        schema_builder.push(geometry_array.data_type().to_field("geometry", true));
-
         for (key, geometry_builder) in geometry_builders {
             let geometry_array = geometry_builder.finish();
             columns.push(geometry_array.to_array_ref());
             schema_builder.push(geometry_array.data_type().to_field(key, true));
         }
-
-        // Build the table
         let schema = Arc::new(schema_builder.finish().with_metadata(metadata));
         let record_batch = RecordBatch::try_new(schema.clone(), columns)?;
         Ok(Table {
@@ -311,6 +277,33 @@ pub fn add_wkb_metadata(mut record_batch: RecordBatch, column_name: &str) -> Res
         record_batch = record_batch.with_schema(schema.into())?;
     }
     Ok(record_batch)
+}
+
+fn convert_bbox(bbox: Value) -> Result<Value> {
+    let bbox = bbox
+        .as_array()
+        .expect("STAC items should always have a list as their bbox");
+    if bbox.len() == 4 {
+        Ok(json!({
+            "xmin": bbox[0].as_number().expect("all bbox values should be a number"),
+            "ymin": bbox[1].as_number().expect("all bbox values should be a number"),
+            "xmax": bbox[2].as_number().expect("all bbox values should be a number"),
+            "ymax": bbox[3].as_number().expect("all bbox values should be a number"),
+        }))
+    } else if bbox.len() == 6 {
+        Ok(json!({
+            "xmin": bbox[0].as_number().expect("all bbox values should be a number"),
+            "ymin": bbox[1].as_number().expect("all bbox values should be a number"),
+            "zmin": bbox[2].as_number().expect("all bbox values should be a number"),
+            "xmax": bbox[3].as_number().expect("all bbox values should be a number"),
+            "ymax": bbox[4].as_number().expect("all bbox values should be a number"),
+            "zmax": bbox[5].as_number().expect("all bbox values should be a number"),
+        }))
+    } else {
+        Err(Error::InvalidBbox(
+            bbox.iter().filter_map(|v| v.as_f64()).collect(),
+        ))
+    }
 }
 
 #[cfg(test)]
