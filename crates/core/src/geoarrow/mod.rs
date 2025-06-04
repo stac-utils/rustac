@@ -238,7 +238,7 @@ pub fn with_native_geometry(
         )?;
         let mut columns = record_batch.columns().to_vec();
         let mut schema_builder = SchemaBuilder::from(&*record_batch.schema());
-        schema_builder.push(geometry_array.data_type().to_field("geometry", true));
+        schema_builder.push(geometry_array.data_type().to_field(column_name, true));
         let schema = schema_builder.finish();
         columns.push(geometry_array.to_array_ref());
         record_batch = RecordBatch::try_new(schema.into(), columns)?;
@@ -255,7 +255,7 @@ pub fn with_wkb_geometry(mut record_batch: RecordBatch, column_name: &str) -> Re
         )?;
         let mut columns = record_batch.columns().to_vec();
         let mut schema_builder = SchemaBuilder::from(&*record_batch.schema());
-        schema_builder.push(wkb_array.data_type().to_field("geometry", true));
+        schema_builder.push(wkb_array.data_type().to_field(column_name, true));
         let schema = schema_builder.finish();
         columns.push(wkb_array.to_array_ref());
         record_batch = RecordBatch::try_new(schema.into(), columns)?;
