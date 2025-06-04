@@ -313,9 +313,7 @@ pub fn add_wkb_metadata(mut record_batch: RecordBatch, column_name: &str) -> Res
     Ok(record_batch)
 }
 
-// We only run tests when the geoparquet feature is enabled so that we don't
-// have to add geoarrow as a dev dependency for all builds.
-#[cfg(all(test, feature = "geoparquet"))]
+#[cfg(test)]
 mod tests {
     use super::Table;
     use crate::{Item, ItemCollection};
