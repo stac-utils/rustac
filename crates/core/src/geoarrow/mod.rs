@@ -109,9 +109,8 @@ impl TableBuilder {
             values.push(value);
         }
 
-        // If `collect_field_types_from_object`
-        // (https://github.com/apache/arrow-rs/blob/950f4d067c146edeb8b75bd35ac09fdfbfea32a9/arrow-json/src/reader/schema.rs#L386-L389)
-        // were public, we could use that and reduce the number of passes.
+        // Create a geometry-less record batch of our items.
+        // TODO do this in one pass: https://github.com/stac-utils/rustac/issues/767
         let schema = arrow_json::reader::infer_json_schema_from_iterator(values.iter().map(Ok))?;
         let mut schema_builder = SchemaBuilder::new();
         for field in schema.fields().iter() {
@@ -125,12 +124,12 @@ impl TableBuilder {
                 schema_builder.push(field.clone());
             }
         }
-        let mut metadata = schema.metadata;
-        let _ = metadata.insert(VERSION_KEY.to_string(), VERSION.into());
         let schema = Arc::new(schema_builder.finish());
         let mut decoder = ReaderBuilder::new(schema.clone()).build_decoder()?;
         decoder.serialize(&values)?;
         let record_batch = decoder.flush()?.ok_or(Error::NoItems)?;
+
+        // Add the geometries back in.
         let mut schema_builder = SchemaBuilder::from(schema.fields());
         let mut columns = record_batch.columns().to_vec();
         for (key, geometry_builder) in geometry_builders {
@@ -138,7 +137,10 @@ impl TableBuilder {
             columns.push(geometry_array.to_array_ref());
             schema_builder.push(geometry_array.data_type().to_field(key, true));
         }
-        let schema = Arc::new(schema_builder.finish().with_metadata(metadata));
+        let _ = schema_builder
+            .metadata_mut()
+            .insert(VERSION_KEY.to_string(), VERSION.into());
+        let schema = Arc::new(schema_builder.finish());
         let record_batch = RecordBatch::try_new(schema.clone(), columns)?;
         Ok(Table {
             record_batches: vec![record_batch],
