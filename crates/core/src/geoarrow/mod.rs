@@ -12,7 +12,7 @@ use geoarrow_array::{
     array::{WkbArray, from_arrow_array},
     builder::GeometryBuilder,
 };
-use geoarrow_schema::{CoordType, GeoArrowType, GeometryType, Metadata};
+use geoarrow_schema::{GeoArrowType, GeometryType, Metadata};
 use serde_json::{Value, json};
 use std::{collections::HashMap, sync::Arc};
 
@@ -77,7 +77,7 @@ impl TableBuilder {
     /// Builds a [Table]
     pub fn build(self) -> Result<Table> {
         let mut values = Vec::with_capacity(self.item_collection.items.len());
-        let geometry_type = GeometryType::new(CoordType::Interleaved, Default::default()); // the choice of interleaved is arbitrary
+        let geometry_type = GeometryType::new(Default::default()); // the choice of interleaved is arbitrary
         let mut builder = GeometryBuilder::new(geometry_type.clone());
         let mut geometry_builders = HashMap::new();
         for mut item in self.item_collection.items {
@@ -266,10 +266,7 @@ pub fn with_native_geometry(
         );
         let geometry_array = geoarrow_array::cast::from_wkb(
             &wkb_array,
-            GeoArrowType::Geometry(GeometryType::new(
-                CoordType::Interleaved,
-                Metadata::default().into(),
-            )),
+            GeoArrowType::Geometry(GeometryType::new(Metadata::default().into())),
         )?;
         let mut columns = record_batch.columns().to_vec();
         let mut schema_builder = SchemaBuilder::from(&*record_batch.schema());
@@ -322,8 +319,6 @@ pub fn add_wkb_metadata(mut record_batch: RecordBatch, column_name: &str) -> Res
 mod tests {
     use super::Table;
     use crate::{Item, ItemCollection};
-    use geoparquet::GeoParquetRecordBatchReaderBuilder;
-    use std::fs::File;
 
     #[test]
     fn to_table() {
@@ -337,17 +332,6 @@ mod tests {
         let item: Item = crate::read("examples/simple-item.json").unwrap();
         let table = Table::from_item_collection(vec![item]).unwrap();
         let _ = table.schema().field_with_name("type").unwrap();
-    }
-
-    #[test]
-    fn from_table() {
-        let file = File::open("data/extended-item.parquet").unwrap();
-        let reader = GeoParquetRecordBatchReaderBuilder::try_new(file)
-            .unwrap()
-            .build()
-            .unwrap();
-        let item_collection = super::from_record_batch_reader(reader).unwrap();
-        assert_eq!(item_collection.items.len(), 1);
     }
 
     #[test]

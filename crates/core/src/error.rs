@@ -58,6 +58,11 @@ pub enum Error {
     #[error("no \"{0}\" field in the JSON object")]
     MissingField(&'static str),
 
+    /// No geoparquet metadata in a stac-geoparquet file.
+    #[error("no geoparquet metadata")]
+    #[cfg(feature = "geoparquet")]
+    MissingGeoparquetMetadata,
+
     /// There are no items, when items are required.
     #[error("no items")]
     NoItems,
