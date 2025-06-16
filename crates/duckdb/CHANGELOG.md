@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Conditionally disable parsing the WKB ([#635](https://github.com/stac-utils/rustac/pull/635))
 - `Client.extensions` ([#665](https://github.com/stac-utils/rustac/pull/665))
 - Filtering ([#699](https://github.com/stac-utils/rustac/pull/699))
+- `union_by_name`, on by default ([#773](https://github.com/stac-utils/rustac/pull/773))
 
 ### Removed
 
