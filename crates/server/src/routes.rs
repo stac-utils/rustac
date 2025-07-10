@@ -174,9 +174,8 @@ pub async fn collection<B: Backend>(
         .await
         .map_err(Error::from)
         .and_then(|option| {
-            option.ok_or_else(|| {
-                Error::NotFound(format!("no collection with id='{collection_id}'"))
-            })
+            option
+                .ok_or_else(|| Error::NotFound(format!("no collection with id='{collection_id}'")))
         })
         .map(Json)
 }
@@ -196,9 +195,8 @@ pub async fn items<B: Backend>(
         .await
         .map_err(Error::from)
         .and_then(|option| {
-            option.ok_or_else(|| {
-                Error::NotFound(format!(" no collection with id='{collection_id}'"))
-            })
+            option
+                .ok_or_else(|| Error::NotFound(format!(" no collection with id='{collection_id}'")))
         })
         .map(GeoJson)
 }
