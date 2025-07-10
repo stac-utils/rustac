@@ -7,7 +7,10 @@ use async_stream::try_stream;
 use clap::{Parser, Subcommand};
 use futures_core::TryStream;
 use futures_util::{TryStreamExt, pin_mut};
-use stac::{Assets, Collection, Item, Links, Migrate, SelfHref, geoparquet::Compression};
+use stac::{
+    Assets, Collection, Item, Links, Migrate, SelfHref,
+    geoparquet::{Compression, DEFAULT_COMPRESSION},
+};
 use stac_api::{GetItems, GetSearch, Search};
 use stac_io::{Format, StacStore};
 use stac_server::Backend;
@@ -590,7 +593,7 @@ impl Rustac {
             Format::Json(true)
         };
         if matches!(format, Format::Geoparquet(_)) {
-            Format::Geoparquet(self.parquet_compression.or(Some(Compression::SNAPPY)))
+            Format::Geoparquet(self.parquet_compression.or(Some(DEFAULT_COMPRESSION)))
         } else if let Format::Json(pretty) = format {
             Format::Json(self.compact_json.map(|c| !c).unwrap_or(pretty))
         } else {
