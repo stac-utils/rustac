@@ -657,8 +657,13 @@ mod tests {
 
     #[rstest]
     fn filter(client: Client) {
-        let mut search = Search::default();
-        search.filter = Some("sat:relative_orbit = 98".parse().unwrap());
+        let search = Search {
+            items: Items {
+                filter: Some("sat:relative_orbit = 98".parse().unwrap()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
         let item_collection = client
             .search("data/100-sentinel-2-items.parquet", search)
             .unwrap();
@@ -667,8 +672,13 @@ mod tests {
 
     #[rstest]
     fn filter_no_column(client: Client) {
-        let mut search = Search::default();
-        search.filter = Some("foo:bar = 42".parse().unwrap());
+        let search = Search {
+            items: Items {
+                filter: Some("foo:bar = 42".parse().unwrap()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
         let item_collection = client
             .search("data/100-sentinel-2-items.parquet", search)
             .unwrap();
