@@ -14,7 +14,7 @@ To use the library in your project:
 
 ```toml
 [dependencies]
-stac = "0.12"
+stac = "0.13"
 ```
 
 ## Examples

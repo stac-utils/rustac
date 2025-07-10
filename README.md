@@ -76,7 +76,9 @@ This monorepo contains several crates:
 
 | Crate                                            | Description                                                                                     | Badges                                                                                                                                                                                                                                                                  |
 | ------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [stac](./crates/core/README.md)                  | Core data structures and I/O                                                                    | [![docs.rs](https://img.shields.io/docsrs/stac?style=flat-square)](https://docs.rs/stac/latest/stac/) <br> [![Crates.io](https://img.shields.io/crates/v/stac?style=flat-square)](https://crates.io/crates/stac)                                                        |
+| [stac](./crates/core/README.md)                  | Core data structures                                                                  | [![docs.rs](https://img.shields.io/docsrs/stac?style=flat-square)](https://docs.rs/stac/latest/stac/) <br> [![Crates.io](https://img.shields.io/crates/v/stac?style=flat-square)](https://crates.io/crates/stac)                                                        |
+| [stac-io](./crates/io/README.md)                  | Input and output                                                                    | [![docs.rs](https://img.shields.io/docsrs/stac-io?style=flat-square)](https://docs.rs/stac-io/latest/stac_io/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-io?style=flat-square)](https://crates.io/crates/stac-io)                                                        |
+| [stac-api](./crates/api/README.md)               | Data structures for the [STAC API](https://github.com/radiantearth/stac-api-spec) specification | [![docs.rs](https://img.shields.io/docsrs/stac-api?style=flat-square)](https://docs.rs/stac-api/latest/stac_api/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-api?style=flat-square)](https://crates.io/crates/stac-api)                                    |
 | [stac-api](./crates/api/README.md)               | Data structures for the [STAC API](https://github.com/radiantearth/stac-api-spec) specification | [![docs.rs](https://img.shields.io/docsrs/stac-api?style=flat-square)](https://docs.rs/stac-api/latest/stac_api/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-api?style=flat-square)](https://crates.io/crates/stac-api)                                    |
 | [stac-extensions](./crates/extensions/README.md) | Basic support for [STAC extensions](https://stac-extensions.github.io/)                         | [![docs.rs](https://img.shields.io/docsrs/stac-extensions?style=flat-square)](https://docs.rs/stac-extensions/latest/stac_extensions/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-extensions?style=flat-square)](https://crates.io/crates/stac-extensions) |
 | [rustac](./crates/cli/README.md)               | Command line interface                                                                          | [![docs.rs](https://img.shields.io/docsrs/rustac?style=flat-square)](https://docs.rs/rustac/latest/rustac/) <br> [![Crates.io](https://img.shields.io/crates/v/rustac?style=flat-square)](https://crates.io/crates/rustac)                                    |
@@ -89,11 +91,13 @@ This monorepo contains several crates:
 ```mermaid
 graph TD
     stac --> stac-api
+    stac --> stac-io
     stac --> stac-extensions
     stac --> rustac
     stac --> pgstac
     stac --> stac-duckdb
     stac --> stac-server
+    stac-io --> rustac
     stac-api --> pgstac
     stac-api --> stac-duckdb
     stac-api --> stac-server

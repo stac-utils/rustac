@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.13.0] - 2025-07-10
+
 ### Added
 
 - geoarrow record batch converters (moved from **stac-duckdb**) ([#652](https://github.com/stac-utils/rustac/pull/652))
@@ -455,7 +457,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release.
 
-[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-v0.12.0...main
+[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-v0.13.0...main
+[0.13.0]: https://github.com/stac-utils/rustac/compare/stac-v0.12.0...stac-v0.13.0
 [0.12.0]: https://github.com/stac-utils/rustac/compare/stac-v0.11.1...stac-v0.12.0
 [0.11.1]: https://github.com/stac-utils/rustac/compare/stac-v0.11.0...stac-v0.11.1
 [0.11.0]: https://github.com/stac-utils/rustac/compare/stac-v0.10.2...stac-v0.11.0
