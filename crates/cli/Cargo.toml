@@ -27,7 +27,11 @@ serde_json.workspace = true
 stac.workspace = true
 stac-api = { workspace = true, features = ["client"] }
 stac-duckdb.workspace = true
-stac-io = { workspace = true, features = ["store-all", "reqwest"] }
+stac-io = { workspace = true, features = [
+    "store-all",
+    "reqwest",
+    "geoparquet",
+] }
 stac-server = { workspace = true, features = ["axum", "duckdb"] }
 stac-validate.workspace = true
 tokio = { workspace = true, features = [
