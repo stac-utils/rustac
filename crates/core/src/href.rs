@@ -84,7 +84,7 @@ pub fn make_absolute<'a>(href: &'a str, base: &str) -> Result<Cow<'a, str>> {
         if base.is_empty() {
             Ok(normalize_path(href).into())
         } else {
-            Ok(normalize_path(&format!("{}/{}", base, href)).into())
+            Ok(normalize_path(&format!("{base}/{href}")).into())
         }
     }
 }

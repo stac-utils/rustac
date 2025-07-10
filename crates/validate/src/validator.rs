@@ -397,7 +397,7 @@ mod tests {
     #[test]
     fn validate_array() {
         let items: Vec<_> = (0..100)
-            .map(|i| Item::new(format!("item-{}", i)))
+            .map(|i| Item::new(format!("item-{i}")))
             .map(|i| serde_json::to_value(i).unwrap())
             .collect();
         let mut validator = Validator::new().unwrap();

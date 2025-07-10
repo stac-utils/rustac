@@ -234,8 +234,8 @@ impl<B: Backend> Api<B> {
     pub async fn items(&self, collection_id: &str, items: Items) -> Result<Option<ItemCollection>> {
         match self.backend.items(collection_id, items.clone()).await? {
             Some(mut item_collection) => {
-                let collection_url = self.url(&format!("/collections/{}", collection_id))?;
-                let items_url = self.url(&format!("/collections/{}/items", collection_id))?;
+                let collection_url = self.url(&format!("/collections/{collection_id}"))?;
+                let items_url = self.url(&format!("/collections/{collection_id}/items"))?;
                 item_collection.set_link(Link::root(self.root.clone()).json());
                 item_collection.set_link(Link::self_(items_url.clone()).geojson());
                 item_collection.set_link(Link::collection(collection_url).json());
@@ -289,11 +289,11 @@ impl<B: Backend> Api<B> {
                 item.set_link(Link::root(self.root.clone()).json());
                 item.set_link(
                     Link::self_(
-                        self.url(&format!("/collections/{}/items/{}", collection_id, item_id))?,
+                        self.url(&format!("/collections/{collection_id}/items/{item_id}"))?,
                     )
                     .geojson(),
                 );
-                let collection_url = self.url(&format!("/collections/{}", collection_id))?;
+                let collection_url = self.url(&format!("/collections/{collection_id}"))?;
                 item.set_link(Link::collection(collection_url.clone()).json());
                 item.set_link(Link::parent(collection_url).json());
                 Ok(Some(item))
@@ -390,10 +390,10 @@ impl<B: Backend> Api<B> {
         let mut item_link = None;
         if let Some(item_id) = item.get("id").and_then(|id| id.as_str()) {
             if let Some(collection_id) = item.get("collection").and_then(|id| id.as_str()) {
-                collection_url = Some(self.url(&format!("/collections/{}", collection_id))?);
+                collection_url = Some(self.url(&format!("/collections/{collection_id}"))?);
                 item_link = Some(serde_json::to_value(
                     Link::self_(
-                        self.url(&format!("/collections/{}/items/{}", collection_id, item_id))?,
+                        self.url(&format!("/collections/{collection_id}/items/{item_id}"))?,
                     )
                     .geojson(),
                 )?);
@@ -522,8 +522,7 @@ mod tests {
                 conformance
                     .conforms_to
                     .contains(&conformance_class.to_string()),
-                "{} not in the conforms_to list",
-                conformance_class
+                "{conformance_class} not in the conforms_to list"
             );
         }
     }

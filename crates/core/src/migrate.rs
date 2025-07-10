@@ -127,7 +127,7 @@ fn migrate_bands(asset: &mut Map<String, Value>) -> Result<()> {
                     if key == "name" {
                         let _ = band.insert(key, value);
                     } else {
-                        let _ = band.insert(format!("eo:{}", key), value);
+                        let _ = band.insert(format!("eo:{key}"), value);
                     }
                 }
             }
@@ -144,7 +144,7 @@ fn migrate_bands(asset: &mut Map<String, Value>) -> Result<()> {
                     {
                         let _ = band.insert(key, value);
                     } else {
-                        let _ = band.insert(format!("raster:{}", key), value);
+                        let _ = band.insert(format!("raster:{key}"), value);
                     }
                 }
             }
@@ -203,7 +203,7 @@ fn migrate_links(object: &mut Map<String, Value>) {
                     if let Some(href) = link.get("href").and_then(|v| v.as_str()) {
                         if href.starts_with('/') {
                             let _ =
-                                link.insert("href".to_string(), format!("file://{}", href).into());
+                                link.insert("href".to_string(), format!("file://{href}").into());
                         }
                     }
                 }

@@ -224,14 +224,12 @@ impl Type {
     /// ```
     pub fn spec_path(&self, version: &Version) -> Option<String> {
         match self {
-            Type::Item => Some(format!("/v{}/item-spec/json-schema/item.json", version)),
+            Type::Item => Some(format!("/v{version}/item-spec/json-schema/item.json")),
             Type::Catalog => Some(format!(
-                "/v{}/catalog-spec/json-schema/catalog.json",
-                version
+                "/v{version}/catalog-spec/json-schema/catalog.json"
             )),
             Type::Collection => Some(format!(
-                "/v{}/collection-spec/json-schema/collection.json",
-                version
+                "/v{version}/collection-spec/json-schema/collection.json"
             )),
             Type::ItemCollection => None,
         }

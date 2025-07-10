@@ -36,7 +36,7 @@ impl UrlBuilder {
         let root: Url = if url.ends_with('/') {
             url.parse()?
         } else {
-            format!("{}/", url).parse()?
+            format!("{url}/").parse()?
         };
         Ok(UrlBuilder {
             collections: root.join("collections")?,
@@ -108,7 +108,7 @@ impl UrlBuilder {
     /// );
     /// ```
     pub fn items(&self, id: &str) -> Result<Url, ParseError> {
-        self.collections_with_slash.join(&format!("{}/items", id))
+        self.collections_with_slash.join(&format!("{id}/items"))
     }
 
     /// Returns a item url.
@@ -125,7 +125,7 @@ impl UrlBuilder {
     /// ```
     pub fn item(&self, collection_id: &str, id: &str) -> Result<Url, ParseError> {
         self.collections_with_slash
-            .join(&format!("{}/items/{}", collection_id, id))
+            .join(&format!("{collection_id}/items/{id}"))
     }
 
     /// Returns the conformance url.
