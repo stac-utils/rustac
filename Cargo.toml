@@ -62,7 +62,7 @@ geoarrow-schema = "0.4.0"
 geojson = "0.24.1"
 getrandom = { version = "0.3.3", features = ["wasm_js"] }
 http = "1.1"
-indexmap = { version = "2.9.0", features = ["serde"] }
+indexmap = { version = "2.10.0", features = ["serde"] }
 jsonschema = { version = "0.30.0", default-features = false }
 libduckdb-sys = "1.3.0"
 log = "0.4.25"
@@ -80,9 +80,9 @@ rustls = { version = "0.23.22", default-features = false }
 serde = "1.0"
 serde_json = "1.0"
 serde_urlencoded = "0.7.1"
-stac = { version = "0.12.0", path = "crates/core" }
-stac-api = { version = "0.7.0", path = "crates/api" }
-stac-derive = { version = "0.2.0", path = "crates/derive" }
+stac = { version = "0.13.0", path = "crates/core" }
+stac-api = { version = "0.8.0", path = "crates/api" }
+stac-derive = { version = "0.3.0", path = "crates/derive" }
 stac-duckdb = { version = "0.1.1", path = "crates/duckdb" }
 stac-extensions = { version = "0.1.0", path = "crates/extensions" }
 stac-io = { version = "0.1.0", path = "crates/io" }
