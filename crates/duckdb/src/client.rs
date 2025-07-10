@@ -436,7 +436,7 @@ mod tests {
     use geo::Geometry;
     use rstest::{fixture, rstest};
     use stac::Bbox;
-    use stac_api::{Search, Sortby};
+    use stac_api::{Items, Search, Sortby};
     use stac_validate::Validate;
 
     #[fixture]
@@ -677,8 +677,13 @@ mod tests {
 
     #[rstest]
     fn sortby_property(client: Client) {
-        let mut search = Search::default();
-        search.sortby = vec!["eo:cloud_cover".parse().unwrap()];
+        let search = Search {
+            items: Items {
+                sortby: vec!["eo:cloud_cover".parse().unwrap()],
+                ..Default::default()
+            },
+            ..Default::default()
+        };
         let item_collection = client
             .search("data/100-sentinel-2-items.parquet", search)
             .unwrap();
