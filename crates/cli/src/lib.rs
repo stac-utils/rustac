@@ -9,8 +9,9 @@ use futures_core::TryStream;
 use futures_util::{TryStreamExt, pin_mut};
 use stac::{Assets, Collection, Item, Links, Migrate, SelfHref, geoparquet::Compression};
 use stac_api::{GetItems, GetSearch, Search};
-use stac_io::{Format, StacStore, Validate};
+use stac_io::{Format, StacStore};
 use stac_server::Backend;
+use stac_validate::Validate;
 use std::{
     collections::{HashMap, VecDeque},
     io::Write,
@@ -492,7 +493,7 @@ impl Rustac {
                     .spawn_blocking(move || value.validate())
                     .await?;
                 if let Err(error) = result {
-                    if let stac_io::Error::Validation(errors) = error {
+                    if let stac_validate::Error::Validation(errors) = error {
                         if let Some(format) = self.output_format {
                             if let Format::Json(_) = format {
                                 let value = errors

@@ -65,7 +65,7 @@ where
 #[derive(Debug, Clone)]
 pub struct StacStore {
     store: Arc<dyn ObjectStore>,
-    root: Url,
+    root: Option<Url>,
 }
 
 impl StacStore {
@@ -86,74 +86,83 @@ impl StacStore {
     pub fn new(store: Arc<dyn ObjectStore>, root: Url) -> StacStore {
         StacStore {
             store: Arc::new(store),
-            root,
+            root: Some(root),
         }
     }
 
     /// Gets a STAC value from the store.
     ///
-    /// The format will be inferred from the path's file extension.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use object_store::local::LocalFileSystem;
-    /// use stac_io::StacStore;
-    ///
-    /// let store = LocalFileSystem::new_with_prefix(std::env::current_dir().unwrap()).unwrap();
-    /// let stac_store = StacStore::from(store);
-    /// # tokio_test::block_on(async {
-    /// let item: stac::Item = stac_store.get("examples/simple-item.json").await.unwrap();
-    /// });
-    /// ```
-    pub async fn get<T>(&self, path: impl Into<Path>) -> Result<T>
+    /// The format will be inferred from the href's file extension.
+    pub async fn get<T>(&self, href: impl ToString + AsRef<str> + Debug) -> Result<T>
     where
         T: Readable,
     {
-        let path = path.into();
-        let format = Format::infer_from_href(path.as_ref()).unwrap_or_default();
-        self.get_format(path, format).await
+        let format = Format::infer_from_href(href.as_ref()).unwrap_or_default();
+        self.get_format(href, format).await
     }
 
     /// Gets a STAC value from the store in a specific format.
     #[instrument(skip(self))]
-    pub async fn get_format<T>(&self, path: impl Into<Path> + Debug, format: Format) -> Result<T>
+    pub async fn get_format<T>(&self, href: impl ToString + Debug, format: Format) -> Result<T>
     where
         T: Readable,
     {
-        let path = path.into();
+        let href = href.to_string();
+        let path = self.path(&href)?;
         let get_result = self.store.get(&path).await?;
         let bytes = get_result.bytes().await?;
         let mut value: T = format.from_bytes(bytes)?;
-        value.set_self_href(self.root.join(path.as_ref())?);
+        if let Some(root) = self.root.as_ref() {
+            value.set_self_href(root.join(path.as_ref())?);
+        }
         Ok(value)
     }
 
     /// Puts a STAC value to the store.
-    pub async fn put<T>(&self, path: impl Into<Path>, value: T) -> Result<PutResult>
+    pub async fn put<T>(&self, href: impl AsRef<str> + Debug, value: T) -> Result<PutResult>
     where
         T: Writeable + Debug,
     {
-        let path = path.into();
-        let format = Format::infer_from_href(path.as_ref()).unwrap_or_default();
-        self.put_format(path, value, format).await
+        let format = Format::infer_from_href(href.as_ref()).unwrap_or_default();
+        self.put_format(href, value, format).await
     }
 
     /// Puts a STAC value to the store in a specific format.
     #[instrument(skip(self))]
     pub async fn put_format<T>(
         &self,
-        path: impl Into<Path> + Debug,
+        href: impl AsRef<str> + Debug,
         value: T,
         format: Format,
     ) -> Result<PutResult>
     where
         T: Writeable + Debug,
     {
-        let path = path.into();
+        let path = self.path(href.as_ref())?;
         let bytes = format.into_vec(value)?;
         let put_result = self.store.put(&path, bytes.into()).await?;
         Ok(put_result)
+    }
+
+    fn path(&self, href: &str) -> Result<Path> {
+        let result = if let Ok(url) = Url::parse(href) {
+            // TODO check to see if the host and such match? or not?
+            Path::from_url_path(url.path())
+        } else {
+            Path::parse(href)
+        };
+        let path = result.map_err(object_store::Error::from)?;
+        Ok(path)
+    }
+}
+
+impl<T> From<T> for StacStore
+where
+    T: Into<Arc<dyn ObjectStore>>,
+{
+    fn from(store: T) -> Self {
+        let store: Arc<dyn ObjectStore> = store.into();
+        StacStore { store, root: None }
     }
 }
 
@@ -169,5 +178,12 @@ mod tests {
         let self_href = item.self_href().unwrap();
         assert!(self_href.starts_with("file:///"));
         assert!(self_href.ends_with("examples/simple-item.json"));
+    }
+
+    #[tokio::test]
+    async fn get_local_href() {
+        let (store, path) = super::parse_href("examples/simple-item.json").unwrap();
+        let href = format!("file:///{}", path);
+        let _: Item = store.get(href).await.unwrap();
     }
 }

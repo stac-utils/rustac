@@ -10,15 +10,17 @@ members = [
     "crates/io",
     "crates/pgstac",
     "crates/server",
+    "crates/validate",
     "crates/wasm",
 ]
 default-members = [
     "crates/api",
     "crates/core",
-    "crates/io",
     "crates/derive",
     "crates/extensions",
+    "crates/io",
     "crates/server",
+    "crates/validate",
 ]
 
 [workspace.package]
@@ -46,7 +48,7 @@ bytes = "1.7"
 chrono = "0.4.39"
 clap = "4.5"
 cql2 = "0.3.7"
-duckdb = "1.2.2"
+duckdb = "1.3.0"
 fluent-uri = "0.3.2"
 futures = "0.3.31"
 futures-core = "0.3.31"
@@ -55,14 +57,14 @@ geo = "0.30.0"
 geo-traits = "0.3.0"
 geo-types = "0.7.16"
 geoarrow-array = "0.4.0"
-geoparquet = "0.4.0-beta.4"
+geoparquet = "0.4.0"
 geoarrow-schema = "0.4.0"
 geojson = "0.24.1"
 getrandom = { version = "0.3.3", features = ["wasm_js"] }
 http = "1.1"
 indexmap = { version = "2.9.0", features = ["serde"] }
 jsonschema = { version = "0.30.0", default-features = false }
-libduckdb-sys = "1.2.1"
+libduckdb-sys = "1.3.0"
 log = "0.4.25"
 mime = "0.3.17"
 mockito = "1.5"
@@ -85,6 +87,7 @@ stac-duckdb = { version = "0.1.1", path = "crates/duckdb" }
 stac-extensions = { version = "0.1.0", path = "crates/extensions" }
 stac-io = { version = "0.1.0", path = "crates/io" }
 stac-server = { version = "0.3.2", path = "crates/server" }
+stac-validate = { version = "0.4.0", path = "crates/validate" }
 syn = "2.0"
 tempfile = "3.16"
 thiserror = "2.0"
@@ -103,6 +106,3 @@ tracing-subscriber = { version = "0.3.18", features = [
 tracing-indicatif = "0.3.9"
 url = "2.3"
 webpki-roots = "1.0.0"
-
-[patch.crates-io]
-duckdb = { git = "https://github.com/gadomski/duckdb-rs/", branch = "arrow-v55" }

@@ -1,12 +1,16 @@
 //! Read data from and write data in [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet/blob/main/spec/stac-geoparquet-spec.md).
 
 use crate::{
-    Catalog, Collection, Item, ItemCollection, Result, Value,
+    Catalog, Collection, Error, Item, ItemCollection, Result, Value,
     geoarrow::{Table, VERSION, VERSION_KEY},
 };
 use bytes::Bytes;
-use geoparquet::{GeoParquetRecordBatchReaderBuilder, GeoParquetWriterOptions};
+use geoparquet::{
+    reader::{GeoParquetReaderBuilder, GeoParquetRecordBatchReader},
+    writer::GeoParquetWriterOptions,
+};
 use parquet::{
+    arrow::arrow_reader::ParquetRecordBatchReaderBuilder,
     file::{properties::WriterProperties, reader::ChunkReader},
     format::KeyValue,
 };
@@ -29,7 +33,15 @@ pub fn from_reader<R>(reader: R) -> Result<ItemCollection>
 where
     R: ChunkReader + 'static,
 {
-    let reader = GeoParquetRecordBatchReaderBuilder::try_new(reader)?.build()?;
+    let builder = ParquetRecordBatchReaderBuilder::try_new(reader)?;
+    let geoparquet_metadata = builder
+        .geoparquet_metadata()
+        .transpose()?
+        .ok_or(Error::MissingGeoparquetMetadata)?;
+    let geoarrow_schema =
+        builder.geoarrow_schema(&geoparquet_metadata, true, Default::default())?;
+    let reader = builder.build()?;
+    let reader = GeoParquetRecordBatchReader::try_new(reader, geoarrow_schema)?;
     crate::geoarrow::from_record_batch_reader(reader)
 }
 
@@ -121,7 +133,7 @@ where
         options.primary_column = Some("geometry".to_string());
     }
     let table = Table::from_item_collection(item_collection)?;
-    geoparquet::write_geoparquet(Box::new(table.into_reader()), writer, &options)?;
+    geoparquet::writer::write_geoparquet(Box::new(table.into_reader()), writer, &options)?;
     Ok(())
 }
 /// Create a STAC object from geoparquet data.

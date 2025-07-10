@@ -15,8 +15,12 @@ pub const DEFAULT_USE_HIVE_PARTITIONING: bool = false;
 /// Default convert wkb value.
 pub const DEFAULT_CONVERT_WKB: bool = true;
 
-const DEFAULT_COLLECTION_DESCRIPTION: &str =
+/// The default collection description.
+pub const DEFAULT_COLLECTION_DESCRIPTION: &str =
     "Auto-generated collection from stac-geoparquet extents";
+
+/// The default union by name value.
+pub const DEFAULT_UNION_BY_NAME: bool = true;
 
 /// A client for making DuckDB requests for STAC objects.
 #[derive(Debug)]
@@ -30,6 +34,11 @@ pub struct Client {
     ///
     /// If False, WKB metadata will be added.
     pub convert_wkb: bool,
+
+    /// Whether to use `union_by_name` when querying.
+    ///
+    /// Defaults to true.
+    pub union_by_name: bool,
 }
 
 impl Client {
@@ -316,7 +325,7 @@ impl Client {
         if let Some(filter) = search.items.filter {
             let expr: Expr = filter.try_into()?;
             if expr_properties_match(&expr, &column_names) {
-                let sql = expr.to_ducksql()?;
+                let sql = expr.to_ducksql().map_err(Box::new)?;
                 wheres.push(sql);
             } else {
                 return Ok(Vec::new());
@@ -359,14 +368,16 @@ impl Client {
     }
 
     fn format_parquet_href(&self, href: &str) -> String {
-        if self.use_hive_partitioning {
-            format!(
-                "read_parquet('{}', filename=true, hive_partitioning=1)",
-                href
-            )
-        } else {
-            format!("read_parquet('{}', filename=true)", href)
-        }
+        format!(
+            "read_parquet('{}', filename=true, hive_partitioning={}, union_by_name={})",
+            href,
+            if self.use_hive_partitioning {
+                "true"
+            } else {
+                "false"
+            },
+            if self.union_by_name { "true" } else { "false" }
+        )
     }
 }
 
@@ -413,6 +424,7 @@ impl From<Connection> for Client {
             connection,
             use_hive_partitioning: DEFAULT_USE_HIVE_PARTITIONING,
             convert_wkb: DEFAULT_CONVERT_WKB,
+            union_by_name: DEFAULT_UNION_BY_NAME,
         }
     }
 }
@@ -425,7 +437,7 @@ mod tests {
     use rstest::{fixture, rstest};
     use stac::Bbox;
     use stac_api::{Search, Sortby};
-    use stac_io::Validate;
+    use stac_validate::Validate;
 
     #[fixture]
     #[once]
@@ -671,5 +683,18 @@ mod tests {
             .search("data/100-sentinel-2-items.parquet", search)
             .unwrap();
         assert_eq!(item_collection.items.len(), 100);
+    }
+
+    #[rstest]
+    fn union_by_name(client: Client) {
+        let _ = client.search("data/*.parquet", Default::default()).unwrap();
+    }
+
+    #[rstest]
+    fn no_union_by_name(mut client: Client) {
+        client.union_by_name = false;
+        let _ = client
+            .search("data/*.parquet", Default::default())
+            .unwrap_err();
     }
 }
