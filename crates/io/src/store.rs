@@ -183,7 +183,7 @@ mod tests {
     #[tokio::test]
     async fn get_local_href() {
         let (store, path) = super::parse_href("examples/simple-item.json").unwrap();
-        let href = format!("file:///{}", path);
+        let href = format!("file:///{path}");
         let _: Item = store.get(href).await.unwrap();
     }
 }

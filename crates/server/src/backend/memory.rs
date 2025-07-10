@@ -62,8 +62,7 @@ impl Backend for MemoryBackend {
         if let Some(collection_id) = item.collection.clone() {
             if self.collection(&collection_id).await?.is_none() {
                 Err(Error::MemoryBackend(format!(
-                    "no collection with id='{}'",
-                    collection_id
+                    "no collection with id='{collection_id}'",
                 )))
             } else {
                 let mut items = self.items.write().unwrap();

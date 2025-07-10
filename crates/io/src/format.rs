@@ -201,14 +201,7 @@ impl Format {
     /// Returns the default geoparquet format (snappy compression if compression is enabled).
     #[cfg(feature = "geoparquet")]
     pub fn geoparquet() -> Format {
-        #[cfg(feature = "geoparquet-compression")]
-        {
-            Format::Geoparquet(Some(stac::geoparquet::Compression::SNAPPY))
-        }
-        #[cfg(not(feature = "geoparquet-compression"))]
-        {
-            Format::Geoparquet(None)
-        }
+        Format::Geoparquet(Some(stac::geoparquet::DEFAULT_COMPRESSION))
     }
 }
 
@@ -232,7 +225,7 @@ impl Display for Format {
             #[cfg(feature = "geoparquet")]
             Self::Geoparquet(compression) => {
                 if let Some(compression) = *compression {
-                    write!(f, "geoparquet[{}]", compression)
+                    write!(f, "geoparquet[{compression}]")
                 } else {
                     f.write_str("geoparquet")
                 }
@@ -275,12 +268,10 @@ fn infer_geoparquet_format(s: &str) -> Result<Format> {
             } else {
                 Err(Error::UnsupportedFormat(s.to_string()))
             }
-        } else if cfg!(feature = "geoparquet-compression") {
-            Ok(Format::Geoparquet(Some(
-                stac::geoparquet::Compression::SNAPPY,
-            )))
         } else {
-            Ok(Format::Geoparquet(None))
+            Ok(Format::Geoparquet(Some(
+                stac::geoparquet::DEFAULT_COMPRESSION,
+            )))
         }
     } else {
         Err(Error::UnsupportedFormat(s.to_string()))
@@ -312,19 +303,9 @@ mod tests {
         }
 
         #[test]
-        #[cfg(feature = "geoparquet-compression")]
         fn infer_from_href() {
             assert_eq!(
                 Format::Geoparquet(Some(Compression::SNAPPY)),
-                Format::infer_from_href("out.parquet").unwrap()
-            );
-        }
-
-        #[test]
-        #[cfg(not(feature = "geoparquet-compression"))]
-        fn infer_from_href() {
-            assert_eq!(
-                Format::Geoparquet(None),
                 Format::infer_from_href("out.parquet").unwrap()
             );
         }

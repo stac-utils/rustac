@@ -7,16 +7,19 @@ use crate::{
 use bytes::Bytes;
 use geoparquet::{
     reader::{GeoParquetReaderBuilder, GeoParquetRecordBatchReader},
-    writer::GeoParquetWriterOptions,
+    writer::{GeoParquetRecordBatchEncoder, GeoParquetWriterOptionsBuilder},
 };
 use parquet::{
-    arrow::arrow_reader::ParquetRecordBatchReaderBuilder,
+    arrow::{ArrowWriter, arrow_reader::ParquetRecordBatchReaderBuilder},
     file::{properties::WriterProperties, reader::ChunkReader},
     format::KeyValue,
 };
 use std::io::Write;
 
 pub use parquet::basic::Compression;
+
+/// Default stac-geoparquet compression
+pub const DEFAULT_COMPRESSION: Compression = Compression::SNAPPY;
 
 /// Reads a [ItemCollection] from a [ChunkReader] as
 /// [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet).
@@ -65,7 +68,7 @@ pub fn into_writer<W>(writer: W, item_collection: impl Into<ItemCollection>) -> 
 where
     W: Write + Send,
 {
-    into_writer_with_options(writer, item_collection, Default::default())
+    WriterBuilder::new(writer, item_collection).write()
 }
 
 /// Writes a [ItemCollection] to a [std::io::Write] as
@@ -77,12 +80,9 @@ where
 /// use std::io::Cursor;
 /// use stac::{Item, geoparquet::Compression};
 ///
-/// # #[cfg(feature = "geoparquet-compression")]
-/// # {
 /// let item: Item = stac::read("examples/simple-item.json").unwrap();
 /// let mut cursor = Cursor::new(Vec::new());
 /// stac::geoparquet::into_writer_with_compression(&mut cursor, vec![item], Compression::SNAPPY).unwrap();
-/// # }
 /// ```
 pub fn into_writer_with_compression<W>(
     writer: W,
@@ -92,50 +92,59 @@ pub fn into_writer_with_compression<W>(
 where
     W: Write + Send,
 {
-    let mut options = GeoParquetWriterOptions::default();
-    let writer_properties = WriterProperties::builder()
-        .set_compression(compression)
-        .set_key_value_metadata(Some(vec![KeyValue {
-            key: VERSION_KEY.to_string(),
-            value: Some(VERSION.to_string()),
-        }]))
-        .build();
-    options.writer_properties = Some(writer_properties);
-    into_writer_with_options(writer, item_collection, options)
+    WriterBuilder::new(writer, item_collection)
+        .compression(compression)
+        .write()
 }
 
-/// Writes a [ItemCollection] to a [std::io::Write] as
-/// [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet) with the provided options.
-///
-/// # Examples
-///
-/// ```
-/// use std::io::Cursor;
-/// use stac::{Item, geoparquet::Compression};
-///
-/// let item: Item = stac::read("examples/simple-item.json").unwrap();
-/// let mut cursor = Cursor::new(Vec::new());
-/// stac::geoparquet::into_writer_with_options(&mut cursor, vec![item], Default::default()).unwrap();
-/// ```
-pub fn into_writer_with_options<W>(
+struct WriterBuilder<W: Write + Send> {
     writer: W,
-    item_collection: impl Into<ItemCollection>,
-    mut options: GeoParquetWriterOptions,
-) -> Result<()>
-where
-    W: Write + Send,
-{
-    if let Some(primary_column) = options.primary_column.as_deref() {
-        if primary_column != "geometry" {
-            log::warn!("primary column not set to 'geometry'");
-        }
-    } else {
-        options.primary_column = Some("geometry".to_string());
-    }
-    let table = Table::from_item_collection(item_collection)?;
-    geoparquet::writer::write_geoparquet(Box::new(table.into_reader()), writer, &options)?;
-    Ok(())
+    item_collection: ItemCollection,
+    compression: Option<Compression>,
 }
+
+impl<W: Write + Send> WriterBuilder<W> {
+    fn new(writer: W, item_collection: impl Into<ItemCollection>) -> WriterBuilder<W> {
+        WriterBuilder {
+            writer,
+            item_collection: item_collection.into(),
+            compression: Some(DEFAULT_COMPRESSION),
+        }
+    }
+
+    fn compression(mut self, compression: impl Into<Option<Compression>>) -> WriterBuilder<W> {
+        self.compression = compression.into();
+        self
+    }
+
+    fn write(self) -> Result<()> {
+        let (record_batches, schema) =
+            Table::from_item_collection(self.item_collection)?.into_inner();
+        let options = GeoParquetWriterOptionsBuilder::default()
+            .set_primary_column("geometry".to_string())
+            .build();
+        let mut encoder = GeoParquetRecordBatchEncoder::try_new(&schema, &options)?;
+        let mut builder = WriterProperties::builder();
+        if let Some(compression) = self.compression {
+            builder = builder.set_compression(compression);
+        }
+        let properties = builder.build();
+        let mut writer =
+            ArrowWriter::try_new(self.writer, encoder.target_schema(), Some(properties))?;
+        for record_batch in record_batches {
+            let record_batch = encoder.encode_record_batch(&record_batch)?;
+            writer.write(&record_batch)?;
+        }
+        writer.append_key_value_metadata(encoder.into_keyvalue()?);
+        writer.append_key_value_metadata(KeyValue::new(
+            VERSION_KEY.to_string(),
+            Some(VERSION.to_string()),
+        ));
+        let _ = writer.finish()?;
+        Ok(())
+    }
+}
+
 /// Create a STAC object from geoparquet data.
 pub trait FromGeoparquet: Sized {
     /// Creates a STAC object from geoparquet bytes.
@@ -329,7 +338,7 @@ mod tests {
             .file_metadata()
             .key_value_metadata()
             .unwrap()
-            .into_iter()
+            .iter()
             .find(|key_value| key_value.key == "geo")
             .unwrap();
         let value: serde_json::Value =

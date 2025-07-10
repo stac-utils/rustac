@@ -7,7 +7,7 @@ async fn main() {
     std::process::exit(match args.run(true).await {
         Ok(()) => 0,
         Err(err) => {
-            eprintln!("ERROR: {}", err);
+            eprintln!("ERROR: {err}");
             1 // TODO make this more meaningful
         }
     })

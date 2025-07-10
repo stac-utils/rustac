@@ -83,7 +83,7 @@ pub trait Fields {
     /// ```
     fn fields_with_prefix<D: DeserializeOwned>(&self, prefix: &str) -> Result<D> {
         let mut map = Map::new();
-        let prefix = format!("{}:", prefix);
+        let prefix = format!("{prefix}:");
         for (key, value) in self.fields().iter() {
             if key.starts_with(&prefix) && key.len() > prefix.len() {
                 let _ = map.insert(key[prefix.len()..].to_string(), value.clone());
@@ -108,7 +108,7 @@ pub trait Fields {
         let value = serde_json::to_value(value)?;
         if let Value::Object(object) = value {
             for (key, value) in object.into_iter() {
-                let _ = self.set_field(format!("{}:{}", prefix, key), value);
+                let _ = self.set_field(format!("{prefix}:{key}"), value);
             }
             Ok(())
         } else {
@@ -127,7 +127,7 @@ pub trait Fields {
     /// item.remove_fields_with_prefix("proj");
     /// ```
     fn remove_fields_with_prefix(&mut self, prefix: &str) {
-        let prefix = format!("{}:", prefix);
+        let prefix = format!("{prefix}:");
         self.fields_mut()
             .retain(|key, _| !(key.starts_with(&prefix) && key.len() > prefix.len()));
     }

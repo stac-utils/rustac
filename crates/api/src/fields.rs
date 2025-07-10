@@ -50,7 +50,7 @@ impl Display for Fields {
             fields.push(include.to_string());
         }
         for exclude in &self.exclude {
-            fields.push(format!("-{}", exclude));
+            fields.push(format!("-{exclude}"));
         }
         write!(f, "{}", fields.join(","))
     }

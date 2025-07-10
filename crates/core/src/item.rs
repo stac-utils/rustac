@@ -567,7 +567,7 @@ impl Item {
         for (key, _) in properties.iter() {
             if TOP_LEVEL_ATTRIBUTES.contains(&key.as_str()) {
                 if drop_invalid_attributes {
-                    log::warn!("dropping invalid property: {}", key);
+                    log::warn!("dropping invalid property: {key}");
                 } else {
                     return Err(Error::InvalidAttribute(key.to_string()));
                 }
@@ -575,7 +575,7 @@ impl Item {
         }
         for (key, _) in self.additional_fields {
             if drop_invalid_attributes {
-                log::warn!("dropping out-of-spec top-level attribute: {}", key);
+                log::warn!("dropping out-of-spec top-level attribute: {key}");
             } else {
                 return Err(Error::InvalidAttribute(key));
             }

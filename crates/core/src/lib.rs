@@ -65,7 +65,6 @@
 //! - `geo`: add some geo-enabled methods, see [geo]
 //! - `geoarrow`: read and write [geoarrow](https://geoarrow.org/), see [geoarrow]
 //! - `geoparquet`: read and write [geoparquet](https://geoparquet.org/), see [geoparquet]
-//!     - `geoparquet-compression`: enable parquet compression
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(
@@ -225,14 +224,10 @@ impl Type {
     /// ```
     pub fn spec_path(&self, version: &Version) -> Option<String> {
         match self {
-            Type::Item => Some(format!("/v{}/item-spec/json-schema/item.json", version)),
-            Type::Catalog => Some(format!(
-                "/v{}/catalog-spec/json-schema/catalog.json",
-                version
-            )),
+            Type::Item => Some(format!("/v{version}/item-spec/json-schema/item.json")),
+            Type::Catalog => Some(format!("/v{version}/catalog-spec/json-schema/catalog.json")),
             Type::Collection => Some(format!(
-                "/v{}/collection-spec/json-schema/collection.json",
-                version
+                "/v{version}/collection-spec/json-schema/collection.json"
             )),
             Type::ItemCollection => None,
         }

@@ -439,7 +439,7 @@ mod tests {
         let mut page_1_body: ItemCollection =
             serde_json::from_str(include_str!("../mocks/search-page-1.json")).unwrap();
         let mut next_link = page_1_body.link("next").unwrap().clone();
-        next_link.href = format!("{}/search", server.url()).into();
+        next_link.href = format!("{}/search", server.url());
         page_1_body.set_link(next_link);
         let page_1 = server
             .mock("POST", "/search")
@@ -495,8 +495,7 @@ mod tests {
             "{}/collections/sentinel-2-l2a/items?{}",
             server.url(),
             query
-        )
-        .into();
+        );
         page_1_body.set_link(next_link);
         let page_1 = server
             .mock("GET", "/collections/sentinel-2-l2a/items?limit=1")
@@ -542,8 +541,7 @@ mod tests {
             "{}/collections/sentinel-2-l2a/items?{}",
             server.url(),
             query
-        )
-        .into();
+        );
         page_body.set_link(next_link);
         page_body.items = vec![];
         let page = server
