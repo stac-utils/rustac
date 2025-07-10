@@ -57,7 +57,7 @@ impl From<crate::Error> for Error {
 
 impl From<JsonRejection> for Error {
     fn from(json_rejection: JsonRejection) -> Self {
-        Error::BadRequest(format!("bad request, json rejection: {}", json_rejection))
+        Error::BadRequest(format!("bad request, json rejection: {json_rejection}"))
     }
 }
 
@@ -175,7 +175,7 @@ pub async fn collection<B: Backend>(
         .map_err(Error::from)
         .and_then(|option| {
             option.ok_or_else(|| {
-                Error::NotFound(format!("no collection with id='{}'", collection_id))
+                Error::NotFound(format!("no collection with id='{collection_id}'"))
             })
         })
         .map(Json)
@@ -191,13 +191,13 @@ pub async fn items<B: Backend>(
 ) -> Result<GeoJson<ItemCollection>> {
     let items = Items::try_from(items.0)
         .and_then(Items::valid)
-        .map_err(|error| Error::BadRequest(format!("invalid query: {}", error)))?;
+        .map_err(|error| Error::BadRequest(format!("invalid query: {error}")))?;
     api.items(&collection_id, items)
         .await
         .map_err(Error::from)
         .and_then(|option| {
             option.ok_or_else(|| {
-                Error::NotFound(format!(" no collection with id='{}'", collection_id))
+                Error::NotFound(format!(" no collection with id='{collection_id}'"))
             })
         })
         .map(GeoJson)
@@ -214,8 +214,7 @@ pub async fn item<B: Backend>(
         .await?
         .ok_or_else(|| {
             Error::NotFound(format!(
-                "no item with id='{}' in collection='{}'",
-                item_id, collection_id
+                "no item with id='{item_id}' in collection='{collection_id}'"
             ))
         })
         .map(GeoJson)

@@ -225,7 +225,7 @@ impl Display for Format {
             #[cfg(feature = "geoparquet")]
             Self::Geoparquet(compression) => {
                 if let Some(compression) = *compression {
-                    write!(f, "geoparquet[{}]", compression)
+                    write!(f, "geoparquet[{compression}]")
                 } else {
                     f.write_str("geoparquet")
                 }

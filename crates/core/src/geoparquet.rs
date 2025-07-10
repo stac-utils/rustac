@@ -338,7 +338,7 @@ mod tests {
             .file_metadata()
             .key_value_metadata()
             .unwrap()
-            .into_iter()
+            .iter()
             .find(|key_value| key_value.key == "geo")
             .unwrap();
         let value: serde_json::Value =
