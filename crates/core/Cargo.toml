@@ -24,7 +24,6 @@ geoarrow = [
     "dep:geo-types",
 ]
 geoparquet = ["geoarrow", "dep:geoparquet", "dep:parquet"]
-geoparquet-compression = ["geoparquet", "geoparquet/compression"]
 
 [dependencies]
 arrow-array = { workspace = true, optional = true, features = ["chrono-tz"] }

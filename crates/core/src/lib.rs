@@ -65,7 +65,6 @@
 //! - `geo`: add some geo-enabled methods, see [geo]
 //! - `geoarrow`: read and write [geoarrow](https://geoarrow.org/), see [geoarrow]
 //! - `geoparquet`: read and write [geoparquet](https://geoparquet.org/), see [geoparquet]
-//!     - `geoparquet-compression`: enable parquet compression
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(

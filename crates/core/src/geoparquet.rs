@@ -77,12 +77,9 @@ where
 /// use std::io::Cursor;
 /// use stac::{Item, geoparquet::Compression};
 ///
-/// # #[cfg(feature = "geoparquet-compression")]
-/// # {
 /// let item: Item = stac::read("examples/simple-item.json").unwrap();
 /// let mut cursor = Cursor::new(Vec::new());
 /// stac::geoparquet::into_writer_with_compression(&mut cursor, vec![item], Compression::SNAPPY).unwrap();
-/// # }
 /// ```
 pub fn into_writer_with_compression<W>(
     writer: W,
