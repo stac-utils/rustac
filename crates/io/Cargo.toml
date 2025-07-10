@@ -1,6 +1,7 @@
 [package]
 name = "stac-io"
 version = "0.1.0"
+description = "Input and output (I/O) for the SpatioTemporal Asset Catalog (STAC)"
 authors.workspace = true
 edition.workspace = true
 homepage.workspace = true
