@@ -238,9 +238,9 @@ impl Client {
             if column == "geometry" {
                 columns.push("ST_AsWKB(geometry) geometry".to_string());
             } else if DATETIME_COLUMNS.contains(&column.as_str()) {
-                columns.push(format!("\"{}\"::TIMESTAMPTZ {}", column, column))
+                columns.push(format!("\"{column}\"::TIMESTAMPTZ {column}"))
             } else {
-                columns.push(format!("\"{}\"", column));
+                columns.push(format!("\"{column}\""));
             }
             column_names.push(column);
         }
@@ -340,10 +340,10 @@ impl Client {
             suffix.push_str(&format!(" ORDER BY {}", order_by.join(", ")));
         }
         if let Some(limit) = limit {
-            suffix.push_str(&format!(" LIMIT {}", limit));
+            suffix.push_str(&format!(" LIMIT {limit}"));
         }
         if let Some(offset) = offset {
-            suffix.push_str(&format!(" OFFSET {}", offset));
+            suffix.push_str(&format!(" OFFSET {offset}"));
         }
 
         let sql = format!(
@@ -352,7 +352,7 @@ impl Client {
             self.format_parquet_href(href),
             suffix,
         );
-        log::debug!("duckdb sql: {}", sql);
+        log::debug!("duckdb sql: {sql}");
         let mut statement = self.prepare(&sql)?;
         statement
             .query_arrow(duckdb::params_from_iter(params))?

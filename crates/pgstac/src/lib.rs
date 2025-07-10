@@ -258,7 +258,7 @@ pub trait Pgstac: GenericClient {
             .map(|i| format!("${}", i + 1))
             .collect::<Vec<_>>()
             .join(", ");
-        let query = format!("SELECT * from pgstac.{}({})", function, param_string);
+        let query = format!("SELECT * from pgstac.{function}({param_string})");
         self.query_one(&query, params).await
     }
 
@@ -357,7 +357,7 @@ pub(crate) mod tests {
 
     impl TestClient {
         async fn new(id: u16) -> TestClient {
-            let dbname = format!("pgstac_test_{}", id);
+            let dbname = format!("pgstac_test_{id}");
             let config = config();
             {
                 let _mutex = MUTEX.lock().await;

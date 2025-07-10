@@ -514,7 +514,7 @@ impl Rustac {
                             }
                         } else {
                             for error in errors {
-                                println!("{}", error);
+                                println!("{error}");
                             }
                         }
                     }
@@ -693,11 +693,11 @@ async fn load_and_serve(
             "items don't have a collection and `create_collections` is false"
         ));
     }
-    let root = format!("http://{}", addr);
+    let root = format!("http://{addr}");
     let api = stac_server::Api::new(backend, &root)?;
     let router = stac_server::routes::from_api(api);
     let listener = TcpListener::bind(&addr).await?;
-    eprintln!("Serving a STAC API at {}", root);
+    eprintln!("Serving a STAC API at {root}");
     axum::serve(listener, router).await.map_err(Error::from)
 }
 

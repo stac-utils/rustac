@@ -44,11 +44,11 @@ pub struct Page {
 impl Page {
     /// Returns this page's next token, if it has one.
     pub fn next_token(&self) -> Option<String> {
-        self.next.as_ref().map(|next| format!("next:{}", next))
+        self.next.as_ref().map(|next| format!("next:{next}"))
     }
 
     /// Returns this page's prev token, if it has one.
     pub fn prev_token(&self) -> Option<String> {
-        self.prev.as_ref().map(|prev| format!("prev:{}", prev))
+        self.prev.as_ref().map(|prev| format!("prev:{prev}"))
     }
 }
