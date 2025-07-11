@@ -83,7 +83,7 @@ serde_urlencoded = "0.7.1"
 stac = { version = "0.13.0", path = "crates/core" }
 stac-api = { version = "0.8.0", path = "crates/api" }
 stac-derive = { version = "0.3.0", path = "crates/derive" }
-stac-duckdb = { version = "0.1.1", path = "crates/duckdb" }
+stac-duckdb = { version = "0.2.0", path = "crates/duckdb" }
 stac-extensions = { version = "0.1.0", path = "crates/extensions" }
 stac-io = { version = "0.1.0", path = "crates/io" }
 stac-server = { version = "0.3.2", path = "crates/server" }

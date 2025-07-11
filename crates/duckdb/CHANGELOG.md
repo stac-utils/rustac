@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-07-11
+
 ### Added
 
 - Read hive partitioned datasets ([#624](https://github.com/stac-utils/rustac/pull/624))
@@ -49,7 +51,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release of **stac-duckdb**.
 
-[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.1.1...main
+[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.2.0...main
+[0.2.0]: https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.1.1...stac-duckdb-v0.2.0
 [0.1.1]: https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.1.0...stac-duckdb-v0.1.1
 [0.1.0]: https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.0.3...stac-duckdb-v0.1.0
 [0.0.3]: https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.0.2...stac-duckdb-v0.0.3
