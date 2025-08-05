@@ -1,6 +1,6 @@
 {
-  "name": "stac-wasm",
-  "version": "0.1.0",
+  "name": "stac-wasm-test",
+  "version": "0.0.0",
   "description": "STAC WASM test",
   "main": "index.js",
   "scripts": {
