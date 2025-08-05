@@ -1,6 +1,7 @@
 [package]
 name = "stac-wasm"
-version = "0.0.2"
+version = "0.0.3"
+readme = "README.md"
 description = "Converts Arrow arrays to STAC items, via WASM"
 authors.workspace = true
 edition.workspace = true
@@ -20,7 +21,7 @@ arrow-schema.workspace = true
 arrow-wasm = { git = "https://github.com/kylebarron/arrow-wasm", rev = "012447cab019efbb051cbd43ea5ad55a7549a4d8" }
 serde.workspace = true
 serde-wasm-bindgen = "0.6.5"
-stac = { workspace = true, features = ["geoarrow"] }
+stac = { workspace = true, features = ["geoparquet"] }
 thiserror.workspace = true
 wasm-bindgen = "0.2.84"
 
