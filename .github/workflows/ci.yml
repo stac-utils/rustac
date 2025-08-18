@@ -27,7 +27,7 @@ jobs:
           - macos-latest
           - windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
       - name: Test
         run: cargo test -p stac --all-features
@@ -38,7 +38,7 @@ jobs:
       run:
         working-directory: crates/core
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
       - name: Install check-all-features
         run: cargo install cargo-all-features
@@ -48,7 +48,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
       - name: Format
         run: cargo fmt --check
@@ -63,7 +63,7 @@ jobs:
       DUCKDB_LIB_DIR: /opt/duckdb
       LD_LIBRARY_PATH: /opt/duckdb
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v6
       - name: Get DuckDB
@@ -102,7 +102,7 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v6
       - name: Get DuckDB
@@ -117,7 +117,7 @@ jobs:
     name: Check (nightly)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
       - name: Check
@@ -125,7 +125,7 @@ jobs:
   msrv:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: taiki-e/install-action@cargo-hack
       - name: Check msrv
         run: cargo hack check --rust-version --workspace --all-targets --ignore-private
@@ -135,7 +135,7 @@ jobs:
     env:
       RUSTDOCFLAGS: -Dwarnings
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: Swatinem/rust-cache@v2
       - uses: DavidAnson/markdownlint-cli2-action@v20
       - name: Doc
