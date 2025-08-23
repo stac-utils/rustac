@@ -1,9 +1,159 @@
-use crate::{Error, Fields, Filter, Result, Search, Sortby};
+use std::collections::HashSet;
+
+use crate::{Error, Fields, Filter, Result, Search, Sortby, Direction};
 use chrono::{DateTime, FixedOffset};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use stac::{Bbox, Item};
+
+/// A trait providing utility methods for JSON operations.
+///
+/// This trait defines methods for checking JSON operations, combining JSON values,
+/// and creating JSON filters for various conditions.
+/// A trait for performing JSON-based operations.
+pub trait JsonOps {
+    /// Checks if the operation matches the given string.
+    fn is_op(&self, op: &str) -> bool;
+
+    /// Checks if the operation is a logical AND.
+    fn is_and(&self) -> bool;
+
+    /// Checks if the operation is a logical OR.
+    fn is_or(&self) -> bool;
+
+    /// Retrieves the arguments of the operation as a vector of values.
+    fn args(&self) -> Vec<Value>;
+
+    /// Performs a logical AND operation with the given value.
+    fn _and(&self, v: Value) -> Value;
+
+    /// Performs a logical OR operation with the given value.
+    fn _or(&self, v: Value) -> Value;
+
+    /// Checks if the value is not null.
+    fn _notnull(&self) -> Value;
+
+    /// Checks if the value is null.
+    fn _isnull(&self) -> Value;
+
+    /// Compares if the value is greater than the given value.
+    fn _gt(&self, v: Value) -> Value;
+
+    /// Compares if the value is less than the given value.
+    fn _lt(&self, v: Value) -> Value;
+
+    /// Compares if the value is equal to the given value.
+    fn _eq(&self, v: Value) -> Value;
+}
+
+impl JsonOps for Value {
+    fn is_op(&self, op: &str) -> bool {
+        if let Some(obj) = self.as_object() {
+            if let Some(op_value) = obj.get("op") {
+                if let Some(op_str) = op_value.as_str() {
+                    return op_str == op;
+                }
+            }
+        }
+        false
+    }
+    fn is_and(&self) -> bool {
+        self.is_op("and")
+    }
+
+    fn is_or(&self) -> bool {
+        self.is_op("or")
+    }
+
+    fn args(&self) -> Vec<Value> {
+        if let Some(obj) = self.as_object(){
+            if let Some(args) = obj.get("args") {
+                if let Some(args_arr) = args.as_array() {
+                    return args_arr.clone();
+                }
+            }
+        }
+        vec![self.clone()]
+    }
+
+    fn _and(&self, v: Value) -> Value {
+        let mut args: Vec<Value> = vec![];
+        if self.is_and() {
+            args.extend(self.args());
+        } else {
+            args.push(self.clone());
+        }
+
+        if v.is_and() {
+            args.extend(v.args());
+        } else {
+            args.push(v.clone());
+        }
+
+        json!({
+            "op": "and",
+            "args": args
+        })
+    }
+
+    fn _or(&self, v: Value) -> Value {
+        let mut args: Vec<Value> = vec![];
+        if self.is_or() {
+            args.extend(self.args());
+        } else {
+            args.push(self.clone());
+        }
+
+        if v.is_or() {
+            args.extend(v.args());
+        } else {
+            args.push(v.clone());
+        }
+
+        json!({
+            "op": "or",
+            "args": args
+        })
+    }
+
+    fn _notnull(&self) -> Value {
+        json!({
+            "op": "not",
+            "args": [{
+                "op": "isNull",
+                "args": [self]
+            }]
+        })
+    }
+
+    fn _isnull(&self) -> Value {
+        json!({
+            "op": "isNull",
+            "args": [self]
+        })
+    }
+
+    fn _gt(&self, v: Value) -> Value {
+        json!({
+            "op": ">=",
+            "args": [self, v]
+        })
+    }
+
+    fn _lt(&self, v: Value) -> Value {
+        json!({
+            "op": "<=",
+            "args": [self, v]
+        })
+    }
+    fn _eq(&self, v: Value) -> Value {
+        json!({
+            "op": "=",
+            "args": [self, v]
+        })
+    }
+}
 
 /// Parameters for the items endpoint from STAC API - Features.
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
@@ -50,6 +200,7 @@ pub struct Items {
     /// Additional fields.
     #[serde(flatten)]
     pub additional_fields: Map<String, Value>,
+
 }
 
 /// GET parameters for the items endpoint from STAC API - Features.
@@ -299,6 +450,146 @@ impl Items {
         }
         Ok(self)
     }
+
+    /// gets sortby ensuring defaults and no duplicates.
+    /// The default is to sort by datetime descending, then id ascending.
+    pub fn get_sortby(&self) -> Vec<Sortby>{
+        let mut outsorts = Vec::new();
+        let mut seen = HashSet::new();
+        let idsort = Sortby {
+            field: "id".to_string(),
+            direction: Direction::Ascending,
+        };
+        let dtsort = Sortby {
+            field: "datetime".to_string(),
+            direction: Direction::Descending,
+        };
+        if self.sortby.is_empty() {
+            outsorts.push(dtsort);
+        }
+        for s in self.sortby.iter() {
+            if seen.contains("id") {
+                outsorts.push(s.clone());
+                break;
+            } else if seen.contains(&s.field) {
+                continue;
+            } else {
+                _ = seen.insert(s.field.clone());
+                outsorts.push(s.clone());
+            }
+        }
+        if ! seen.contains("id") {
+            outsorts.push(idsort);
+        }
+        outsorts
+    }
+
+    /// Uses the sorting from the items structure to calculate a cql2-json filter to get the next page.
+    /// # Examples
+    ///
+    /// ```
+    /// use stac_api::Items;
+    /// use stac::Item;
+    /// use serde_json::json;
+    /// use stac_api::JsonOps;
+    ///
+    /// let itemjson = json!({"id": "item-id", "datetime": "2023-10-09T00:00:00Z"});
+    /// let item: Item = serde_json::from_value(itemjson).unwrap();
+    /// let items = Items::default();
+    /// let filter = items.next_page_cql2(&item);
+    /// 
+    /// dbg!(&filter);
+    /// assert_eq!(filter, json!({
+    ///     "op": "or",
+    ///     "args": [
+    ///        {
+    ///            "op": "<=",
+    ///            "args": [
+    ///               {"property": "datetime"},
+    ///               {"timestamp": "2023-10-09T00:00:00Z"}
+    ///           ]
+    ///       },
+    ///       {
+    ///            "op": "isNull",
+    ///            "args": [
+    ///                 {"property": "datetime"}
+    ///             ]
+    ///      },
+    ///      {
+    ///             "op": "and",
+    ///             "args": [
+    ///                 {
+    ///                     "op": "=",
+    ///                     "args": [
+    ///                         {"property": "datetime"},
+    ///                         {"timestamp": "2023-10-09T00:00:00Z"}
+    ///                     ]
+    ///                },
+    ///                 {
+    ///                     "op": ">=",
+    ///                     "args": [
+    ///                         {"property": "id"},
+    ///                         "item-id"
+    ///                     ]
+    ///                 }
+    ///            ]
+    ///      }
+    ///   ]
+    /// }));
+    /// ```
+    pub fn next_page_cql2(&self, next_item: &Item) -> Value {
+        let sortby = self.get_sortby();
+
+        let mut first_run = true;
+        let mut andfilters: Value = json!({});
+        let mut orfilters: Value = json!({});
+
+        for sort in sortby {
+            let property = json!({
+                "property": sort.field
+            });
+
+            let field_value = next_item
+                .get_property(&sort.field);
+
+            let equality_filter: Value;
+
+            match &field_value {
+                Some(v) => {
+                    equality_filter = property._eq(v.clone());
+                }
+                None => {
+                    equality_filter = property._isnull();
+                }
+            }
+
+            let base_filter = match (sort.direction, &field_value) {
+                (Direction::Descending, None) => {
+                    property._isnull()
+                }
+                (Direction::Descending, Some(v)) => {
+                    property._lt(v.clone())._or(property._isnull())
+                }
+                (Direction::Ascending, None) => {
+                    property._notnull()
+                }
+                (Direction::Ascending, Some(v)) => {
+                    property._gt(v.clone().clone())
+                }
+            };
+
+
+            if first_run {
+                andfilters = equality_filter;
+                orfilters = base_filter;
+                first_run = false;
+            } else {
+                orfilters = orfilters._or(andfilters._and(base_filter));
+                andfilters = andfilters._and(equality_filter);
+            }
+        }
+        orfilters
+    }
 }
 
 impl TryFrom<Items> for GetItems {
@@ -408,6 +699,8 @@ impl stac::Fields for Items {
         &mut self.additional_fields
     }
 }
+
+
 
 fn maybe_parse_from_rfc3339(s: &str) -> Result<Option<DateTime<FixedOffset>>> {
     if s.is_empty() || s == ".." {
