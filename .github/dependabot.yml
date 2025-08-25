@@ -4,11 +4,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    labels: []
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "weekly"
+    labels: []
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+    labels: []
