@@ -19,7 +19,7 @@ jobs:
         run: uv sync --group docs
       - name: Build
         run: uv run mkdocs build
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         id: deployment
         with:
           path: site/
