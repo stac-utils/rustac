@@ -1,19 +1,21 @@
 use crate::{Error, Result};
+use async_recursion::async_recursion;
+use async_trait::async_trait;
 use fluent_uri::Uri;
-use jsonschema::{Resource, Retrieve, ValidationOptions, Validator as JsonschemaValidator};
-use reqwest::blocking::Client;
+use jsonschema::{AsyncRetrieve, Resource, ValidationOptions, Validator as JsonschemaValidator};
+use reqwest::Client;
 use serde::Serialize;
 use serde_json::{Map, Value};
 use stac::{Type, Version};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 const SCHEMA_BASE: &str = "https://schemas.stacspec.org";
 
 /// A structure for validating STAC.
-#[derive(Debug)]
 pub struct Validator {
     validators: HashMap<Uri<String>, JsonschemaValidator>,
-    validation_options: ValidationOptions,
+    validation_options: ValidationOptions<Arc<dyn referencing::AsyncRetrieve>>,
 }
 
 #[derive(Debug)]
@@ -27,17 +29,20 @@ impl Validator {
     /// ```
     /// use stac_validate::Validator;
     ///
-    /// let validator = Validator::new().unwrap();
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let validator = Validator::new().await.unwrap();
+    /// }
     /// ```
-    pub fn new() -> Result<Validator> {
-        let validation_options = jsonschema::options();
+    pub async fn new() -> Result<Validator> {
+        let validation_options = jsonschema::async_options();
         let validation_options = validation_options
             .with_resources(prebuild_resources().into_iter())
             .with_retriever(Retriever(
                 Client::builder().user_agent(crate::user_agent()).build()?,
             ));
         Ok(Validator {
-            validators: prebuild_validators(&validation_options),
+            validators: prebuild_validators(&validation_options).await,
             validation_options,
         })
     }
@@ -48,37 +53,41 @@ impl Validator {
     ///
     /// ```
     /// use stac::Item;
-    /// use stac_validate::Validator;
+    /// use stac_validate::Validate;
     ///
-    /// let item = Item::new("an-id");
-    /// let mut validator = Validator::new().unwrap();
-    /// validator.validate(&item).unwrap();
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let mut item = Item::new("an-id");
+    ///     item.validate().await.unwrap();
+    /// }
     /// ```
-    pub fn validate<T>(&mut self, value: &T) -> Result<()>
+    pub async fn validate<T>(&mut self, value: &T) -> Result<()>
     where
         T: Serialize,
     {
         let value = serde_json::to_value(value)?;
-        let _ = self.validate_value(value)?;
+        let _ = self.validate_value(value).await?;
         Ok(())
     }
 
     /// If you have a [serde_json::Value], you can skip a deserialization step by using this method.
-    pub fn validate_value(&mut self, value: Value) -> Result<Value> {
+    #[async_recursion]
+    pub async fn validate_value(&mut self, value: Value) -> Result<Value> {
         if let Value::Object(object) = value {
-            self.validate_object(object).map(Value::Object)
+            self.validate_object(object).await.map(Value::Object)
         } else if let Value::Array(array) = value {
-            self.validate_array(array).map(Value::Array)
+            self.validate_array(array).await.map(Value::Array)
         } else {
             Err(Error::ScalarJson(value))
         }
     }
 
-    fn validate_array(&mut self, array: Vec<Value>) -> Result<Vec<Value>> {
+    #[async_recursion]
+    async fn validate_array(&mut self, array: Vec<Value>) -> Result<Vec<Value>> {
         let mut errors = Vec::new();
         let mut new_array = Vec::with_capacity(array.len());
         for value in array {
-            match self.validate_value(value) {
+            match self.validate_value(value).await {
                 Ok(value) => new_array.push(value),
                 Err(error) => {
                     if let Error::Validation(e) = error {
@@ -96,12 +105,16 @@ impl Validator {
         }
     }
 
-    fn validate_object(&mut self, mut object: Map<String, Value>) -> Result<Map<String, Value>> {
+    #[async_recursion]
+    async fn validate_object(
+        &mut self,
+        mut object: Map<String, Value>,
+    ) -> Result<Map<String, Value>> {
         let r#type = if let Some(r#type) = object.get("type").and_then(|v| v.as_str()) {
             let r#type: Type = r#type.parse()?;
             if r#type == Type::ItemCollection {
                 if let Some(features) = object.remove("features") {
-                    let features = self.validate_value(features)?;
+                    let features = self.validate_value(features).await?;
                     let _ = object.insert("features".to_string(), features);
                 }
                 return Ok(object);
@@ -110,7 +123,7 @@ impl Validator {
         } else {
             match object.remove("collections") {
                 Some(collections) => {
-                    let collections = self.validate_value(collections)?;
+                    let collections = self.validate_value(collections).await?;
                     let _ = object.insert("collections".to_string(), collections);
                     return Ok(object);
                 }
@@ -129,7 +142,7 @@ impl Validator {
             .ok_or(stac::Error::MissingField("stac_version"))?;
 
         let uri = build_uri(r#type, &version);
-        let validator = self.validator(uri)?;
+        let validator = self.validator(uri).await?;
         let value = Value::Object(object);
         let errors: Vec<_> = validator.iter_errors(&value).collect();
         let object = if errors.is_empty() {
@@ -145,10 +158,13 @@ impl Validator {
             ));
         };
 
-        self.validate_extensions(object)
+        self.validate_extensions(object).await
     }
 
-    fn validate_extensions(&mut self, object: Map<String, Value>) -> Result<Map<String, Value>> {
+    async fn validate_extensions(
+        &mut self,
+        object: Map<String, Value>,
+    ) -> Result<Map<String, Value>> {
         match object
             .get("stac_extensions")
             .and_then(|value| value.as_array())
@@ -165,7 +181,7 @@ impl Validator {
                         }
                     })
                     .collect::<std::result::Result<Vec<_>, _>>()?;
-                self.ensure_validators(&uris)?;
+                self.ensure_validators(&uris).await?;
 
                 let mut errors = Vec::new();
                 let value = Value::Object(object);
@@ -192,24 +208,27 @@ impl Validator {
         }
     }
 
-    fn validator(&mut self, uri: Uri<String>) -> Result<&JsonschemaValidator> {
-        self.ensure_validator(&uri)?;
+    async fn validator(&mut self, uri: Uri<String>) -> Result<&JsonschemaValidator> {
+        self.ensure_validator(&uri).await?;
         Ok(self.validator_opt(&uri).unwrap())
     }
 
-    fn ensure_validators(&mut self, uris: &[Uri<String>]) -> Result<()> {
+    async fn ensure_validators(&mut self, uris: &[Uri<String>]) -> Result<()> {
         for uri in uris {
-            self.ensure_validator(uri)?;
+            self.ensure_validator(uri).await?;
         }
         Ok(())
     }
 
-    fn ensure_validator(&mut self, uri: &Uri<String>) -> Result<()> {
+    async fn ensure_validator(&mut self, uri: &Uri<String>) -> Result<()> {
         if !self.validators.contains_key(uri) {
-            let response = reqwest::blocking::get(uri.as_str())?.error_for_status()?;
+            let client = reqwest::Client::new();
+            let response = client.get(uri.as_str()).send().await?.error_for_status()?;
+            let json_data = response.json().await?;
             let validator = self
                 .validation_options
-                .build(&response.json()?)
+                .build(&json_data)
+                .await
                 .map_err(Box::new)?;
             let _ = self.validators.insert(uri.clone(), validator);
         }
@@ -221,13 +240,14 @@ impl Validator {
     }
 }
 
-impl Retrieve for Retriever {
-    fn retrieve(
+#[async_trait]
+impl AsyncRetrieve for Retriever {
+    async fn retrieve(
         &self,
         uri: &Uri<String>,
     ) -> std::result::Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-        let response = self.0.get(uri.as_str()).send()?.error_for_status()?;
-        let value = response.json()?;
+        let response = self.0.get(uri.as_str()).send().await?.error_for_status()?;
+        let value = response.json().await?;
         Ok(value)
     }
 }
@@ -243,8 +263,8 @@ fn build_uri(r#type: Type, version: &Version) -> Uri<String> {
     .unwrap()
 }
 
-fn prebuild_validators(
-    validation_options: &ValidationOptions,
+async fn prebuild_validators(
+    validation_options: &ValidationOptions<Arc<dyn referencing::AsyncRetrieve>>,
 ) -> HashMap<Uri<String>, JsonschemaValidator> {
     use Type::*;
     use Version::*;
@@ -255,7 +275,7 @@ fn prebuild_validators(
         ($t:expr_2021, $v:expr_2021, $path:expr_2021, $schemas:expr_2021) => {
             let url = build_uri($t, &$v);
             let value = serde_json::from_str(include_str!($path)).unwrap();
-            let validator = validation_options.build(&value).unwrap();
+            let validator = validation_options.build(&value).await.unwrap();
             let _ = schemas.insert(url, validator);
         };
     }
@@ -381,35 +401,34 @@ mod tests {
     use serde_json::json;
     use stac::{Collection, Item};
 
-    #[test]
-    fn validate_simple_item() {
+    #[tokio::test]
+    async fn validate_simple_item() {
         let item: Item = stac_io::read("examples/simple-item.json").unwrap();
-        item.validate().unwrap();
+        item.validate().await.unwrap();
     }
 
     #[tokio::test]
-    #[ignore = "can't validate in a tokio runtime yet: https://github.com/Stranger6667/jsonschema/issues/385"]
     async fn validate_inside_tokio_runtime() {
         let item: Item = stac_io::read("examples/extended-item.json").unwrap();
-        item.validate().unwrap();
+        item.validate().await.unwrap();
     }
 
-    #[test]
-    fn validate_array() {
+    #[tokio::test]
+    async fn validate_array() {
         let items: Vec<_> = (0..100)
             .map(|i| Item::new(format!("item-{i}")))
             .map(|i| serde_json::to_value(i).unwrap())
             .collect();
-        let mut validator = Validator::new().unwrap();
-        validator.validate(&items).unwrap();
+        let mut validator = Validator::new().await.unwrap();
+        validator.validate(&items).await.unwrap();
     }
 
-    #[test]
-    fn validate_collections() {
+    #[tokio::test]
+    async fn validate_collections() {
         let collection: Collection = stac_io::read("examples/collection.json").unwrap();
         let collections = json!({
             "collections": [collection]
         });
-        collections.validate().unwrap();
+        collections.validate().await.unwrap();
     }
 }
