@@ -20,7 +20,7 @@ use std::{
     io::Write,
     str::FromStr,
 };
-use tokio::{io::AsyncReadExt, net::TcpListener, runtime::Handle, task::JoinSet};
+use tokio::{io::AsyncReadExt, net::TcpListener, task::JoinSet};
 use tracing::metadata::Level;
 use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::{
@@ -492,9 +492,7 @@ impl Rustac {
             }
             Command::Validate { ref infile } => {
                 let value = self.get(infile.as_deref()).await?;
-                let result = Handle::current()
-                    .spawn_blocking(move || value.validate())
-                    .await?;
+                let result = value.validate().await;
                 if let Err(error) = result {
                     if let stac_validate::Error::Validation(errors) = error {
                         if let Some(format) = self.output_format {

@@ -464,12 +464,13 @@ mod tests {
     }
 
     #[rstest]
-    fn search(client: Client) {
+    #[tokio::test]
+    async fn search(client: Client) {
         let item_collection = client
             .search("data/100-sentinel-2-items.parquet", Search::default())
             .unwrap();
         assert_eq!(item_collection.items.len(), 100);
-        item_collection.items[0].validate().unwrap();
+        item_collection.items[0].validate().await.unwrap();
     }
 
     #[rstest]
