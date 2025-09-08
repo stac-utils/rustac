@@ -65,7 +65,9 @@ geojson = "0.24.1"
 getrandom = { version = "0.3.3", features = ["wasm_js"] }
 http = "1.1"
 indexmap = { version = "2.10.0", features = ["serde"] }
-jsonschema = { version = "0.33.0", default-features = false, features = ["resolve-async"] }
+jsonschema = { version = "0.33.0", default-features = false, features = [
+    "resolve-async",
+] }
 libduckdb-sys = "1.3.0"
 log = "0.4.25"
 mime = "0.3.17"
@@ -90,7 +92,7 @@ stac-duckdb = { version = "0.2.0", path = "crates/duckdb" }
 stac-extensions = { version = "0.1.0", path = "crates/extensions" }
 stac-io = { version = "0.1.0", path = "crates/io" }
 stac-server = { version = "0.3.2", path = "crates/server" }
-stac-validate = { version = "0.4.0", path = "crates/validate" }
+stac-validate = { version = "0.5.0", path = "crates/validate" }
 syn = "2.0"
 tempfile = "3.16"
 thiserror = "2.0"
