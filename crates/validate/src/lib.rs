@@ -8,19 +8,26 @@
 //! use stac::Item;
 //! use stac_validate::Validate;
 //!
-//! Item::new("an-id").validate().unwrap();
+//! #[tokio::main]
+//! async fn main() {
+//!     Item::new("an-id").validate().await.unwrap();
+//! }
 //! ```
 //!
 //! All fetched schemas are cached, so if you're you're doing multiple
 //! validations, you should re-use the same [Validator]:
 //!
 //! ```
-//! # use stac::Item;
+//! use stac::Item;
 //! use stac_validate::Validator;
-//! let mut items: Vec<_> = (0..10).map(|n| Item::new(format!("item-{}", n))).collect();
-//! let mut validator = Validator::new().unwrap();
-//! for item in items {
-//!     validator.validate(&item).unwrap();
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let mut items: Vec<_> = (0..10).map(|n| Item::new(format!("item-{}", n))).collect();
+//!     let mut validator = Validator::new().await.unwrap();
+//!     for item in items {
+//!         validator.validate(&item).await.unwrap();
+//!     }
 //! }
 //! ```
 //!
@@ -31,6 +38,7 @@ use serde::Serialize;
 
 mod error;
 mod validator;
+use async_trait::async_trait;
 
 pub use {error::Error, validator::Validator};
 
@@ -38,6 +46,7 @@ pub use {error::Error, validator::Validator};
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Validate any serializable object with [json-schema](https://json-schema.org/)
+#[async_trait]
 pub trait Validate: Serialize + Sized {
     /// Validates this object.
     ///
@@ -53,16 +62,19 @@ pub trait Validate: Serialize + Sized {
     /// use stac::Item;
     /// use stac_validate::Validate;
     ///
-    /// let mut item = Item::new("an-id");
-    /// item.validate().unwrap();
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let mut item = Item::new("an-id");
+    ///     item.validate().await.unwrap();
+    /// }
     /// ```
-    fn validate(&self) -> Result<()> {
-        let mut validator = Validator::new()?;
-        validator.validate(self)
+    async fn validate(&self) -> Result<()> {
+        let mut validator = Validator::new().await?;
+        validator.validate(self).await
     }
 }
 
-impl<T: Serialize> Validate for T {}
+impl<T: Serialize + Send + Sync> Validate for T {}
 
 /// Returns a string suitable for use as a HTTP user agent.
 pub fn user_agent() -> &'static str {
