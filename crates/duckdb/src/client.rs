@@ -401,6 +401,7 @@ fn expr_properties_match(expr: &Expr, properties: &[String]) -> bool {
         BBox { bbox } => bbox
             .iter()
             .all(|expr| expr_properties_match(expr, properties)),
+        Null => expr_properties_match(expr, properties),
     }
 }
 
