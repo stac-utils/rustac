@@ -35,7 +35,7 @@ where
         }
 
         #[cfg(feature = "store-azure")]
-        if matches!(scheme, ObjectStoreScheme::AmazonS3) {
+        if matches!(scheme, ObjectStoreScheme::MicrosoftAzure) {
             let mut builder = object_store::azure::MicrosoftAzureBuilder::from_env();
             for (key, value) in options {
                 builder = builder.with_config(key.as_ref().parse()?, value);

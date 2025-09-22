@@ -1,6 +1,6 @@
 [package]
 name = "stac-validate"
-version = "0.4.0"
+version = "0.5.0"
 readme = "README.md"
 description = "json-schema validation for the Rust implementation of the STAC specification"
 authors.workspace = true
@@ -19,7 +19,10 @@ serde.workspace = true
 serde_json.workspace = true
 stac.workspace = true
 thiserror.workspace = true
+async-trait.workspace = true
+referencing.workspace = true
+async-recursion.workspace = true
 
 [dev-dependencies]
 stac-io.workspace = true
-tokio = { workspace = true, features = ["macros"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
