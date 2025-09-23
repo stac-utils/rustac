@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Don't set geo metadata for `proj:geometry` ([#808](https://github.com/stac-utils/rustac/pull/808))
+
 ## [0.13.0] - 2025-07-10
 
 ### Added
