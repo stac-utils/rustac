@@ -85,7 +85,7 @@ jobs:
       matrix:
         pgstac_version:
           - v0.8.6
-          - v0.9.6
+          - v0.9.8
     env:
       DUCKDB_LIB_DIR: /opt/duckdb
       LD_LIBRARY_PATH: /opt/duckdb
@@ -139,4 +139,4 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: DavidAnson/markdownlint-cli2-action@v20
       - name: Doc
-        run: cargo doc --workspace --all-features
+        run: cargo doc --workspace
