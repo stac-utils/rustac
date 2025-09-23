@@ -436,7 +436,7 @@ fn set_column_for_json_rows(
                             })
                             .transpose()?;
                         if let Some(j) = maybe_value {
-                            row.insert(col_name.to_string(), Value::try_from(&j).unwrap());
+                            row.insert(col_name.to_string(), Value::from(&j));
                         } else if explicit_nulls {
                             row.insert(col_name.to_string(), Value::Null);
                         }
