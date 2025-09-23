@@ -85,7 +85,7 @@ jobs:
       matrix:
         pgstac_version:
           - v0.8.6
-          - v0.9.6
+          - v0.9.8
     env:
       DUCKDB_LIB_DIR: /opt/duckdb
       LD_LIBRARY_PATH: /opt/duckdb
