@@ -3,7 +3,10 @@
 pub mod json;
 
 use crate::{Error, ItemCollection, Result};
-use arrow_array::{RecordBatch, RecordBatchIterator, RecordBatchReader, cast::AsArray};
+use arrow_array::{
+    Array, RecordBatch, RecordBatchIterator, RecordBatchReader, builder::BinaryBuilder,
+    cast::AsArray,
+};
 use arrow_json::ReaderBuilder;
 use arrow_schema::{DataType, Field, SchemaBuilder, SchemaRef, TimeUnit};
 use geo_types::Geometry;
@@ -14,16 +17,13 @@ use geoarrow_array::{
 };
 use geoarrow_schema::{GeoArrowType, GeometryType, Metadata};
 use serde_json::{Value, json};
-use std::{collections::HashMap, sync::Arc};
+use std::{io::Cursor, sync::Arc};
 
 /// The stac-geoparquet version metadata key.
 pub const VERSION_KEY: &str = "stac:geoparquet_version";
 
 /// The stac-geoparquet version.
 pub const VERSION: &str = "1.0.0";
-
-/// Geometry columns.
-pub const GEOMETRY_COLUMNS: [&str; 2] = ["geometry", "proj:geometry"];
 
 /// Datetime columns.
 pub const DATETIME_COLUMNS: [&str; 8] = [
@@ -79,7 +79,8 @@ impl TableBuilder {
     /// ```
     pub fn build(self) -> Result<Table> {
         let mut values = Vec::with_capacity(self.item_collection.items.len());
-        let mut geometry_builders = HashMap::new();
+        let mut geometry_builder = GeometryBuilder::new(GeometryType::new(Default::default()));
+        let mut proj_geometry_builder = BinaryBuilder::new();
 
         for item in self.item_collection.items {
             let mut value =
@@ -88,18 +89,20 @@ impl TableBuilder {
                 let value = value
                     .as_object_mut()
                     .expect("a flat item should serialize to an object");
-                for key in GEOMETRY_COLUMNS {
-                    if let Some(value) = value.remove(key) {
-                        let entry = geometry_builders.entry(key).or_insert_with(|| {
-                            let geometry_type = GeometryType::new(Default::default());
-                            GeometryBuilder::new(geometry_type)
-                        });
-                        let geometry =
-                            geojson::Geometry::from_json_value(value).map_err(Box::new)?;
-                        entry.push_geometry(Some(
-                            &(Geometry::try_from(geometry).map_err(Box::new)?),
-                        ))?;
-                    }
+                if let Some(value) = value.remove("geometry") {
+                    let geometry = geojson::Geometry::from_json_value(value).map_err(Box::new)?;
+                    geometry_builder
+                        .push_geometry(Some(&(Geometry::try_from(geometry).map_err(Box::new)?)))?;
+                }
+                if let Some(value) = value.remove("proj:geometry") {
+                    let geometry = geojson::Geometry::from_json_value(value).map_err(Box::new)?;
+                    let mut cursor = Cursor::new(Vec::new());
+                    wkb::writer::write_geometry(
+                        &mut cursor,
+                        &Geometry::try_from(geometry).map_err(Box::new)?,
+                        &Default::default(),
+                    )?;
+                    proj_geometry_builder.append_value(cursor.into_inner());
                 }
                 if let Some(bbox) = value.remove("bbox") {
                     let bbox = convert_bbox(bbox)?;
@@ -132,10 +135,14 @@ impl TableBuilder {
         // Add the geometries back in.
         let mut schema_builder = SchemaBuilder::from(schema.fields());
         let mut columns = record_batch.columns().to_vec();
-        for (key, geometry_builder) in geometry_builders {
-            let geometry_array = geometry_builder.finish();
-            columns.push(geometry_array.to_array_ref());
-            schema_builder.push(geometry_array.data_type().to_field(key, true));
+        let geometry_array = geometry_builder.finish();
+        columns.push(geometry_array.to_array_ref());
+        schema_builder.push(geometry_array.data_type().to_field("geometry", true));
+        let proj_geometry_array = proj_geometry_builder.finish();
+        if !proj_geometry_array.is_empty() {
+            let data_type = proj_geometry_array.data_type().clone();
+            columns.push(Arc::new(proj_geometry_array));
+            schema_builder.push(Field::new("proj:geometry", data_type, true));
         }
         let _ = schema_builder
             .metadata_mut()
@@ -349,5 +356,21 @@ mod tests {
         assert_eq!(record_batches.len(), 1);
         let record_batch = record_batches.pop().unwrap();
         let _ = super::with_wkb_geometry(record_batch, "geometry").unwrap();
+    }
+
+    #[test]
+    fn has_proj_geometry() {
+        let item: Item =
+            crate::read("examples/extensions-collection/proj-example/proj-example.json").unwrap();
+        let table = Table::from_item_collection(vec![item]).unwrap();
+        let (mut record_batches, _) = table.into_inner();
+        assert_eq!(record_batches.len(), 1);
+        let record_batch = record_batches.pop().unwrap();
+        assert!(
+            record_batch
+                .schema()
+                .column_with_name("proj:geometry")
+                .is_some()
+        );
     }
 }
