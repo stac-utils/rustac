@@ -419,10 +419,35 @@ fn set_column_for_json_rows(
             }
         }
         _ => {
-            return Err(ArrowError::JsonError(format!(
-                "data type {:?} not supported in nested map for json writer",
-                array.data_type()
-            )));
+            if col_name == "proj:geometry" {
+                let binary_array = as_generic_binary_array::<i32>(array);
+                rows.iter_mut()
+                    .zip(binary_array.iter())
+                    .filter_map(|(maybe_row, maybe_value)| {
+                        maybe_row.as_mut().map(|row| (row, maybe_value))
+                    })
+                    .try_for_each(|(row, maybe_value)| -> Result<(), ArrowError> {
+                        let maybe_value = maybe_value
+                            .map(|value| -> Result<_, ArrowError> {
+                                let wkb = wkb::reader::read_wkb(value)
+                                    .map_err(|err| ArrowError::ExternalError(Box::new(err)))?;
+                                let value = geojson::Value::from(&wkb.to_geometry());
+                                Ok(value)
+                            })
+                            .transpose()?;
+                        if let Some(j) = maybe_value {
+                            row.insert(col_name.to_string(), Value::from(&j));
+                        } else if explicit_nulls {
+                            row.insert(col_name.to_string(), Value::Null);
+                        }
+                        Ok(())
+                    })?;
+            } else {
+                return Err(ArrowError::JsonError(format!(
+                    "data type {:?} not supported in nested map for json writer",
+                    array.data_type()
+                )));
+            }
         }
     }
     Ok(())
