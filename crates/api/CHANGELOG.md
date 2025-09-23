@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.8.1] - 2025-09-23
+
+Bump dependencies.
+
 ## [0.8.0] - 2025-07-10
 
 ### Fixed
@@ -165,7 +169,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release
 
-[unreleased]: https://github.com/stac-utils/rustac/compare/stac-api-v0.8.0...main
+[unreleased]: https://github.com/stac-utils/rustac/compare/stac-api-v0.8.1...main
+[0.8.1]: https://github.com/stac-utils/rustac/compare/stac-api-v0.8.0...stac-api-v0.8.1
 [0.8.0]: https://github.com/stac-utils/rustac/compare/stac-api-v0.7.1...stac-api-v0.8.0
 [0.7.1]: https://github.com/stac-utils/rustac/compare/stac-api-v0.7.0...stac-api-v0.7.1
 [0.7.0]: https://github.com/stac-utils/rustac/compare/stac-api-v0.6.2...stac-api-v0.7.0

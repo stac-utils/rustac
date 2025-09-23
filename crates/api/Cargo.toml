@@ -1,7 +1,7 @@
 [package]
 name = "stac-api"
 description = "Rust library for the SpatioTemporal Asset Catalog (STAC) API specification"
-version = "0.8.0"
+version = "0.8.1"
 keywords = ["geospatial", "stac", "metadata", "geo", "api"]
 categories = ["science", "data-structures", "web-programming"]
 authors.workspace = true
