@@ -372,4 +372,30 @@ mod tests {
         let cursor = Cursor::new(Vec::new());
         super::into_writer(cursor, items).unwrap();
     }
+
+    #[test]
+    fn no_proj_geometry_metadata() {
+        let item: Item =
+            crate::read("examples/extensions-collection/proj-example/proj-example.json").unwrap();
+        let mut cursor = Cursor::new(Vec::new());
+        super::into_writer(&mut cursor, vec![item]).unwrap();
+        let bytes = Bytes::from(cursor.into_inner());
+        let reader = SerializedFileReader::new(bytes).unwrap();
+        let key_value = reader
+            .metadata()
+            .file_metadata()
+            .key_value_metadata()
+            .unwrap()
+            .iter()
+            .find(|key_value| key_value.key == "geo")
+            .unwrap();
+        let value: serde_json::Value =
+            serde_json::from_str(key_value.value.as_deref().unwrap()).unwrap();
+        assert!(
+            !value["columns"]
+                .as_object()
+                .unwrap()
+                .contains_key("proj:geometry")
+        );
+    }
 }

@@ -103,4 +103,9 @@ pub enum Error {
     /// [url::ParseError]
     #[error(transparent)]
     UrlParse(#[from] url::ParseError),
+
+    /// [wkb::error::WkbError]
+    #[error(transparent)]
+    #[cfg(feature = "geoarrow")]
+    Wkb(#[from] wkb::error::WkbError),
 }
