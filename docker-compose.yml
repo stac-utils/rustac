@@ -1,6 +1,6 @@
 services:
   pgstac:
-    image: ghcr.io/stac-utils/pgstac:${PGSTAC_VERSION:-v0.9.6}
+    image: ghcr.io/stac-utils/pgstac:${PGSTAC_VERSION:-v0.9.8}
     environment:
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password
