@@ -442,21 +442,16 @@ mod tests {
 
     #[fixture]
     #[once]
-    fn install_spatial() {
+    fn install_extensions() {
         let connection = Connection::open_in_memory().unwrap();
+        connection.execute("INSTALL icu", []).unwrap();
         connection.execute("INSTALL spatial", []).unwrap();
     }
 
     #[allow(unused_variables)]
     #[fixture]
-    fn client(install_spatial: ()) -> Client {
+    fn client(install_extensions: ()) -> Client {
         Client::new().unwrap()
-    }
-
-    #[allow(unused_variables)]
-    #[rstest]
-    fn new(install_spatial: ()) {
-        Client::new().unwrap();
     }
 
     #[rstest]
