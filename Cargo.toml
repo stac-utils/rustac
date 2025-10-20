@@ -60,7 +60,7 @@ geo-traits = "0.3.0"
 geo-types = "0.7.16"
 geoarrow-array = "0.5.0"
 geoparquet = "0.5.0"
-geoarrow-schema = "0.5.0"
+geoarrow-schema = "0.6.1"
 geojson = "0.24.1"
 getrandom = { version = "0.3.3", features = ["wasm_js"] }
 http = "1.1"
