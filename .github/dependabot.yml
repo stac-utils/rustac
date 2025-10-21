@@ -10,6 +10,11 @@ updates:
     schedule:
       interval: "weekly"
     labels: []
+    groups:
+      geoarrow:
+        patterns:
+          - "geoarrow-*"
+          - "geoparquet"
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
