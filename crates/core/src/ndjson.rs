@@ -1,7 +1,7 @@
 use crate::{Error, FromJson, Item, ItemCollection, Result, Value};
 use bytes::Bytes;
 use serde::Serialize;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 
 /// Create a STAC object from newline-delimited JSON.
 pub trait FromNdjson: FromJson {
@@ -29,7 +29,7 @@ pub trait ToNdjson: Serialize {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```
     /// use stac::{ToNdjson, ItemCollection, Item};
     ///
     /// let item_collection: ItemCollection = vec![Item::new("a"), Item::new("b")].into();
@@ -109,6 +109,15 @@ impl ToNdjson for Item {}
 impl ToNdjson for crate::Catalog {}
 impl ToNdjson for crate::Collection {}
 impl ToNdjson for ItemCollection {
+    fn to_ndjson_writer(&self, writer: impl Write) -> Result<()> {
+        let mut writer = BufWriter::new(writer);
+        for item in &self.items {
+            serde_json::to_writer(&mut writer, item)?;
+            writeln!(&mut writer)?;
+        }
+        Ok(())
+    }
+
     fn to_ndjson_vec(&self) -> Result<Vec<u8>> {
         let mut vec = Vec::new();
         self.to_ndjson_writer(&mut vec)?;
@@ -133,12 +142,35 @@ impl ToNdjson for serde_json::Value {
         self.to_ndjson_writer(&mut buf)?;
         Ok(buf)
     }
+    fn to_ndjson_writer(&self, writer: impl Write) -> Result<()> {
+        if self
+            .get("type")
+            .and_then(|type_| type_.as_str())
+            .map(|type_| type_ == "FeatureCollection")
+            .unwrap_or_default()
+        {
+            if let Some(features) = self
+                .get("features")
+                .and_then(|features| features.as_array())
+            {
+                let mut writer = BufWriter::new(writer);
+                for feature in features {
+                    serde_json::to_writer(&mut writer, feature)?;
+                    writeln!(&mut writer)?;
+                }
+            }
+        } else {
+            serde_json::to_writer(writer, self)?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::FromNdjson;
-    use crate::{ItemCollection, Value};
+    use super::{FromNdjson, ToNdjson};
+    use crate::{FromJson, Item, ItemCollection, Value};
+    use std::io::Cursor;
     use std::{fs::File, io::Read};
 
     #[test]
@@ -160,5 +192,22 @@ mod tests {
             .read_to_end(&mut buf)
             .unwrap();
         let _ = Value::from_ndjson_bytes(buf).unwrap();
+    }
+
+    #[test]
+    fn item_collection_write() {
+        let item_collection = ItemCollection::from(vec![Item::new("an-item")]);
+        let mut cursor = Cursor::new(Vec::new());
+        item_collection.to_ndjson_writer(&mut cursor).unwrap();
+        let _ = Item::from_json_slice(&cursor.into_inner()).unwrap();
+    }
+
+    #[test]
+    fn json_item_collection_write() {
+        let item_collection =
+            serde_json::to_value(ItemCollection::from(vec![Item::new("an-item")])).unwrap();
+        let mut cursor = Cursor::new(Vec::new());
+        item_collection.to_ndjson_writer(&mut cursor).unwrap();
+        let _ = Item::from_json_slice(&cursor.into_inner()).unwrap();
     }
 }

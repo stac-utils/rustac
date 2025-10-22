@@ -556,7 +556,9 @@ impl Rustac {
                 Value::Stac(stac) => format.into_vec(stac)?,
             };
             // TODO allow disabling trailing newline
-            bytes.push(b'\n');
+            if !matches!(format, Format::NdJson) {
+                bytes.push(b'\n');
+            }
             std::io::stdout().write_all(&bytes)?;
             Ok(())
         }
