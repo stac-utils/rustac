@@ -202,7 +202,38 @@ impl Client {
     /// ```
     pub fn search_to_arrow(&self, href: &str, search: Search) -> Result<Vec<RecordBatch>> {
         // TODO can we return an iterator?
+        if let Some((sql, params)) = self.build_query(href, search)? {
+            log::debug!("duckdb sql: {sql}");
+            let mut statement = self.prepare(&sql)?;
+            statement
+                .query_arrow(duckdb::params_from_iter(params))?
+                .map(|record_batch| {
+                    let record_batch = if self.convert_wkb {
+                        stac::geoarrow::with_native_geometry(record_batch, "geometry")?
+                    } else {
+                        stac::geoarrow::add_wkb_metadata(record_batch, "geometry")?
+                    };
+                    Ok(record_batch)
+                })
+                .collect::<Result<_>>()
+        } else {
+            Ok(Vec::new())
+        }
+    }
 
+    /// Returns the SQL query string and parameters for this href and search object.
+    ///
+    /// Returns `None` if we can _know_ that the query will return nothing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac_duckdb::Client;
+    ///
+    /// let client = Client::new().unwrap();
+    /// let (sql, params) = client.build_query("data/100-sentinel-2-items.parquet", Default::default()).unwrap().unwrap();
+    /// ```
+    pub fn build_query(&self, href: &str, search: Search) -> Result<Option<(String, Vec<Value>)>> {
         // Note that we pull out some fields early so we can avoid closing some search strings below.
 
         if search.items.query.is_some() {
@@ -328,7 +359,7 @@ impl Client {
                 let sql = expr.to_ducksql().map_err(Box::new)?;
                 wheres.push(sql);
             } else {
-                return Ok(Vec::new());
+                return Ok(None);
             }
         }
 
@@ -352,19 +383,7 @@ impl Client {
             self.format_parquet_href(href),
             suffix,
         );
-        log::debug!("duckdb sql: {sql}");
-        let mut statement = self.prepare(&sql)?;
-        statement
-            .query_arrow(duckdb::params_from_iter(params))?
-            .map(|record_batch| {
-                let record_batch = if self.convert_wkb {
-                    stac::geoarrow::with_native_geometry(record_batch, "geometry")?
-                } else {
-                    stac::geoarrow::add_wkb_metadata(record_batch, "geometry")?
-                };
-                Ok(record_batch)
-            })
-            .collect::<Result<_>>()
+        Ok(Some((sql, params)))
     }
 
     fn format_parquet_href(&self, href: &str) -> String {
