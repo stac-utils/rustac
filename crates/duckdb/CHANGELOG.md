@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- `build_query` ([#832](https://github.com/stac-utils/rustac/pull/832))
+
 ## [0.2.1] - 2025-09-23
 
 Update dependencies.
