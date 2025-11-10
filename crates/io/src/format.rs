@@ -198,10 +198,10 @@ impl Format {
         Format::NdJson
     }
 
-    /// Returns the default geoparquet format (snappy compression if compression is enabled).
+    /// Returns the default geoparquet format.
     #[cfg(feature = "geoparquet")]
     pub fn geoparquet() -> Format {
-        Format::Geoparquet(Some(stac::geoparquet::DEFAULT_COMPRESSION))
+        Format::Geoparquet(Some(stac::geoparquet::default_compression()))
     }
 }
 
@@ -270,7 +270,7 @@ fn infer_geoparquet_format(s: &str) -> Result<Format> {
             }
         } else {
             Ok(Format::Geoparquet(Some(
-                stac::geoparquet::DEFAULT_COMPRESSION,
+                stac::geoparquet::default_compression(),
             )))
         }
     } else {
@@ -294,7 +294,7 @@ mod tests {
     #[cfg(feature = "geoparquet")]
     mod geoparquet {
         use super::Format;
-        use stac::geoparquet::Compression;
+        use stac::geoparquet::{Compression, default_compression};
 
         #[test]
         fn parse_geoparquet_compression() {
@@ -305,7 +305,7 @@ mod tests {
         #[test]
         fn infer_from_href() {
             assert_eq!(
-                Format::Geoparquet(Some(Compression::SNAPPY)),
+                Format::Geoparquet(Some(default_compression())),
                 Format::infer_from_href("out.parquet").unwrap()
             );
         }
