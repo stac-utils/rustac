@@ -16,10 +16,12 @@ use parquet::{
 };
 use std::io::Write;
 
-pub use parquet::basic::Compression;
+pub use parquet::basic::{BrotliLevel, Compression, GzipLevel, ZstdLevel};
 
 /// Default stac-geoparquet compression
-pub const DEFAULT_COMPRESSION: Compression = Compression::SNAPPY;
+pub fn default_compression() -> Compression {
+    Compression::ZSTD(ZstdLevel::try_new(15).unwrap())
+}
 
 /// Reads a [ItemCollection] from a [ChunkReader] as
 /// [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet).
@@ -108,7 +110,7 @@ impl<W: Write + Send> WriterBuilder<W> {
         WriterBuilder {
             writer,
             item_collection: item_collection.into(),
-            compression: Some(DEFAULT_COMPRESSION),
+            compression: Some(default_compression()),
         }
     }
 
