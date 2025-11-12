@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Write multiple record batches to a `geoarrow` table ([#835](https://github.com/stac-utils/rustac/pull/835))
+
 ### Changed
 
 - Switch to zstd(15) for default geoparquet compression ([#834](https://github.com/stac-utils/rustac/pull/834))
