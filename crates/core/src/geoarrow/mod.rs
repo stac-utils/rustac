@@ -126,6 +126,7 @@ impl TableBuilder {
 
         // Create a geometry-less record batch of our items.
         // TODO do this in one pass: https://github.com/stac-utils/rustac/issues/767
+        // TODO can/should we re-use the schema from a previous record batch (if one exists) or will that make schema mismatch error messages too opaque?
         let schema = arrow_json::reader::infer_json_schema_from_iterator(values.iter().map(Ok))?;
         let mut schema_builder = SchemaBuilder::new();
         for field in schema.fields().iter() {
