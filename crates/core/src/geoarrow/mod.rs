@@ -160,10 +160,10 @@ impl TableBuilder {
             .metadata_mut()
             .insert(VERSION_KEY.to_string(), VERSION.into());
         let schema = Arc::new(schema_builder.finish());
-        if !self.record_batches.is_empty()
-            && self.record_batches.last().unwrap().schema() != schema {
-                return Err(Error::ArrowSchemaMismatch);
-            }
+        if !self.record_batches.is_empty() && self.record_batches.last().unwrap().schema() != schema
+        {
+            return Err(Error::ArrowSchemaMismatch);
+        }
         let record_batch = RecordBatch::try_new(schema.clone(), columns)?;
         self.record_batches.push(record_batch);
         Ok(())
