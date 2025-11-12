@@ -10,6 +10,16 @@ pub enum Error {
     #[cfg(feature = "geoarrow")]
     Arrow(#[from] arrow_schema::ArrowError),
 
+    /// The schema of two sets of items don't match.
+    #[cfg(feature = "geoarrow")]
+    #[error("Arrow schema mismatch")]
+    ArrowSchemaMismatch,
+
+    /// The arrow table is empty
+    #[cfg(feature = "geoarrow")]
+    #[error("Empty arrow table")]
+    EmptyArrowTable,
+
     /// [chrono::ParseError]
     #[error(transparent)]
     ChronoParse(#[from] chrono::ParseError),

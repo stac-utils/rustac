@@ -2,7 +2,7 @@
 
 pub mod json;
 
-use crate::{Error, ItemCollection, Result};
+use crate::{Error, Item, ItemCollection, Result};
 use arrow_array::{
     Array, RecordBatch, RecordBatchIterator, RecordBatchReader, builder::BinaryBuilder,
     cast::AsArray,
@@ -50,9 +50,6 @@ pub struct Table {
 /// A builder for converting an [ItemCollection] to a [Table]
 #[derive(Debug)]
 pub struct TableBuilder {
-    /// The item collection.
-    pub item_collection: ItemCollection,
-
     /// Whether to drop invalid attributes.
     ///
     /// If false, an invalid attribute will cause an error. If true, an invalid
@@ -60,29 +57,44 @@ pub struct TableBuilder {
     ///
     /// Invalid attributes are values in `properties` that would conflict with a STAC-defined top-level key.
     pub drop_invalid_attributes: bool,
+
+    record_batches: Vec<RecordBatch>,
 }
 
 impl TableBuilder {
-    /// Builds a [Table].
+    /// Creates a new table builder.
     ///
     /// # Examples
     ///
     /// ```
     /// use stac::geoarrow::TableBuilder;
     ///
-    /// let item = stac::read("examples/simple-item.json").unwrap();
-    /// let builder = TableBuilder {
-    ///     item_collection: vec![item].into(),
-    ///     drop_invalid_attributes: false,
-    /// };
-    /// let table = builder.build().unwrap();
+    /// let builder = TableBuilder::new(true);
     /// ```
-    pub fn build(self) -> Result<Table> {
-        let mut values = Vec::with_capacity(self.item_collection.items.len());
+    pub fn new(drop_invalid_attributes: bool) -> TableBuilder {
+        TableBuilder {
+            drop_invalid_attributes,
+            record_batches: Vec::new(),
+        }
+    }
+
+    /// Adds items to this table builder.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::geoarrow::TableBuilder;
+    ///
+    /// let mut builder = TableBuilder::new(true);
+    /// let item = stac::read("examples/simple-item.json").unwrap();
+    /// builder.add_items(vec![item]).unwrap();
+    /// ```
+    pub fn add_items(&mut self, items: Vec<Item>) -> Result<()> {
+        let mut values = Vec::with_capacity(items.len());
         let mut geometry_builder = GeometryBuilder::new(GeometryType::new(Default::default()));
         let mut proj_geometry_builder = BinaryBuilder::new();
 
-        for item in self.item_collection.items {
+        for item in items {
             let mut value =
                 serde_json::to_value(item.into_flat_item(self.drop_invalid_attributes)?)?;
             {
@@ -148,16 +160,59 @@ impl TableBuilder {
             .metadata_mut()
             .insert(VERSION_KEY.to_string(), VERSION.into());
         let schema = Arc::new(schema_builder.finish());
+        if self.record_batches.len() > 0 {
+            if self.record_batches.last().unwrap().schema() != schema {
+                return Err(Error::ArrowSchemaMismatch);
+            }
+        }
         let record_batch = RecordBatch::try_new(schema.clone(), columns)?;
-        Ok(Table {
-            record_batches: vec![record_batch],
-            schema,
-        })
+        self.record_batches.push(record_batch);
+        Ok(())
+    }
+
+    /// Builds a new table.
+    ///
+    /// Returns an error if no items have been added.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::geoarrow::TableBuilder;
+    ///
+    /// let mut builder = TableBuilder::new(true);
+    /// let item = stac::read("examples/simple-item.json").unwrap();
+    /// builder.add_items(vec![item]).unwrap();
+    /// let table = builder.build().unwrap();
+    /// ```
+    pub fn build(self) -> Result<Table> {
+        if self.record_batches.len() > 0 {
+            Ok(Table {
+                schema: self.record_batches[0].schema(),
+                record_batches: self.record_batches,
+            })
+        } else {
+            Err(Error::EmptyArrowTable)
+        }
     }
 }
 
 impl Table {
     /// Creates a [Table] from a vector of record batches and a schema.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{ItemCollection, geoarrow::Table};
+    /// use std::sync::Arc;
+    ///
+    /// let item = stac::read("examples/simple-item.json").unwrap();
+    /// let item_collection = ItemCollection::from(vec![item]);
+    /// let table = Table::from_item_collection(item_collection).unwrap();
+    /// let (record_batches, schema) = table.into_inner();
+    ///
+    /// // Reconstruct the table
+    /// let new_table = Table::new(record_batches, schema);
+    /// ```
     pub fn new(record_batches: Vec<RecordBatch>, schema: SchemaRef) -> Table {
         Table {
             record_batches,
@@ -182,29 +237,78 @@ impl Table {
     /// let table = Table::from_item_collection(item_collection).unwrap();
     /// ```
     pub fn from_item_collection(item_collection: impl Into<ItemCollection>) -> Result<Table> {
-        TableBuilder {
-            item_collection: item_collection.into(),
+        let mut builder = TableBuilder {
             drop_invalid_attributes: true,
-        }
-        .build()
+            record_batches: Vec::new(),
+        };
+        builder.add_items(item_collection.into().items)?;
+        builder.build()
     }
 
     /// Returns this table's schema as a reference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{ItemCollection, geoarrow::Table};
+    ///
+    /// let item = stac::read("examples/simple-item.json").unwrap();
+    /// let item_collection = ItemCollection::from(vec![item]);
+    /// let table = Table::from_item_collection(item_collection).unwrap();
+    /// let schema = table.schema();
+    /// assert_eq!(schema.metadata()["stac:geoparquet_version"], "1.0.0");
+    /// ```
     pub fn schema(&self) -> &SchemaRef {
         &self.schema
     }
 
     /// Converts this table into a [RecordBatchIterator].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{ItemCollection, geoarrow::Table};
+    /// use arrow_array::RecordBatchReader;
+    ///
+    /// let item = stac::read("examples/simple-item.json").unwrap();
+    /// let item_collection = ItemCollection::from(vec![item]);
+    /// let table = Table::from_item_collection(item_collection).unwrap();
+    /// let reader = table.into_reader();
+    /// assert_eq!(reader.schema().metadata()["stac:geoparquet_version"], "1.0.0");
+    /// ```
     pub fn into_reader(self) -> impl RecordBatchReader {
         RecordBatchIterator::new(self.record_batches.into_iter().map(Ok), self.schema)
     }
 
     /// Converts this table into its record batches and schema.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{ItemCollection, geoarrow::Table};
+    ///
+    /// let item = stac::read("examples/simple-item.json").unwrap();
+    /// let item_collection = ItemCollection::from(vec![item]);
+    /// let table = Table::from_item_collection(item_collection).unwrap();
+    /// let (record_batches, schema) = table.into_inner();
+    /// assert_eq!(record_batches.len(), 1);
+    /// ```
     pub fn into_inner(self) -> (Vec<RecordBatch>, SchemaRef) {
         (self.record_batches, self.schema)
     }
 
     /// Returns the total number of records in this table.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{ItemCollection, geoarrow::Table};
+    ///
+    /// let item = stac::read("examples/simple-item.json").unwrap();
+    /// let item_collection = ItemCollection::from(vec![item]);
+    /// let table = Table::from_item_collection(item_collection).unwrap();
+    /// assert_eq!(table.len(), 1);
+    /// ```
     pub fn len(&self) -> usize {
         self.record_batches
             .iter()
@@ -213,12 +317,36 @@ impl Table {
     }
 
     /// Returns true if this is an empty table.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{ItemCollection, geoarrow::Table};
+    ///
+    /// let item = stac::read("examples/simple-item.json").unwrap();
+    /// let item_collection = ItemCollection::from(vec![item]);
+    /// let table = Table::from_item_collection(item_collection).unwrap();
+    /// assert!(!table.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 }
 
 /// Converts a [RecordBatchReader] to an [ItemCollection].
+///
+/// # Examples
+///
+/// ```
+/// use stac::{ItemCollection, geoarrow::Table};
+///
+/// let item = stac::read("examples/simple-item.json").unwrap();
+/// let item_collection = ItemCollection::from(vec![item]);
+/// let table = Table::from_item_collection(item_collection).unwrap();
+/// let reader = table.into_reader();
+/// let restored_collection = stac::geoarrow::from_record_batch_reader(reader).unwrap();
+/// assert_eq!(restored_collection.items.len(), 1);
+/// ```
 pub fn from_record_batch_reader<R: RecordBatchReader>(reader: R) -> Result<ItemCollection> {
     let item_collection = json::from_record_batch_reader(reader)?
         .into_iter()
@@ -229,6 +357,21 @@ pub fn from_record_batch_reader<R: RecordBatchReader>(reader: R) -> Result<ItemC
 }
 
 /// Converts a geometry column to geoarrow native type.
+///
+/// # Examples
+///
+/// ```
+/// use stac::{ItemCollection, geoarrow::Table};
+///
+/// let item = stac::read("examples/simple-item.json").unwrap();
+/// let table = Table::from_item_collection(vec![item]).unwrap();
+/// let (mut record_batches, _) = table.into_inner();
+/// let record_batch = record_batches.pop().unwrap();
+///
+/// // First convert to WKB, then back to native geometry
+/// let wkb_batch = stac::geoarrow::with_wkb_geometry(record_batch, "geometry").unwrap();
+/// let native_batch = stac::geoarrow::with_native_geometry(wkb_batch, "geometry").unwrap();
+/// ```
 pub fn with_native_geometry(
     mut record_batch: RecordBatch,
     column_name: &str,
@@ -254,6 +397,18 @@ pub fn with_native_geometry(
 }
 
 /// Converts a geometry column to geoarrow.wkb.
+///
+/// # Examples
+///
+/// ```
+/// use stac::{ItemCollection, geoarrow::Table};
+///
+/// let item = stac::read("examples/simple-item.json").unwrap();
+/// let table = Table::from_item_collection(vec![item]).unwrap();
+/// let (mut record_batches, _) = table.into_inner();
+/// let record_batch = record_batches.pop().unwrap();
+/// let wkb_batch = stac::geoarrow::with_wkb_geometry(record_batch, "geometry").unwrap();
+/// ```
 pub fn with_wkb_geometry(mut record_batch: RecordBatch, column_name: &str) -> Result<RecordBatch> {
     if let Some((index, field)) = record_batch.schema().column_with_name(column_name) {
         let geometry_column = record_batch.remove_column(index);
@@ -271,6 +426,25 @@ pub fn with_wkb_geometry(mut record_batch: RecordBatch, column_name: &str) -> Re
 }
 
 /// Adds geoarrow wkb metadata to a geometry column.
+///
+/// # Examples
+///
+/// ```
+/// use stac::{ItemCollection, geoarrow::Table};
+///
+/// let item = stac::read("examples/simple-item.json").unwrap();
+/// let table = Table::from_item_collection(vec![item]).unwrap();
+/// let (mut record_batches, _) = table.into_inner();
+/// let record_batch = record_batches.pop().unwrap();
+/// let wkb_batch = stac::geoarrow::with_wkb_geometry(record_batch, "geometry").unwrap();
+/// let metadata_batch = stac::geoarrow::add_wkb_metadata(wkb_batch, "geometry").unwrap();
+///
+/// // Verify the metadata was added
+/// let schema = metadata_batch.schema();
+/// let (index, field) = schema.column_with_name("geometry").unwrap();
+/// let metadata = field.metadata();
+/// assert_eq!(metadata.get("ARROW:extension:name"), Some(&"geoarrow.wkb".to_string()));
+/// ```
 pub fn add_wkb_metadata(mut record_batch: RecordBatch, column_name: &str) -> Result<RecordBatch> {
     if let Some((index, field)) = record_batch.schema().column_with_name(column_name) {
         let mut metadata = field.metadata().clone();
@@ -317,7 +491,7 @@ fn convert_bbox(bbox: Value) -> Result<Value> {
 
 #[cfg(test)]
 mod tests {
-    use super::Table;
+    use super::{Table, TableBuilder};
     use crate::{Item, ItemCollection};
 
     #[test]
@@ -372,5 +546,15 @@ mod tests {
                 .column_with_name("proj:geometry")
                 .is_some()
         );
+    }
+
+    #[test]
+    fn two_batches() {
+        let mut builder = TableBuilder::new(true);
+        let item: Item = crate::read("examples/simple-item.json").unwrap();
+        builder.add_items(vec![item.clone()]).unwrap();
+        builder.add_items(vec![item.clone()]).unwrap();
+        let table = builder.build().unwrap();
+        assert_eq!(table.record_batches.len(), 2);
     }
 }
