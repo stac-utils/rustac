@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.13.3] - 2025-11-13
+
 ### Added
 
 - Write multiple record batches to a `geoarrow` table ([#835](https://github.com/stac-utils/rustac/pull/835))
@@ -481,7 +483,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release.
 
-[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-v0.13.2...main
+[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-v0.13.3...main
+[0.13.3]: https://github.com/stac-utils/rustac/compare/stac-v0.13.2...stac-v0.13.3
 [0.13.2]: https://github.com/stac-utils/rustac/compare/stac-v0.13.1...stac-v0.13.2
 [0.13.1]: https://github.com/stac-utils/rustac/compare/stac-v0.13.0...stac-v0.13.1
 [0.13.0]: https://github.com/stac-utils/rustac/compare/stac-v0.12.0...stac-v0.13.0

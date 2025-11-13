@@ -1,7 +1,7 @@
 [package]
 name = "stac"
 description = "Rust library for the SpatioTemporal Asset Catalog (STAC) specification"
-version = "0.13.2"
+version = "0.13.3"
 keywords = ["geospatial", "stac", "metadata", "geo"]
 authors.workspace = true
 categories.workspace = true
