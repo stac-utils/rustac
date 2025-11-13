@@ -1,0 +1,157 @@
+{
+  "id": "0fbe7681-e8d4-4480-bd45-eb008c59f72d",
+  "bbox": [-116.897638, 50.195065, -114.657376, 51.737401],
+  "type": "Feature",
+  "links": [
+    {
+      "rel": "collection",
+      "type": "application/json",
+      "href": "https://www.eodms-sgdot.nrcan-rncan.gc.ca/stac/collections/rcm-ard"
+    },
+    {
+      "rel": "parent",
+      "type": "application/json",
+      "href": "https://www.eodms-sgdot.nrcan-rncan.gc.ca/stac/collections/rcm-ard"
+    },
+    {
+      "rel": "root",
+      "type": "application/json",
+      "href": "https://www.eodms-sgdot.nrcan-rncan.gc.ca/stac/"
+    },
+    {
+      "rel": "self",
+      "type": "application/geo+json",
+      "href": "https://www.eodms-sgdot.nrcan-rncan.gc.ca/stac/collections/rcm-ard/items/0fbe7681-e8d4-4480-bd45-eb008c59f72d"
+    }
+  ],
+  "assets": {
+    "rl": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_RL.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "roles": ["data", "gamma()"],
+      "title": "Backscatter Measurements RL Polarization"
+    },
+    "rr": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_RR.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "roles": ["data", "gamma()"],
+      "title": "Backscatter Measurements RR Polarization"
+    },
+    "rrrl": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_RRRL.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "roles": ["data", "covmat"],
+      "title": "Normalized Polarimetric Radar Covariance Matrix (CovMat)"
+    },
+    "metadata": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_product.xml",
+      "type": "text/xml",
+      "roles": ["metadata"],
+      "title": "ARD Product Metadata"
+    },
+    "data_mask": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_bitmask.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "roles": ["data", "data-mask"],
+      "title": "Data Mask Image"
+    },
+    "thumbnail": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_RR_quickLook.png",
+      "type": "image/png",
+      "roles": ["thumbnail"],
+      "title": "Thumbnail"
+    },
+    "eula_license": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM_EULA_PUBLIC_v1-0_20191213_UNCLASSIFIED.pdf",
+      "type": "application/pdf",
+      "roles": ["license"],
+      "title": "EULA"
+    },
+    "rl_thumbnail": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_RL_quickLook.tif",
+      "type": "image/tiff; application=geotiff",
+      "title": "Backscatter RL Polarization Quicklook"
+    },
+    "rr_thumbnail": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_RR_quickLook.tif",
+      "type": "image/tiff; application=geotiff",
+      "title": "Backscatter RR Polarization Quicklook"
+    },
+    "local_inc_angle": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_localIncAngle.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "roles": ["data", "local-incidence-angle"],
+      "title": "Local Incident Angle Image"
+    },
+    "gamma_to_sigma_ratio": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_gammaToSigmaRatio.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "roles": ["data"],
+      "title": "Gamma-to-Sigma Ratio Image"
+    },
+    "local_contributing_area": {
+      "href": "https://rcm-ceos-ard.s3.ca-central-1.amazonaws.com/MLC/2025/11/13/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC/RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_localContributingArea.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "roles": ["data"],
+      "title": "Scattering Area Image"
+    }
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-116.897638, 51.493118],
+        [-115.082447, 51.737401],
+        [-114.657376, 50.435388],
+        [-116.418298, 50.195065],
+        [-116.897638, 51.493118]
+      ]
+    ]
+  },
+  "collection": "rcm-ard",
+  "properties": {
+    "ard_proc_version": "1.2.0",
+    "ceosard:specification": "NRB - POL",
+    "ceosard:specification_version": "1.0",
+    "ceosard:type": "radar",
+    "created": "2025-11-13T12:17:01.022440+00:00",
+    "datetime": "2025-11-13T01:18:44.291467",
+    "end_datetime": "2025-11-13T01:19:05.574225",
+    "order_key": "RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC",
+    "processing:facility": "SHUB",
+    "processing:level": "l2",
+    "processing:software": { "RCM PGS": "7.06" },
+    "product_column_spacing": 20.0,
+    "product_row_spacing": 20.0,
+    "raster:bands": [
+      { "nodata": 0, "sampling": "RasterPixelIsArea", "data_type": "Float" }
+    ],
+    "rcm_uuid": "825c5e7c-292e-53bb-89e2-8ec711339010",
+    "sar:center_frequency": 5.405,
+    "sar:frequency_band": "C",
+    "sar:instrument_mode": "Medium Resolution 30m",
+    "sar:looks_azimuth": 2,
+    "sar:looks_range": 2,
+    "sar:observation_direction": "Right",
+    "sar:pixel_spacing_azimuth": 22.7,
+    "sar:pixel_spacing_range": 7.9,
+    "sar:polarizations": ["CH", "CV", "XC"],
+    "sar:product_type": "MLC",
+    "sat:absolute_orbit": 34986.0,
+    "sat:orbit_state": "Ascending",
+    "sat:relative_orbit": 121,
+    "sequence_id": 34170555,
+    "start_datetime": "2025-11-13T01:18:44.291467",
+    "title": "RCM2_OK3685761_PK3902965_1_SC30MCPA_20251113_011844_CH_CV_MLC",
+    "version": "1.2"
+  },
+  "stac_version": "1.0.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/sar/v1.0.0/schema.json",
+    "https://stac-extensions.github.io/processing/v1.1.0/schema.json",
+    "https://stac-extensions.github.io/sat/v1.0.0/schema.json",
+    "https://stac-extensions.github.io/raster/v1.1.0/schema.json",
+    "https://stac-extensions.github.io/ceos-ard/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/version/v1.2.0/schema.json"
+  ]
+}
