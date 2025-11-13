@@ -1,4 +1,4 @@
-//! Convert between [ItemCollection] and [Table].
+//! Convert items to geoarrow record batches.
 
 pub mod json;
 
@@ -400,7 +400,7 @@ mod tests {
     use arrow_array::RecordBatchIterator;
 
     #[test]
-    fn to_table() {
+    fn encode() {
         let item: Item = crate::read("examples/simple-item.json").unwrap();
         let (_, schema) = super::encode(vec![item]).unwrap();
         assert_eq!(schema.metadata["stac:geoparquet_version"], "1.0.0");
