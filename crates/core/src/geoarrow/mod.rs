@@ -197,7 +197,7 @@ impl Writer {
                 schema_builder.push(field.clone());
             }
         }
-        Ok(Arc::new(schema))
+        Ok(Arc::new(schema_builder.finish()))
     }
 
     fn write(mut self, base_schema: SchemaRef) -> Result<RecordBatch> {
