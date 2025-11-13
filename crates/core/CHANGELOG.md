@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - Use `Encoder` instead of `TableBuilder` for `geoarrow` (breaking) ([#840](https://github.com/stac-utils/rustac/pull/840))
+- Break apart geoparquet writing into a `WriterBuilder` and a `Writer` (breaking) ([#841](https://github.com/stac-utils/rustac/pull/841))
 
 ## [0.13.3] - 2025-11-13
 
