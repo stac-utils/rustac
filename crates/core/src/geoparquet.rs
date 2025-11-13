@@ -2,7 +2,7 @@
 
 use crate::{
     Catalog, Collection, Error, Item, ItemCollection, Result, Value,
-    geoarrow::{Table, VERSION, VERSION_KEY},
+    geoarrow::{VERSION, VERSION_KEY},
 };
 use bytes::Bytes;
 use geoparquet::{
@@ -120,8 +120,7 @@ impl<W: Write + Send> WriterBuilder<W> {
     }
 
     fn write(self) -> Result<()> {
-        let (record_batches, schema) =
-            Table::from_item_collection(self.item_collection)?.into_inner();
+        let (record_batch, schema) = crate::geoarrow::encode(self.item_collection.items)?;
         let options = GeoParquetWriterOptionsBuilder::default()
             .set_primary_column("geometry".to_string())
             .build();
@@ -133,10 +132,8 @@ impl<W: Write + Send> WriterBuilder<W> {
         let properties = builder.build();
         let mut writer =
             ArrowWriter::try_new(self.writer, encoder.target_schema(), Some(properties))?;
-        for record_batch in record_batches {
-            let record_batch = encoder.encode_record_batch(&record_batch)?;
-            writer.write(&record_batch)?;
-        }
+        let record_batch = encoder.encode_record_batch(&record_batch)?;
+        writer.write(&record_batch)?;
         writer.append_key_value_metadata(encoder.into_keyvalue()?);
         writer.append_key_value_metadata(KeyValue::new(
             VERSION_KEY.to_string(),
