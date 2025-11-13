@@ -188,7 +188,11 @@ pub struct Properties {
     /// This is a [common
     /// metadata](https://github.com/radiantearth/stac-spec/blob/master/item-spec/common-metadata.md)
     /// field.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_datetime_permissively"
+    )]
     pub start_datetime: Option<DateTime<Utc>>,
 
     /// The last or end date and time for the Item, in UTC.
@@ -198,7 +202,11 @@ pub struct Properties {
     /// This is a [common
     /// metadata](https://github.com/radiantearth/stac-spec/blob/master/item-spec/common-metadata.md)
     /// field.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_datetime_permissively"
+    )]
     pub end_datetime: Option<DateTime<Utc>>,
 
     /// A human readable title describing the Item.
@@ -930,5 +938,10 @@ mod tests {
     #[test]
     fn read_invalid_item_datetime() {
         let _: Item = crate::read("data/invalid-item-datetime.json").unwrap();
+    }
+
+    #[test]
+    fn read_invalid_item_datetimes() {
+        let _: Item = crate::read("data/invalid-datetimes.json").unwrap();
     }
 }
