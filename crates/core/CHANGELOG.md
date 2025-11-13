@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Fixed
 
-- Permissively deserialize start and end datetimes ([#838](https://github.com/stac-utils/rustac/pull/838)) 
+- Permissively deserialize start and end datetimes ([#838](https://github.com/stac-utils/rustac/pull/838))
 
 ## [0.13.2] - 2025-10-22
 
