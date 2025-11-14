@@ -66,7 +66,6 @@
 //! - `geoarrow`: read and write [geoarrow](https://geoarrow.org/), see [geoarrow]
 //! - `geoparquet`: read and write [geoparquet](https://geoparquet.org/), see [geoparquet]
 
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(
     elided_lifetimes_in_paths,
     explicit_outlives_requirements,
