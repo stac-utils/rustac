@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.3.6] - 2025-11-14
+
+Update **stac** dependency.
+
 ## [0.3.5] - 2025-07-11
 
 ### Added
@@ -73,7 +77,8 @@ Bump axum dependency.
 
 Initial release.
 
-[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-server-v0.3.5..main
+[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-server-v0.3.6..main
+[0.3.6]: https://github.com/stac-utils/rustac/compare/stac-server-v0.3.5..stac-server-v0.3.6
 [0.3.5]: https://github.com/stac-utils/rustac/compare/stac-server-v0.3.4..stac-server-v0.3.5
 [0.3.4]: https://github.com/stac-utils/rustac/compare/stac-server-v0.3.3..stac-server-v0.3.4
 [0.3.3]: https://github.com/stac-utils/rustac/compare/stac-server-v0.3.2..stac-server-v0.3.3

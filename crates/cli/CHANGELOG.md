@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-11-14
+
+Update **stac** dependency.
+
 ## [0.1.1] - 2025-10-22
 
 ### Changed
@@ -147,7 +151,8 @@ Moved over from [stac-incubator-rs](https://github.com/gadomski/stac-incubator-r
 - Downloading ([#142](https://github.com/stac-utils/rustac/pull/142), [#152](https://github.com/stac-utils/rustac/pull/152))
 - Validation ([#155](https://github.com/stac-utils/rustac/pull/155))
 
-[Unreleased]: https://github.com/stac-utils/rustac/compare/rustac-v0.1.1..main
+[Unreleased]: https://github.com/stac-utils/rustac/compare/rustac-v0.1.2..main
+[0.1.2]: https://github.com/stac-utils/rustac/compare/rustac-v0.1.1..rustac-v0.1.2
 [0.1.1]: https://github.com/stac-utils/rustac/compare/rustac-v0.1.0..rustac-v0.1.1
 [0.1.0]: https://github.com/stac-utils/rustac/tree/rustac-v0.1.0
 [stac-cli 0.5.3]: https://github.com/stac-utils/rustac/compare/stac-cli-v0.5.2..stac-cli-v0.5.3

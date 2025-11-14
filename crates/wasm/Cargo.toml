@@ -1,6 +1,6 @@
 [package]
 name = "stac-wasm"
-version = "0.0.3"
+version = "0.0.4"
 readme = "README.md"
 description = "Converts Arrow arrays to STAC items, via WASM"
 authors.workspace = true

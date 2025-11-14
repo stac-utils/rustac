@@ -1,6 +1,6 @@
 [package]
 name = "stac-validate"
-version = "0.5.0"
+version = "0.5.1"
 readme = "README.md"
 description = "json-schema validation for the Rust implementation of the STAC specification"
 authors.workspace = true

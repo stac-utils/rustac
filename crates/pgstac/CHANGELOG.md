@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-11-14
+
+Update **stac** dependency.
+
+## [0.3.1] - 2025-09-19
+
+Update **stac** dependency.
+
 ## [0.3.0] - 2025-01-14
 
 ### Added
@@ -92,7 +100,9 @@ Bump dependencies.
 
 Initial release
 
-[unreleased]: https://github.com/stac-utils/rustac/compare/pgstac-v0.3.0...HEAD
+[unreleased]: https://github.com/stac-utils/rustac/compare/pgstac-v0.3.2...HEAD
+[0.3.2]: https://github.com/stac-utils/rustac/compare/pgstac-v0.3.1..pgstac-v0.3.2
+[0.3.1]: https://github.com/stac-utils/rustac/compare/pgstac-v0.3.0..pgstac-v0.3.1
 [0.3.0]: https://github.com/stac-utils/rustac/compare/pgstac-v0.2.2..pgstac-v0.3.0
 [0.2.2]: https://github.com/stac-utils/rustac/compare/pgstac-v0.2.1..pgstac-v0.2.2
 [0.2.1]: https://github.com/stac-utils/rustac/compare/pgstac-v0.2.0..pgstac-v0.2.1
