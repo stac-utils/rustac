@@ -100,7 +100,7 @@ where
     WriterBuilder::new(writer)
         .compression(compression)
         .build(item_collection.into().items)
-        .and_then(|writer| writer.finish())
+        .and_then(|mut writer| writer.finish())
 }
 
 /// Builder for a stac-geoparquet writer.
@@ -115,7 +115,9 @@ pub struct WriterBuilder<W: Write + Send> {
 #[allow(missing_debug_implementations)]
 pub struct Writer<W: Write + Send> {
     geoarrow_encoder: Encoder,
-    encoder: GeoParquetRecordBatchEncoder,
+    // We make this an option so we can consume it during write but keep write
+    // as only requiring a mutable reference.
+    encoder: Option<GeoParquetRecordBatchEncoder>,
     arrow_writer: ArrowWriter<W>,
 }
 
@@ -191,7 +193,7 @@ impl<W: Write + Send> WriterBuilder<W> {
     ///
     /// let item: Item = stac::read("examples/simple-item.json").unwrap();
     /// let cursor = Cursor::new(Vec::new());
-    /// let writer = WriterBuilder::new(cursor).build(vec![item]).unwrap();
+    /// let mut writer = WriterBuilder::new(cursor).build(vec![item]).unwrap();
     /// writer.finish().unwrap();
     /// ```
     pub fn build(self, items: Vec<Item>) -> Result<Writer<W>> {
@@ -222,12 +224,14 @@ impl<W: Write + Send> Writer<W> {
         arrow_writer.write(&record_batch)?;
         Ok(Writer {
             geoarrow_encoder,
-            encoder,
+            encoder: Some(encoder),
             arrow_writer,
         })
     }
 
     /// Writes more items to this writer.
+    ///
+    /// It's an error to write after `finish` has been called.
     ///
     /// # Examples
     ///
@@ -244,12 +248,18 @@ impl<W: Write + Send> Writer<W> {
     /// ```
     pub fn write(&mut self, items: Vec<Item>) -> Result<()> {
         let record_batch = self.geoarrow_encoder.encode(items)?;
-        let record_batch = self.encoder.encode_record_batch(&record_batch)?;
+        let record_batch = if let Some(encoder) = self.encoder.as_mut() {
+            encoder.encode_record_batch(&record_batch)?
+        } else {
+            return Err(Error::ClosedGeoparquetWriter);
+        };
         self.arrow_writer.write(&record_batch)?;
         Ok(())
     }
 
     /// Finishes writing.
+    ///
+    /// It's an error to call finish twice.
     ///
     /// # Examples
     ///
@@ -259,12 +269,16 @@ impl<W: Write + Send> Writer<W> {
     ///
     /// let item: Item = stac::read("examples/simple-item.json").unwrap();
     /// let cursor = Cursor::new(Vec::new());
-    /// let writer = WriterBuilder::new(cursor).build(vec![item]).unwrap();
+    /// let mut writer = WriterBuilder::new(cursor).build(vec![item]).unwrap();
     /// writer.finish().unwrap();
     /// ```
-    pub fn finish(mut self) -> Result<()> {
-        self.arrow_writer
-            .append_key_value_metadata(self.encoder.into_keyvalue()?);
+    pub fn finish(&mut self) -> Result<()> {
+        if let Some(encoder) = self.encoder.take() {
+            self.arrow_writer
+                .append_key_value_metadata(encoder.into_keyvalue()?);
+        } else {
+            return Err(Error::ClosedGeoparquetWriter);
+        }
         self.arrow_writer.append_key_value_metadata(KeyValue::new(
             VERSION_KEY.to_string(),
             Some(VERSION.to_string()),

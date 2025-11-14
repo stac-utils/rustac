@@ -5,21 +5,6 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// [arrow_schema::ArrowError]
-    #[error(transparent)]
-    #[cfg(feature = "geoarrow")]
-    Arrow(#[from] arrow_schema::ArrowError),
-
-    /// The schema of two sets of items don't match.
-    #[cfg(feature = "geoarrow")]
-    #[error("Arrow schema mismatch")]
-    ArrowSchemaMismatch,
-
-    /// The arrow table is empty
-    #[cfg(feature = "geoarrow")]
-    #[error("Empty arrow table")]
-    EmptyArrowTable,
-
     /// [chrono::ParseError]
     #[error(transparent)]
     ChronoParse(#[from] chrono::ParseError),
@@ -28,18 +13,9 @@ pub enum Error {
     #[error("{0} is not enabled")]
     FeatureNotEnabled(&'static str),
 
-    /// [geoarrow_schema::error::GeoArrowError]
-    #[error(transparent)]
-    #[cfg(feature = "geoarrow")]
-    GeoArrow(#[from] geoarrow_schema::error::GeoArrowError),
-
     /// [geojson::Error]
     #[error(transparent)]
     Geojson(#[from] Box<geojson::Error>),
-
-    /// [std::io::Error]
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
 
     /// Returned when a STAC object has the wrong type field.
     #[error("incorrect type: expected={expected}, actual={actual}")]
@@ -64,31 +40,25 @@ pub enum Error {
     #[error("invalid datetime: {0}")]
     InvalidDatetime(String),
 
+    /// [std::io::Error]
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
     /// Returned when there is not a required field on a STAC object
     #[error("no \"{0}\" field in the JSON object")]
     MissingField(&'static str),
-
-    /// No geoparquet metadata in a stac-geoparquet file.
-    #[error("no geoparquet metadata")]
-    #[cfg(feature = "geoparquet")]
-    MissingGeoparquetMetadata,
-
-    /// There are no items, when items are required.
-    #[error("no items")]
-    NoItems,
 
     /// There is not an href, when an href is required.
     #[error("no href")]
     NoHref,
 
+    /// There are no items, when items are required.
+    #[error("no items")]
+    NoItems,
+
     /// This is not a JSON object.
     #[error("json value is not an object")]
     NotAnObject(serde_json::Value),
-
-    /// [parquet::errors::ParquetError]
-    #[error(transparent)]
-    #[cfg(feature = "geoparquet")]
-    Parquet(#[from] parquet::errors::ParquetError),
 
     /// [serde_json::Error]
     #[error(transparent)]
@@ -114,8 +84,43 @@ pub enum Error {
     #[error(transparent)]
     UrlParse(#[from] url::ParseError),
 
+    /// [arrow_schema::ArrowError]
+    #[error(transparent)]
+    #[cfg(feature = "geoarrow")]
+    Arrow(#[from] arrow_schema::ArrowError),
+
+    /// The schema of two sets of items don't match.
+    #[cfg(feature = "geoarrow")]
+    #[error("Arrow schema mismatch")]
+    ArrowSchemaMismatch,
+
+    /// The arrow table is empty
+    #[cfg(feature = "geoarrow")]
+    #[error("Empty arrow table")]
+    EmptyArrowTable,
+
+    /// [geoarrow_schema::error::GeoArrowError]
+    #[error(transparent)]
+    #[cfg(feature = "geoarrow")]
+    GeoArrow(#[from] geoarrow_schema::error::GeoArrowError),
+
     /// [wkb::error::WkbError]
     #[error(transparent)]
     #[cfg(feature = "geoarrow")]
     Wkb(#[from] wkb::error::WkbError),
+
+    /// The geoparquet writer has been closed.
+    #[error("The geoparquet writer has already been closed")]
+    #[cfg(feature = "geoparquet")]
+    ClosedGeoparquetWriter,
+
+    /// No geoparquet metadata in a stac-geoparquet file.
+    #[error("no geoparquet metadata")]
+    #[cfg(feature = "geoparquet")]
+    MissingGeoparquetMetadata,
+
+    /// [parquet::errors::ParquetError]
+    #[error(transparent)]
+    #[cfg(feature = "geoparquet")]
+    Parquet(#[from] parquet::errors::ParquetError),
 }
