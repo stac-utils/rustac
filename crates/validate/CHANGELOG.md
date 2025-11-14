@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.5.1] - 2025-11-14
+
+Update **stac** dependency.
+
 ## [0.5.0] - 2025-09-08
 
 ### Changed
@@ -16,7 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 First release with a changelog.
 
-[unreleased]: https://github.com/stac-utils/rustac/compare/stac-validate-v0.5.0...main
+[unreleased]: https://github.com/stac-utils/rustac/compare/stac-validate-v0.5.1...main
+[0.5.1]: https://github.com/stac-utils/rustac/compare/stac-validate-v0.5.0...stac-validate-v0.5.1
 [0.5.0]: https://github.com/stac-utils/rustac/compare/stac-validate-v0.4.0...stac-validate-v0.5.0
 [0.4.0]: https://github.com/stac-utils/rustac/releases/tag/stac-validate-v0.4.0
 

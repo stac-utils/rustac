@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.14.0] - 2025-11-14
+
 ### Changed
 
 - Use `Encoder` instead of `TableBuilder` for `geoarrow` (breaking) ([#840](https://github.com/stac-utils/rustac/pull/840))
@@ -488,7 +490,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 Initial release.
 
-[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-v0.13.3...main
+[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-v0.14.0...main
+[0.14.0]: https://github.com/stac-utils/rustac/compare/stac-v0.13.3...stac-v0.14.0
 [0.13.3]: https://github.com/stac-utils/rustac/compare/stac-v0.13.2...stac-v0.13.3
 [0.13.2]: https://github.com/stac-utils/rustac/compare/stac-v0.13.1...stac-v0.13.2
 [0.13.1]: https://github.com/stac-utils/rustac/compare/stac-v0.13.0...stac-v0.13.1

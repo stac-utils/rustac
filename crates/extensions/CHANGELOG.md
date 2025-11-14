@@ -6,11 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-11-14
+
+Update **stac** dependency.
+
 ## [0.1.0] - 2025-01-31
 
 Initial release.
 
-[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-extensions-v0.1.0...main
+[Unreleased]: https://github.com/stac-utils/rustac/compare/stac-extensions-v0.1.1...main
+[0.1.1]: https://github.com/stac-utils/rustac/compare/stac-extensions-v0.1.0...stac-extensions-v0.1.1
 [0.1.0]: https://github.com/stac-utils/rustac/releases/tag/v0.1.0
 
 <!-- markdownlint-disable-file MD024 -->

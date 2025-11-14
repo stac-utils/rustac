@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-11-14
+
+Update **stac** dependency.
+
 ## [0.1.1] - 2025-09-23
 
 Bump dependencies.
@@ -14,7 +18,8 @@ Bump dependencies.
 
 Initial release
 
-[unreleased]: https://github.com/stac-utils/rustac/compare/stac-io-v0.1.1...main
+[unreleased]: https://github.com/stac-utils/rustac/compare/stac-io-v0.1.2...main
+[0.1.2]: https://github.com/stac-utils/rustac/compare/stac-io-v0.1.1...stac-io-v0.1.2
 [0.1.1]: https://github.com/stac-utils/rustac/compare/stac-io-v0.1.0...stac-io-v0.1.1
 [0.1.0]: https://github.com/stac-utils/rustac/releases/tag/stac-io-v0.1.0
 
