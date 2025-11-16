@@ -23,6 +23,9 @@ pub fn default_compression() -> Compression {
     Compression::ZSTD(ZstdLevel::try_new(15).unwrap())
 }
 
+/// Default stac-geoparquet max row group size
+pub const DEFAULT_STAC_MAX_ROW_GROUP_SIZE: usize = 150_000;
+
 /// Reads a [ItemCollection] from a [ChunkReader] as
 /// [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet).
 ///
@@ -109,6 +112,7 @@ pub struct WriterBuilder<W: Write + Send> {
     writer: W,
     options: Options,
     compression: Option<Compression>,
+    max_row_group_size: Option<usize>,
 }
 
 /// Write items to stac-geoparquet.
@@ -139,6 +143,7 @@ impl<W: Write + Send> WriterBuilder<W> {
             writer,
             options: Options::default(),
             compression: Some(default_compression()),
+            max_row_group_size: Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE),
         }
     }
 
@@ -159,6 +164,26 @@ impl<W: Write + Send> WriterBuilder<W> {
     /// ```
     pub fn compression(mut self, compression: impl Into<Option<Compression>>) -> WriterBuilder<W> {
         self.compression = compression.into();
+        self
+    }
+
+    /// Sets the parquet max_row_group_size
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::io::Cursor;
+    /// use stac::{Item, geoparquet::{WriterBuilder}};
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let cursor = Cursor::new(Vec::new());
+    /// let writer = WriterBuilder::new(cursor)
+    ///     .max_row_group_size(50000)
+    ///     .build(vec![item])
+    ///     .unwrap();
+    /// ```
+    pub fn max_row_group_size(mut self, size: usize) -> WriterBuilder<W> {
+        self.max_row_group_size = Some(size);
         self
     }
 
@@ -197,7 +222,13 @@ impl<W: Write + Send> WriterBuilder<W> {
     /// writer.finish().unwrap();
     /// ```
     pub fn build(self, items: Vec<Item>) -> Result<Writer<W>> {
-        Writer::new(self.writer, self.options, self.compression, items)
+        Writer::new(
+            self.writer,
+            self.options,
+            self.compression,
+            self.max_row_group_size,
+            items,
+        )
     }
 }
 
@@ -206,6 +237,7 @@ impl<W: Write + Send> Writer<W> {
         writer: W,
         options: Options,
         compression: Option<Compression>,
+        max_row_group_size: Option<usize>,
         items: Vec<Item>,
     ) -> Result<Self> {
         let (geoarrow_encoder, record_batch) = Encoder::new(items, options)?;
@@ -216,6 +248,9 @@ impl<W: Write + Send> Writer<W> {
         let mut builder = WriterProperties::builder();
         if let Some(compression) = compression {
             builder = builder.set_compression(compression);
+        }
+        if let Some(size) = max_row_group_size {
+            builder = builder.set_max_row_group_size(size)
         }
         let properties = builder.build();
         let mut arrow_writer =
@@ -424,7 +459,7 @@ impl IntoGeoparquet for serde_json::Value {
 
 #[cfg(test)]
 mod tests {
-    use crate::{FromGeoparquet, Item, ItemCollection, SelfHref, Value};
+    use crate::{FromGeoparquet, Item, ItemCollection, SelfHref, Value, geoparquet::WriterBuilder};
     use bytes::Bytes;
     use parquet::file::reader::{FileReader, SerializedFileReader};
     use std::{
@@ -540,5 +575,46 @@ mod tests {
                 .unwrap()
                 .contains_key("proj:geometry")
         );
+    }
+
+    #[test]
+    fn custom_max_row_group_size() {
+        // Create multiple items to test row grouping
+        let item: Item = crate::read("examples/simple-item.json").unwrap();
+        let items: Vec<Item> = (0..100).map(|_| item.clone()).collect();
+
+        let mut cursor = Cursor::new(Vec::new());
+        WriterBuilder::new(&mut cursor)
+            .max_row_group_size(25) // 25 rows per group
+            .build(items)
+            .unwrap()
+            .finish()
+            .unwrap();
+
+        let bytes = Bytes::from(cursor.into_inner());
+        let reader = SerializedFileReader::new(bytes).unwrap();
+
+        // Should have 4 row groups (100 items / 25 per group)
+        assert_eq!(reader.metadata().num_row_groups(), 4);
+    }
+
+    #[test]
+    fn default_max_row_group_size() {
+        // Create multiple items to test row grouping
+        let item: Item = crate::read("examples/simple-item.json").unwrap();
+        let items: Vec<Item> = (0..1000).map(|_| item.clone()).collect();
+
+        let mut cursor = Cursor::new(Vec::new());
+        WriterBuilder::new(&mut cursor)
+            .build(items)
+            .unwrap()
+            .finish()
+            .unwrap();
+
+        let bytes = Bytes::from(cursor.into_inner());
+        let reader = SerializedFileReader::new(bytes).unwrap();
+
+        // Should have a single row group
+        assert_eq!(reader.metadata().num_row_groups(), 1);
     }
 }
