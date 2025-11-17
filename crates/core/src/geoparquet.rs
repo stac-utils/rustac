@@ -26,6 +26,67 @@ pub fn default_compression() -> Compression {
 /// Default stac-geoparquet max row group size
 pub const DEFAULT_STAC_MAX_ROW_GROUP_SIZE: usize = 150_000;
 
+/// Options for writing stac-geoparquet files.
+#[derive(Debug, Clone)]
+pub struct WriterOptions {
+    /// Parquet compression codec
+    pub compression: Option<Compression>,
+    /// Maximum number of rows in a row group
+    pub max_row_group_size: Option<usize>,
+}
+
+impl WriterOptions {
+    /// Creates a new WriterOptions with default values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::geoparquet::WriterOptions;
+    ///
+    /// let options = WriterOptions::new();
+    /// ```
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets the compression codec.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::geoparquet::{WriterOptions, Compression};
+    ///
+    /// let options = WriterOptions::new().with_compression(Compression::SNAPPY);
+    /// ```
+    pub fn with_compression(mut self, compression: impl Into<Option<Compression>>) -> Self {
+        self.compression = compression.into();
+        self
+    }
+
+    /// Sets the maximum row group size.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::geoparquet::WriterOptions;
+    ///
+    /// let options = WriterOptions::new().with_max_row_group_size(50000);
+    /// ```
+    pub fn with_max_row_group_size(mut self, size: impl Into<Option<usize>>) -> Self {
+        self.max_row_group_size = size.into();
+        self
+    }
+}
+
+impl Default for WriterOptions {
+    fn default() -> Self {
+        Self {
+            compression: Some(default_compression()),
+            max_row_group_size: Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE),
+        }
+    }
+}
+
 /// Reads a [ItemCollection] from a [ChunkReader] as
 /// [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet).
 ///
@@ -101,7 +162,7 @@ where
     W: Write + Send,
 {
     WriterBuilder::new(writer)
-        .compression(compression)
+        .writer_options(WriterOptions::new().with_compression(compression))
         .build(item_collection.into().items)
         .and_then(|mut writer| writer.finish())
 }
@@ -111,8 +172,7 @@ where
 pub struct WriterBuilder<W: Write + Send> {
     writer: W,
     options: Options,
-    compression: Option<Compression>,
-    max_row_group_size: Option<usize>,
+    writer_options: WriterOptions,
 }
 
 /// Write items to stac-geoparquet.
@@ -142,48 +202,30 @@ impl<W: Write + Send> WriterBuilder<W> {
         WriterBuilder {
             writer,
             options: Options::default(),
-            compression: Some(default_compression()),
-            max_row_group_size: Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE),
+            writer_options: WriterOptions::default(),
         }
     }
 
-    /// Sets the parquet compression.
+    /// Sets the writer options for parquet writing (compression, row group size, etc).
     ///
     /// # Examples
     ///
     /// ```
     /// use std::io::Cursor;
-    /// use stac::{Item, geoparquet::{WriterBuilder, Compression}};
+    /// use stac::{Item, geoparquet::{WriterBuilder, WriterOptions, Compression}};
     ///
     /// let item: Item = stac::read("examples/simple-item.json").unwrap();
     /// let cursor = Cursor::new(Vec::new());
+    /// let options = WriterOptions::new()
+    ///     .with_compression(Compression::SNAPPY)
+    ///     .with_max_row_group_size(50000);
     /// let writer = WriterBuilder::new(cursor)
-    ///     .compression(Compression::SNAPPY)
+    ///     .writer_options(options)
     ///     .build(vec![item])
     ///     .unwrap();
     /// ```
-    pub fn compression(mut self, compression: impl Into<Option<Compression>>) -> WriterBuilder<W> {
-        self.compression = compression.into();
-        self
-    }
-
-    /// Sets the parquet max_row_group_size
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::io::Cursor;
-    /// use stac::{Item, geoparquet::{WriterBuilder}};
-    ///
-    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
-    /// let cursor = Cursor::new(Vec::new());
-    /// let writer = WriterBuilder::new(cursor)
-    ///     .max_row_group_size(50000)
-    ///     .build(vec![item])
-    ///     .unwrap();
-    /// ```
-    pub fn max_row_group_size(mut self, size: usize) -> WriterBuilder<W> {
-        self.max_row_group_size = Some(size);
+    pub fn writer_options(mut self, writer_options: WriterOptions) -> WriterBuilder<W> {
+        self.writer_options = writer_options;
         self
     }
 
@@ -225,8 +267,8 @@ impl<W: Write + Send> WriterBuilder<W> {
         Writer::new(
             self.writer,
             self.options,
-            self.compression,
-            self.max_row_group_size,
+            self.writer_options.compression,
+            self.writer_options.max_row_group_size,
             items,
         )
     }
@@ -584,8 +626,9 @@ mod tests {
         let items: Vec<Item> = (0..100).map(|_| item.clone()).collect();
 
         let mut cursor = Cursor::new(Vec::new());
+        let options = super::WriterOptions::new().with_max_row_group_size(25);
         WriterBuilder::new(&mut cursor)
-            .max_row_group_size(25) // 25 rows per group
+            .writer_options(options)
             .build(items)
             .unwrap()
             .finish()
