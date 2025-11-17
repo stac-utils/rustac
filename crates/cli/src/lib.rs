@@ -98,6 +98,18 @@ pub struct Rustac {
     #[arg(long = "parquet-compression", global = true, verbatim_doc_comment)]
     parquet_compression: Option<Compression>,
 
+    /// Maximum number of rows per row group in parquet files.
+    ///
+    /// The default is 150,000 rows per group, which is optimized for STAC data.
+    /// Lower values result in smaller row groups (better for selective queries),
+    /// while higher values result in larger row groups (better compression).
+    #[arg(
+        long = "parquet-max-row-group-size",
+        global = true,
+        verbatim_doc_comment
+    )]
+    parquet_max_row_group_size: Option<usize>,
+
     #[arg(
         long,
         short = 'v',
@@ -484,7 +496,7 @@ impl Rustac {
                         .put_format(
                             path.child(file_name),
                             stac::ItemCollection::from(items),
-                            format,
+                            format.clone(),
                         )
                         .await?;
                 }
@@ -574,8 +586,8 @@ impl Rustac {
 
     /// Returns the set or inferred input format.
     pub fn input_format(&self, href: Option<&str>) -> Format {
-        if let Some(input_format) = self.input_format {
-            input_format
+        if let Some(input_format) = &self.input_format {
+            input_format.clone()
         } else if let Some(href) = href {
             Format::infer_from_href(href).unwrap_or_default()
         } else {
@@ -585,15 +597,21 @@ impl Rustac {
 
     /// Returns the set or inferred input format.
     pub fn output_format(&self, href: Option<&str>) -> Format {
-        let format = if let Some(format) = self.output_format {
-            format
+        let format = if let Some(format) = &self.output_format {
+            format.clone()
         } else if let Some(href) = href {
             Format::infer_from_href(href).unwrap_or_default()
         } else {
             Format::Json(true)
         };
         if matches!(format, Format::Geoparquet(_)) {
-            Format::Geoparquet(self.parquet_compression.or(Some(default_compression())))
+            use stac::geoparquet::WriterOptions;
+
+            let writer_options = WriterOptions::new()
+                .with_compression(self.parquet_compression.or(Some(default_compression())))
+                .with_max_row_group_size(self.parquet_max_row_group_size);
+
+            Format::Geoparquet(writer_options)
         } else if let Format::Json(pretty) = format {
             Format::Json(self.compact_json.map(|c| !c).unwrap_or(pretty))
         } else {

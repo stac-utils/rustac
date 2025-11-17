@@ -27,7 +27,7 @@ pub fn default_compression() -> Compression {
 pub const DEFAULT_STAC_MAX_ROW_GROUP_SIZE: usize = 150_000;
 
 /// Options for writing stac-geoparquet files.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct WriterOptions {
     /// Parquet compression codec
     pub compression: Option<Compression>,
@@ -380,15 +380,16 @@ pub trait IntoGeoparquet: Sized {
     ///
     /// ```no_run
     /// use stac::{IntoGeoparquet, ItemCollection, Item};
+    /// use stac::geoparquet::WriterOptions;
     ///
     /// let item_collection: ItemCollection = vec![Item::new("a"), Item::new("b")].into();
     /// let mut buf = Vec::new();
-    /// item_collection.into_geoparquet_writer(&mut buf, None).unwrap();
+    /// item_collection.into_geoparquet_writer(&mut buf, WriterOptions::default()).unwrap();
     /// ```
     fn into_geoparquet_writer(
         self,
         writer: impl Write + Send,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()>;
 
     /// Writes a value to a writer as stac-geoparquet to some bytes.
@@ -397,13 +398,14 @@ pub trait IntoGeoparquet: Sized {
     ///
     /// ```no_run
     /// use stac::{IntoGeoparquet, ItemCollection, Item};
+    /// use stac::geoparquet::WriterOptions;
     ///
     /// let item_collection: ItemCollection = vec![Item::new("a"), Item::new("b")].into();
-    /// let bytes = item_collection.into_geoparquet_vec(None).unwrap();
+    /// let bytes = item_collection.into_geoparquet_vec(WriterOptions::default()).unwrap();
     /// ```
-    fn into_geoparquet_vec(self, compression: Option<Compression>) -> Result<Vec<u8>> {
+    fn into_geoparquet_vec(self, writer_options: WriterOptions) -> Result<Vec<u8>> {
         let mut buf = Vec::new();
-        self.into_geoparquet_writer(&mut buf, compression)?;
+        self.into_geoparquet_writer(&mut buf, writer_options)?;
         Ok(buf)
     }
 }
@@ -425,7 +427,7 @@ macro_rules! impl_into_geoparquet {
             fn into_geoparquet_writer(
                 self,
                 _: impl Write + Send,
-                _: Option<Compression>,
+                _: WriterOptions,
             ) -> std::result::Result<(), crate::Error> {
                 Err(crate::Error::UnsupportedGeoparquetType)
             }
@@ -458,13 +460,12 @@ impl IntoGeoparquet for ItemCollection {
     fn into_geoparquet_writer(
         self,
         writer: impl Write + Send,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()> {
-        if let Some(compression) = compression {
-            into_writer_with_compression(writer, self, compression)
-        } else {
-            into_writer(writer, self)
-        }
+        WriterBuilder::new(writer)
+            .writer_options(writer_options)
+            .build(self.items)?
+            .finish()
     }
 }
 
@@ -472,9 +473,9 @@ impl IntoGeoparquet for Item {
     fn into_geoparquet_writer(
         self,
         writer: impl Write + Send,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()> {
-        ItemCollection::from(vec![self]).into_geoparquet_writer(writer, compression)
+        ItemCollection::from(vec![self]).into_geoparquet_writer(writer, writer_options)
     }
 }
 
@@ -482,9 +483,9 @@ impl IntoGeoparquet for Value {
     fn into_geoparquet_writer(
         self,
         writer: impl Write + Send,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()> {
-        ItemCollection::try_from(self)?.into_geoparquet_writer(writer, compression)
+        ItemCollection::try_from(self)?.into_geoparquet_writer(writer, writer_options)
     }
 }
 
@@ -492,10 +493,10 @@ impl IntoGeoparquet for serde_json::Value {
     fn into_geoparquet_writer(
         self,
         writer: impl Write + Send,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()> {
         let item_collection: ItemCollection = serde_json::from_value(self)?;
-        item_collection.into_geoparquet_writer(writer, compression)
+        item_collection.into_geoparquet_writer(writer, writer_options)
     }
 }
 
