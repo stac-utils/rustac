@@ -264,13 +264,7 @@ impl<W: Write + Send> WriterBuilder<W> {
     /// writer.finish().unwrap();
     /// ```
     pub fn build(self, items: Vec<Item>) -> Result<Writer<W>> {
-        Writer::new(
-            self.writer,
-            self.options,
-            self.writer_options.compression,
-            self.writer_options.max_row_group_size,
-            items,
-        )
+        Writer::new(self.writer, self.options, self.writer_options, items)
     }
 }
 
@@ -278,8 +272,7 @@ impl<W: Write + Send> Writer<W> {
     fn new(
         writer: W,
         options: Options,
-        compression: Option<Compression>,
-        max_row_group_size: usize,
+        writer_options: WriterOptions,
         items: Vec<Item>,
     ) -> Result<Self> {
         let (geoarrow_encoder, record_batch) = Encoder::new(items, options)?;
@@ -288,10 +281,10 @@ impl<W: Write + Send> Writer<W> {
             .build();
         let mut encoder = GeoParquetRecordBatchEncoder::try_new(&record_batch.schema(), &options)?;
         let mut builder = WriterProperties::builder();
-        if let Some(compression) = compression {
+        if let Some(compression) = writer_options.compression {
             builder = builder.set_compression(compression);
         }
-        builder = builder.set_max_row_group_size(max_row_group_size);
+        builder = builder.set_max_row_group_size(writer_options.max_row_group_size);
         let properties = builder.build();
         let mut arrow_writer =
             ArrowWriter::try_new(writer, encoder.target_schema(), Some(properties))?;
