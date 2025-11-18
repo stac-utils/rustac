@@ -1,5 +1,5 @@
 use crate::Result;
-use stac::{FromGeoparquet, IntoGeoparquet, geoparquet::Compression};
+use stac::{FromGeoparquet, IntoGeoparquet, geoparquet::WriterOptions};
 use std::{fs::File, io::Read, path::Path};
 
 /// Create a STAC object from geoparquet data.
@@ -33,18 +33,19 @@ pub trait IntoGeoparquetPath: IntoGeoparquet {
     ///
     /// ```no_run
     /// use stac::{ItemCollection, Item};
+    /// use stac::geoparquet::WriterOptions;
     /// use stac_io::IntoGeoparquetPath;
     ///
     /// let item_collection: ItemCollection = vec![Item::new("a"), Item::new("b")].into();
-    /// item_collection.into_geoparquet_path("items.geoparquet", None).unwrap();
+    /// item_collection.into_geoparquet_path("items.geoparquet", WriterOptions::default()).unwrap();
     /// ```
     fn into_geoparquet_path(
         self,
         path: impl AsRef<Path>,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()> {
         let file = File::create(path)?;
-        self.into_geoparquet_writer(file, compression)?;
+        self.into_geoparquet_writer(file, writer_options)?;
         Ok(())
     }
 }

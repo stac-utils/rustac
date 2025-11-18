@@ -23,6 +23,70 @@ pub fn default_compression() -> Compression {
     Compression::ZSTD(ZstdLevel::try_new(15).unwrap())
 }
 
+/// Default stac-geoparquet max row group size
+pub const DEFAULT_STAC_MAX_ROW_GROUP_SIZE: usize = 150_000;
+
+/// Options for writing stac-geoparquet files.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct WriterOptions {
+    /// Parquet compression codec
+    pub compression: Option<Compression>,
+    /// Maximum number of rows in a row group
+    pub max_row_group_size: usize,
+}
+
+impl WriterOptions {
+    /// Creates a new WriterOptions with default values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::geoparquet::WriterOptions;
+    ///
+    /// let options = WriterOptions::new();
+    /// ```
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets the compression codec.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::geoparquet::{WriterOptions, Compression};
+    ///
+    /// let options = WriterOptions::new().with_compression(Compression::SNAPPY);
+    /// ```
+    pub fn with_compression(mut self, compression: impl Into<Option<Compression>>) -> Self {
+        self.compression = compression.into();
+        self
+    }
+
+    /// Sets the maximum row group size.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::geoparquet::WriterOptions;
+    ///
+    /// let options = WriterOptions::new().with_max_row_group_size(50000);
+    /// ```
+    pub fn with_max_row_group_size(mut self, size: usize) -> Self {
+        self.max_row_group_size = size;
+        self
+    }
+}
+
+impl Default for WriterOptions {
+    fn default() -> Self {
+        Self {
+            compression: Some(default_compression()),
+            max_row_group_size: DEFAULT_STAC_MAX_ROW_GROUP_SIZE,
+        }
+    }
+}
+
 /// Reads a [ItemCollection] from a [ChunkReader] as
 /// [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet).
 ///
@@ -98,7 +162,7 @@ where
     W: Write + Send,
 {
     WriterBuilder::new(writer)
-        .compression(compression)
+        .writer_options(WriterOptions::new().with_compression(compression))
         .build(item_collection.into().items)
         .and_then(|mut writer| writer.finish())
 }
@@ -108,7 +172,7 @@ where
 pub struct WriterBuilder<W: Write + Send> {
     writer: W,
     options: Options,
-    compression: Option<Compression>,
+    writer_options: WriterOptions,
 }
 
 /// Write items to stac-geoparquet.
@@ -138,27 +202,30 @@ impl<W: Write + Send> WriterBuilder<W> {
         WriterBuilder {
             writer,
             options: Options::default(),
-            compression: Some(default_compression()),
+            writer_options: WriterOptions::default(),
         }
     }
 
-    /// Sets the parquet compression.
+    /// Sets the writer options for parquet writing (compression, row group size, etc).
     ///
     /// # Examples
     ///
     /// ```
     /// use std::io::Cursor;
-    /// use stac::{Item, geoparquet::{WriterBuilder, Compression}};
+    /// use stac::{Item, geoparquet::{WriterBuilder, WriterOptions, Compression}};
     ///
     /// let item: Item = stac::read("examples/simple-item.json").unwrap();
     /// let cursor = Cursor::new(Vec::new());
+    /// let options = WriterOptions::new()
+    ///     .with_compression(Compression::SNAPPY)
+    ///     .with_max_row_group_size(50000);
     /// let writer = WriterBuilder::new(cursor)
-    ///     .compression(Compression::SNAPPY)
+    ///     .writer_options(options)
     ///     .build(vec![item])
     ///     .unwrap();
     /// ```
-    pub fn compression(mut self, compression: impl Into<Option<Compression>>) -> WriterBuilder<W> {
-        self.compression = compression.into();
+    pub fn writer_options(mut self, writer_options: WriterOptions) -> WriterBuilder<W> {
+        self.writer_options = writer_options;
         self
     }
 
@@ -197,7 +264,7 @@ impl<W: Write + Send> WriterBuilder<W> {
     /// writer.finish().unwrap();
     /// ```
     pub fn build(self, items: Vec<Item>) -> Result<Writer<W>> {
-        Writer::new(self.writer, self.options, self.compression, items)
+        Writer::new(self.writer, self.options, self.writer_options, items)
     }
 }
 
@@ -205,7 +272,7 @@ impl<W: Write + Send> Writer<W> {
     fn new(
         writer: W,
         options: Options,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
         items: Vec<Item>,
     ) -> Result<Self> {
         let (geoarrow_encoder, record_batch) = Encoder::new(items, options)?;
@@ -214,9 +281,10 @@ impl<W: Write + Send> Writer<W> {
             .build();
         let mut encoder = GeoParquetRecordBatchEncoder::try_new(&record_batch.schema(), &options)?;
         let mut builder = WriterProperties::builder();
-        if let Some(compression) = compression {
+        if let Some(compression) = writer_options.compression {
             builder = builder.set_compression(compression);
         }
+        builder = builder.set_max_row_group_size(writer_options.max_row_group_size);
         let properties = builder.build();
         let mut arrow_writer =
             ArrowWriter::try_new(writer, encoder.target_schema(), Some(properties))?;
@@ -303,15 +371,16 @@ pub trait IntoGeoparquet: Sized {
     ///
     /// ```no_run
     /// use stac::{IntoGeoparquet, ItemCollection, Item};
+    /// use stac::geoparquet::WriterOptions;
     ///
     /// let item_collection: ItemCollection = vec![Item::new("a"), Item::new("b")].into();
     /// let mut buf = Vec::new();
-    /// item_collection.into_geoparquet_writer(&mut buf, None).unwrap();
+    /// item_collection.into_geoparquet_writer(&mut buf, WriterOptions::default()).unwrap();
     /// ```
     fn into_geoparquet_writer(
         self,
         writer: impl Write + Send,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()>;
 
     /// Writes a value to a writer as stac-geoparquet to some bytes.
@@ -320,13 +389,14 @@ pub trait IntoGeoparquet: Sized {
     ///
     /// ```no_run
     /// use stac::{IntoGeoparquet, ItemCollection, Item};
+    /// use stac::geoparquet::WriterOptions;
     ///
     /// let item_collection: ItemCollection = vec![Item::new("a"), Item::new("b")].into();
-    /// let bytes = item_collection.into_geoparquet_vec(None).unwrap();
+    /// let bytes = item_collection.into_geoparquet_vec(WriterOptions::default()).unwrap();
     /// ```
-    fn into_geoparquet_vec(self, compression: Option<Compression>) -> Result<Vec<u8>> {
+    fn into_geoparquet_vec(self, writer_options: WriterOptions) -> Result<Vec<u8>> {
         let mut buf = Vec::new();
-        self.into_geoparquet_writer(&mut buf, compression)?;
+        self.into_geoparquet_writer(&mut buf, writer_options)?;
         Ok(buf)
     }
 }
@@ -348,7 +418,7 @@ macro_rules! impl_into_geoparquet {
             fn into_geoparquet_writer(
                 self,
                 _: impl Write + Send,
-                _: Option<Compression>,
+                _: WriterOptions,
             ) -> std::result::Result<(), crate::Error> {
                 Err(crate::Error::UnsupportedGeoparquetType)
             }
@@ -381,13 +451,12 @@ impl IntoGeoparquet for ItemCollection {
     fn into_geoparquet_writer(
         self,
         writer: impl Write + Send,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()> {
-        if let Some(compression) = compression {
-            into_writer_with_compression(writer, self, compression)
-        } else {
-            into_writer(writer, self)
-        }
+        WriterBuilder::new(writer)
+            .writer_options(writer_options)
+            .build(self.items)?
+            .finish()
     }
 }
 
@@ -395,9 +464,9 @@ impl IntoGeoparquet for Item {
     fn into_geoparquet_writer(
         self,
         writer: impl Write + Send,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()> {
-        ItemCollection::from(vec![self]).into_geoparquet_writer(writer, compression)
+        ItemCollection::from(vec![self]).into_geoparquet_writer(writer, writer_options)
     }
 }
 
@@ -405,9 +474,9 @@ impl IntoGeoparquet for Value {
     fn into_geoparquet_writer(
         self,
         writer: impl Write + Send,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()> {
-        ItemCollection::try_from(self)?.into_geoparquet_writer(writer, compression)
+        ItemCollection::try_from(self)?.into_geoparquet_writer(writer, writer_options)
     }
 }
 
@@ -415,16 +484,16 @@ impl IntoGeoparquet for serde_json::Value {
     fn into_geoparquet_writer(
         self,
         writer: impl Write + Send,
-        compression: Option<Compression>,
+        writer_options: WriterOptions,
     ) -> Result<()> {
         let item_collection: ItemCollection = serde_json::from_value(self)?;
-        item_collection.into_geoparquet_writer(writer, compression)
+        item_collection.into_geoparquet_writer(writer, writer_options)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{FromGeoparquet, Item, ItemCollection, SelfHref, Value};
+    use crate::{FromGeoparquet, Item, ItemCollection, SelfHref, Value, geoparquet::WriterBuilder};
     use bytes::Bytes;
     use parquet::file::reader::{FileReader, SerializedFileReader};
     use std::{
@@ -540,5 +609,47 @@ mod tests {
                 .unwrap()
                 .contains_key("proj:geometry")
         );
+    }
+
+    #[test]
+    fn custom_max_row_group_size() {
+        // Create multiple items to test row grouping
+        let item: Item = crate::read("examples/simple-item.json").unwrap();
+        let items: Vec<Item> = (0..100).map(|_| item.clone()).collect();
+
+        let mut cursor = Cursor::new(Vec::new());
+        let options = super::WriterOptions::new().with_max_row_group_size(25);
+        WriterBuilder::new(&mut cursor)
+            .writer_options(options)
+            .build(items)
+            .unwrap()
+            .finish()
+            .unwrap();
+
+        let bytes = Bytes::from(cursor.into_inner());
+        let reader = SerializedFileReader::new(bytes).unwrap();
+
+        // Should have 4 row groups (100 items / 25 per group)
+        assert_eq!(reader.metadata().num_row_groups(), 4);
+    }
+
+    #[test]
+    fn default_max_row_group_size() {
+        // Create multiple items to test row grouping
+        let item: Item = crate::read("examples/simple-item.json").unwrap();
+        let items: Vec<Item> = (0..1000).map(|_| item.clone()).collect();
+
+        let mut cursor = Cursor::new(Vec::new());
+        WriterBuilder::new(&mut cursor)
+            .build(items)
+            .unwrap()
+            .finish()
+            .unwrap();
+
+        let bytes = Bytes::from(cursor.into_inner());
+        let reader = SerializedFileReader::new(bytes).unwrap();
+
+        // Should have a single row group
+        assert_eq!(reader.metadata().num_row_groups(), 1);
     }
 }

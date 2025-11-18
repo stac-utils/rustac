@@ -98,6 +98,18 @@ pub struct Rustac {
     #[arg(long = "parquet-compression", global = true, verbatim_doc_comment)]
     parquet_compression: Option<Compression>,
 
+    /// Maximum number of rows per row group in parquet files.
+    ///
+    /// The default is 150,000 rows per group, which is the maximum recommended value for Geoparquet files.
+    /// When records are ordered spatially or temporally, lower values result in smaller row groups (better for selective queries),
+    /// while higher values result in larger row groups (better compression).
+    #[arg(
+        long = "parquet-max-row-group-size",
+        global = true,
+        verbatim_doc_comment
+    )]
+    parquet_max_row_group_size: Option<usize>,
+
     #[arg(
         long,
         short = 'v',
@@ -593,7 +605,16 @@ impl Rustac {
             Format::Json(true)
         };
         if matches!(format, Format::Geoparquet(_)) {
-            Format::Geoparquet(self.parquet_compression.or(Some(default_compression())))
+            use stac::geoparquet::WriterOptions;
+
+            let mut writer_options = WriterOptions::new()
+                .with_compression(self.parquet_compression.or(Some(default_compression())));
+
+            if let Some(max_row_group_size) = self.parquet_max_row_group_size {
+                writer_options = writer_options.with_max_row_group_size(max_row_group_size);
+            }
+
+            Format::Geoparquet(writer_options)
         } else if let Format::Json(pretty) = format {
             Format::Json(self.compact_json.map(|c| !c).unwrap_or(pretty))
         } else {
@@ -784,7 +805,7 @@ mod tests {
     use assert_cmd::Command;
     use clap::Parser;
     use rstest::{fixture, rstest};
-    use stac::geoparquet::{Compression, ZstdLevel};
+    use stac::geoparquet::{Compression, WriterOptions};
     use stac_io::Format;
 
     #[fixture]
@@ -836,7 +857,7 @@ mod tests {
         let rustac = Rustac::parse_from(["Rustac", "translate"]);
         assert_eq!(
             rustac.input_format(Some("file.parquet")),
-            Format::Geoparquet(Some(Compression::ZSTD(ZstdLevel::try_new(15).unwrap())))
+            Format::Geoparquet(WriterOptions::new())
         );
 
         let rustac = Rustac::parse_from(["rutsac", "--input-format", "json", "translate"]);
@@ -848,7 +869,7 @@ mod tests {
         let rustac = Rustac::parse_from(["rustac", "--input-format", "parquet", "translate"]);
         assert_eq!(
             rustac.input_format(None),
-            Format::Geoparquet(Some(Compression::ZSTD(ZstdLevel::try_new(15).unwrap())))
+            Format::Geoparquet(WriterOptions::new())
         );
 
         let rustac = Rustac::parse_from([
@@ -876,7 +897,7 @@ mod tests {
         let rustac = Rustac::parse_from(["rustac", "translate"]);
         assert_eq!(
             rustac.output_format(Some("file.parquet")),
-            Format::Geoparquet(Some(Compression::ZSTD(ZstdLevel::try_new(15).unwrap())))
+            Format::Geoparquet(WriterOptions::new())
         );
 
         let rustac = Rustac::parse_from(["rustac", "--output-format", "json", "translate"]);
@@ -888,7 +909,7 @@ mod tests {
         let rustac = Rustac::parse_from(["rustac", "--output-format", "parquet", "translate"]);
         assert_eq!(
             rustac.output_format(None),
-            Format::Geoparquet(Some(Compression::ZSTD(ZstdLevel::try_new(15).unwrap())))
+            Format::Geoparquet(WriterOptions::new())
         );
 
         let rustac = Rustac::parse_from([
@@ -911,7 +932,39 @@ mod tests {
         ]);
         assert_eq!(
             rustac.output_format(None),
-            Format::Geoparquet(Some(Compression::LZO))
+            Format::Geoparquet(WriterOptions::new().with_compression(Some(Compression::LZO)))
+        );
+
+        let rustac = Rustac::parse_from([
+            "rustac",
+            "--output-format",
+            "parquet",
+            "--parquet-max-row-group-size",
+            "50000",
+            "translate",
+        ]);
+        assert_eq!(
+            rustac.output_format(None),
+            Format::Geoparquet(WriterOptions::new().with_max_row_group_size(50000))
+        );
+
+        let rustac = Rustac::parse_from([
+            "rustac",
+            "--output-format",
+            "parquet",
+            "--parquet-compression",
+            "snappy",
+            "--parquet-max-row-group-size",
+            "100000",
+            "translate",
+        ]);
+        assert_eq!(
+            rustac.output_format(None),
+            Format::Geoparquet(
+                WriterOptions::new()
+                    .with_compression(Some(Compression::SNAPPY))
+                    .with_max_row_group_size(100000)
+            )
         );
     }
 

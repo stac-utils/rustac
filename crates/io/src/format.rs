@@ -16,7 +16,7 @@ pub enum Format {
 
     /// [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet)
     #[cfg(feature = "geoparquet")]
-    Geoparquet(Option<stac::geoparquet::Compression>),
+    Geoparquet(stac::geoparquet::WriterOptions),
 }
 
 impl Format {
@@ -163,7 +163,7 @@ impl Format {
             Format::Json(pretty) => value.to_json_path(path, *pretty),
             Format::NdJson => value.to_ndjson_path(path),
             #[cfg(feature = "geoparquet")]
-            Format::Geoparquet(compression) => value.into_geoparquet_path(path, *compression),
+            Format::Geoparquet(writer_options) => value.into_geoparquet_path(path, *writer_options),
         }
     }
 
@@ -183,7 +183,7 @@ impl Format {
             Format::Json(pretty) => value.to_json_vec(*pretty)?,
             Format::NdJson => value.to_ndjson_vec()?,
             #[cfg(feature = "geoparquet")]
-            Format::Geoparquet(compression) => value.into_geoparquet_vec(*compression)?,
+            Format::Geoparquet(writer_options) => value.into_geoparquet_vec(*writer_options)?,
         };
         Ok(value)
     }
@@ -201,7 +201,7 @@ impl Format {
     /// Returns the default geoparquet format.
     #[cfg(feature = "geoparquet")]
     pub fn geoparquet() -> Format {
-        Format::Geoparquet(Some(stac::geoparquet::default_compression()))
+        Format::Geoparquet(stac::geoparquet::WriterOptions::default())
     }
 }
 
@@ -223,8 +223,8 @@ impl Display for Format {
             }
             Self::NdJson => f.write_str("ndjson"),
             #[cfg(feature = "geoparquet")]
-            Self::Geoparquet(compression) => {
-                if let Some(compression) = *compression {
+            Self::Geoparquet(writer_options) => {
+                if let Some(compression) = writer_options.compression {
                     write!(f, "geoparquet[{compression}]")
                 } else {
                     f.write_str("geoparquet")
@@ -258,20 +258,19 @@ impl FromStr for Format {
 #[cfg(feature = "geoparquet")]
 fn infer_geoparquet_format(s: &str) -> Result<Format> {
     if s.starts_with("parquet") || s.starts_with("geoparquet") {
-        if let Some((_, compression)) = s.split_once('[') {
-            if let Some(stop) = compression.find(']') {
-                let format = compression[..stop]
-                    .parse()
-                    .map(Some)
-                    .map(Format::Geoparquet)?;
-                Ok(format)
+        if let Some((_, compression_str)) = s.split_once('[') {
+            if let Some(stop) = compression_str.find(']') {
+                let compression: stac::geoparquet::Compression = compression_str[..stop].parse()?;
+                let writer_options =
+                    stac::geoparquet::WriterOptions::new().with_compression(compression);
+                Ok(Format::Geoparquet(writer_options))
             } else {
                 Err(Error::UnsupportedFormat(s.to_string()))
             }
         } else {
-            Ok(Format::Geoparquet(Some(
-                stac::geoparquet::default_compression(),
-            )))
+            Ok(Format::Geoparquet(
+                stac::geoparquet::WriterOptions::default(),
+            ))
         }
     } else {
         Err(Error::UnsupportedFormat(s.to_string()))
@@ -294,20 +293,21 @@ mod tests {
     #[cfg(feature = "geoparquet")]
     mod geoparquet {
         use super::Format;
-        use stac::geoparquet::{Compression, default_compression};
+        use stac::geoparquet::{Compression, WriterOptions};
 
         #[test]
         fn parse_geoparquet_compression() {
             let format: Format = "geoparquet[snappy]".parse().unwrap();
-            assert_eq!(format, Format::Geoparquet(Some(Compression::SNAPPY)));
+            let expected =
+                Format::Geoparquet(WriterOptions::new().with_compression(Compression::SNAPPY));
+            assert_eq!(format, expected);
         }
 
         #[test]
         fn infer_from_href() {
-            assert_eq!(
-                Format::Geoparquet(Some(default_compression())),
-                Format::infer_from_href("out.parquet").unwrap()
-            );
+            let format = Format::infer_from_href("out.parquet").unwrap();
+            let expected = Format::Geoparquet(WriterOptions::default());
+            assert_eq!(format, expected);
         }
     }
 }
