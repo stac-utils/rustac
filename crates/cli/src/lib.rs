@@ -9,7 +9,7 @@ use futures_core::TryStream;
 use futures_util::{TryStreamExt, pin_mut};
 use stac::{
     Assets, Collection, Item, Links, Migrate, SelfHref,
-    geoparquet::{Compression, default_compression, DEFAULT_STAC_MAX_ROW_GROUP_SIZE},
+    geoparquet::{Compression, DEFAULT_STAC_MAX_ROW_GROUP_SIZE, default_compression},
 };
 use stac_api::{GetItems, GetSearch, Search};
 use stac_io::{Format, StacStore};
@@ -609,7 +609,10 @@ impl Rustac {
 
             let writer_options = WriterOptions::new()
                 .with_compression(self.parquet_compression.or(Some(default_compression())))
-                .with_max_row_group_size(self.parquet_max_row_group_size.or(Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE)));
+                .with_max_row_group_size(
+                    self.parquet_max_row_group_size
+                        .or(Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE)),
+                );
 
             Format::Geoparquet(writer_options)
         } else if let Format::Json(pretty) = format {
@@ -802,7 +805,9 @@ mod tests {
     use assert_cmd::Command;
     use clap::Parser;
     use rstest::{fixture, rstest};
-    use stac::geoparquet::{Compression, WriterOptions, ZstdLevel, DEFAULT_STAC_MAX_ROW_GROUP_SIZE};
+    use stac::geoparquet::{
+        Compression, DEFAULT_STAC_MAX_ROW_GROUP_SIZE, WriterOptions, ZstdLevel,
+    };
     use stac_io::Format;
 
     #[fixture]
