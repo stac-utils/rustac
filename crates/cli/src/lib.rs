@@ -496,7 +496,7 @@ impl Rustac {
                         .put_format(
                             path.child(file_name),
                             stac::ItemCollection::from(items),
-                            format.clone(),
+                            format,
                         )
                         .await?;
                 }
@@ -587,7 +587,7 @@ impl Rustac {
     /// Returns the set or inferred input format.
     pub fn input_format(&self, href: Option<&str>) -> Format {
         if let Some(input_format) = &self.input_format {
-            input_format.clone()
+            *input_format
         } else if let Some(href) = href {
             Format::infer_from_href(href).unwrap_or_default()
         } else {
@@ -598,7 +598,7 @@ impl Rustac {
     /// Returns the set or inferred input format.
     pub fn output_format(&self, href: Option<&str>) -> Format {
         let format = if let Some(format) = &self.output_format {
-            format.clone()
+            *format
         } else if let Some(href) = href {
             Format::infer_from_href(href).unwrap_or_default()
         } else {
