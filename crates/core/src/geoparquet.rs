@@ -27,7 +27,7 @@ pub fn default_compression() -> Compression {
 pub const DEFAULT_STAC_MAX_ROW_GROUP_SIZE: usize = 150_000;
 
 /// Options for writing stac-geoparquet files.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct WriterOptions {
     /// Parquet compression codec
     pub compression: Option<Compression>,

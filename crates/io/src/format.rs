@@ -4,7 +4,7 @@ use stac::SelfHref;
 use std::{fmt::Display, path::Path, str::FromStr};
 
 /// The format of STAC data.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Format {
     /// JSON data (the default).
     ///
@@ -163,9 +163,7 @@ impl Format {
             Format::Json(pretty) => value.to_json_path(path, *pretty),
             Format::NdJson => value.to_ndjson_path(path),
             #[cfg(feature = "geoparquet")]
-            Format::Geoparquet(writer_options) => {
-                value.into_geoparquet_path(path, writer_options.clone())
-            }
+            Format::Geoparquet(writer_options) => value.into_geoparquet_path(path, *writer_options),
         }
     }
 
@@ -185,9 +183,7 @@ impl Format {
             Format::Json(pretty) => value.to_json_vec(*pretty)?,
             Format::NdJson => value.to_ndjson_vec()?,
             #[cfg(feature = "geoparquet")]
-            Format::Geoparquet(writer_options) => {
-                value.into_geoparquet_vec(writer_options.clone())?
-            }
+            Format::Geoparquet(writer_options) => value.into_geoparquet_vec(*writer_options)?,
         };
         Ok(value)
     }
