@@ -9,7 +9,7 @@ use futures_core::TryStream;
 use futures_util::{TryStreamExt, pin_mut};
 use stac::{
     Assets, Collection, Item, Links, Migrate, SelfHref,
-    geoparquet::{Compression, DEFAULT_STAC_MAX_ROW_GROUP_SIZE, default_compression},
+    geoparquet::{Compression, default_compression},
 };
 use stac_api::{GetItems, GetSearch, Search};
 use stac_io::{Format, StacStore};
@@ -100,8 +100,8 @@ pub struct Rustac {
 
     /// Maximum number of rows per row group in parquet files.
     ///
-    /// The default is 150,000 rows per group, which is optimized for STAC data.
-    /// Lower values result in smaller row groups (better for selective queries),
+    /// The default is 150,000 rows per group, which is the maximum recommended value for Geoparquet files.
+    /// When records are ordered spatially or temporally, lower values result in smaller row groups (better for selective queries),
     /// while higher values result in larger row groups (better compression).
     #[arg(
         long = "parquet-max-row-group-size",
@@ -586,8 +586,8 @@ impl Rustac {
 
     /// Returns the set or inferred input format.
     pub fn input_format(&self, href: Option<&str>) -> Format {
-        if let Some(input_format) = &self.input_format {
-            *input_format
+        if let Some(input_format) = self.input_format {
+            input_format
         } else if let Some(href) = href {
             Format::infer_from_href(href).unwrap_or_default()
         } else {
@@ -597,8 +597,8 @@ impl Rustac {
 
     /// Returns the set or inferred input format.
     pub fn output_format(&self, href: Option<&str>) -> Format {
-        let format = if let Some(format) = &self.output_format {
-            *format
+        let format = if let Some(format) = self.output_format {
+            format
         } else if let Some(href) = href {
             Format::infer_from_href(href).unwrap_or_default()
         } else {
@@ -607,12 +607,12 @@ impl Rustac {
         if matches!(format, Format::Geoparquet(_)) {
             use stac::geoparquet::WriterOptions;
 
-            let writer_options = WriterOptions::new()
-                .with_compression(self.parquet_compression.or(Some(default_compression())))
-                .with_max_row_group_size(
-                    self.parquet_max_row_group_size
-                        .or(Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE)),
-                );
+            let mut writer_options = WriterOptions::new()
+                .with_compression(self.parquet_compression.or(Some(default_compression())));
+
+            if let Some(max_row_group_size) = self.parquet_max_row_group_size {
+                writer_options = writer_options.with_max_row_group_size(max_row_group_size);
+            }
 
             Format::Geoparquet(writer_options)
         } else if let Format::Json(pretty) = format {
@@ -862,7 +862,7 @@ mod tests {
             Format::Geoparquet(
                 WriterOptions::new()
                     .with_compression(Some(Compression::ZSTD(ZstdLevel::try_new(15).unwrap())))
-                    .with_max_row_group_size(Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE))
+                    .with_max_row_group_size(DEFAULT_STAC_MAX_ROW_GROUP_SIZE)
             )
         );
 
@@ -878,7 +878,7 @@ mod tests {
             Format::Geoparquet(
                 WriterOptions::new()
                     .with_compression(Some(Compression::ZSTD(ZstdLevel::try_new(15).unwrap())))
-                    .with_max_row_group_size(Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE))
+                    .with_max_row_group_size(DEFAULT_STAC_MAX_ROW_GROUP_SIZE)
             )
         );
 
@@ -910,7 +910,7 @@ mod tests {
             Format::Geoparquet(
                 WriterOptions::new()
                     .with_compression(Some(Compression::ZSTD(ZstdLevel::try_new(15).unwrap())))
-                    .with_max_row_group_size(Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE))
+                    .with_max_row_group_size(DEFAULT_STAC_MAX_ROW_GROUP_SIZE)
             )
         );
 
@@ -926,7 +926,7 @@ mod tests {
             Format::Geoparquet(
                 WriterOptions::new()
                     .with_compression(Some(Compression::ZSTD(ZstdLevel::try_new(15).unwrap())))
-                    .with_max_row_group_size(Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE))
+                    .with_max_row_group_size(DEFAULT_STAC_MAX_ROW_GROUP_SIZE)
             )
         );
 
@@ -953,7 +953,7 @@ mod tests {
             Format::Geoparquet(
                 WriterOptions::new()
                     .with_compression(Some(Compression::LZO))
-                    .with_max_row_group_size(Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE))
+                    .with_max_row_group_size(DEFAULT_STAC_MAX_ROW_GROUP_SIZE)
             )
         );
 
@@ -970,7 +970,7 @@ mod tests {
             Format::Geoparquet(
                 WriterOptions::new()
                     .with_compression(Some(Compression::ZSTD(ZstdLevel::try_new(15).unwrap())))
-                    .with_max_row_group_size(Some(50000))
+                    .with_max_row_group_size(50000)
             )
         );
 
@@ -989,7 +989,7 @@ mod tests {
             Format::Geoparquet(
                 WriterOptions::new()
                     .with_compression(Some(Compression::SNAPPY))
-                    .with_max_row_group_size(Some(100000))
+                    .with_max_row_group_size(100000)
             )
         );
     }

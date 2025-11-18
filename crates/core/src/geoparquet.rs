@@ -32,7 +32,7 @@ pub struct WriterOptions {
     /// Parquet compression codec
     pub compression: Option<Compression>,
     /// Maximum number of rows in a row group
-    pub max_row_group_size: Option<usize>,
+    pub max_row_group_size: usize,
 }
 
 impl WriterOptions {
@@ -72,8 +72,8 @@ impl WriterOptions {
     ///
     /// let options = WriterOptions::new().with_max_row_group_size(50000);
     /// ```
-    pub fn with_max_row_group_size(mut self, size: impl Into<Option<usize>>) -> Self {
-        self.max_row_group_size = size.into();
+    pub fn with_max_row_group_size(mut self, size: usize) -> Self {
+        self.max_row_group_size = size;
         self
     }
 }
@@ -82,7 +82,7 @@ impl Default for WriterOptions {
     fn default() -> Self {
         Self {
             compression: Some(default_compression()),
-            max_row_group_size: Some(DEFAULT_STAC_MAX_ROW_GROUP_SIZE),
+            max_row_group_size: DEFAULT_STAC_MAX_ROW_GROUP_SIZE,
         }
     }
 }
@@ -279,7 +279,7 @@ impl<W: Write + Send> Writer<W> {
         writer: W,
         options: Options,
         compression: Option<Compression>,
-        max_row_group_size: Option<usize>,
+        max_row_group_size: usize,
         items: Vec<Item>,
     ) -> Result<Self> {
         let (geoarrow_encoder, record_batch) = Encoder::new(items, options)?;
@@ -291,9 +291,7 @@ impl<W: Write + Send> Writer<W> {
         if let Some(compression) = compression {
             builder = builder.set_compression(compression);
         }
-        if let Some(size) = max_row_group_size {
-            builder = builder.set_max_row_group_size(size)
-        }
+        builder = builder.set_max_row_group_size(max_row_group_size);
         let properties = builder.build();
         let mut arrow_writer =
             ArrowWriter::try_new(writer, encoder.target_schema(), Some(properties))?;
