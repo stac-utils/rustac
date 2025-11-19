@@ -5,3 +5,6 @@ pyrightconfig.json
 site/
 .cache
 crates/wasm/www/package-lock.json
+node_modules/
+package.json
+package-lock.json
