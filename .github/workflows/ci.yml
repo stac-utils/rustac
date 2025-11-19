@@ -61,6 +61,8 @@ jobs:
         run: cargo fmt --check
       - name: Clippy
         run: cargo clippy --workspace -- -D warnings
+      - name: Build
+        run: cargo build
       - name: Test
         run: cargo test
       - name: Validate stac-server
