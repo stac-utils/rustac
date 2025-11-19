@@ -1,14 +1,13 @@
 {
   "config": {
-    "MD013": false
+    "MD013": false,
   },
   "globs": ["**/*.md"],
   "gitignore": true,
   "ignores": [
     "spec-examples/*/README.md",
     "crates/*/examples/README.md",
-    "python/examples/README.md",
     "target/**/*.md",
-    "LICENSE-*"
-  ]
+    "LICENSE-*",
+  ],
 }
