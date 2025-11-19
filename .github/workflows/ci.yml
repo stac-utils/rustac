@@ -58,6 +58,7 @@ jobs:
         run: |
           wget https://github.com/duckdb/duckdb/releases/download/v${{ env.duckdb-version }}/libduckdb-linux-amd64.zip
           unzip libduckdb-linux-amd64.zip -d /opt/duckdb
+          rm libduckdb-linux-amd64.zip
       - uses: j178/prek-action@v1
       - name: Build
         run: cargo build
