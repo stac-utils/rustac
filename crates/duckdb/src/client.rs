@@ -1,13 +1,17 @@
 use crate::{Error, Extension, Result};
 use arrow_array::{RecordBatch, RecordBatchIterator};
+use arrow_schema::{ArrowError, SchemaRef};
 use chrono::DateTime;
 use cql2::{Expr, ToDuckSQL};
-use duckdb::{Connection, types::Value};
+use duckdb::{Connection, Statement, types::Value};
 use geo::BoundingRect;
 use geojson::Geometry;
 use stac::{Collection, SpatialExtent, TemporalExtent, geoarrow::DATETIME_COLUMNS};
 use stac_api::{Direction, Search};
-use std::ops::{Deref, DerefMut};
+use std::{
+    fmt,
+    ops::{Deref, DerefMut},
+};
 
 /// Default hive partitioning value
 pub const DEFAULT_USE_HIVE_PARTITIONING: bool = false;
@@ -178,16 +182,28 @@ impl Client {
     /// let item_collection = client.search("data/100-sentinel-2-items.parquet", Default::default()).unwrap();
     /// ```
     pub fn search(&self, href: &str, search: Search) -> Result<stac_api::ItemCollection> {
-        let record_batches = self.search_to_arrow(href, search)?;
-        if record_batches.is_empty() {
-            Ok(Default::default())
-        } else {
-            let schema = record_batches[0].schema();
-            let item_collection = stac::geoarrow::json::from_record_batch_reader(
-                RecordBatchIterator::new(record_batches.into_iter().map(Ok), schema),
-            )?;
-            Ok(item_collection.into())
-        }
+        let mut arrow_iter = self.search_to_arrow(href, search)?;
+        let Some(schema) = arrow_iter.schema() else {
+            return Ok(Default::default());
+        };
+
+        let first_batch = match arrow_iter.next() {
+            Some(batch) => batch?,
+            None => return Ok(Default::default()),
+        };
+
+        let batches = std::iter::once(Ok(first_batch))
+            .chain(arrow_iter)
+            .map(|batch| {
+                batch.map_err(|err| {
+                    ArrowError::ExternalError(Box::new(ArrowExternalError(err.to_string())))
+                })
+            });
+
+        let item_collection = stac::geoarrow::json::from_record_batch_reader(
+            RecordBatchIterator::new(batches, schema),
+        )?;
+        Ok(item_collection.into())
     }
 
     /// Searches to an iterator of record batches.
@@ -198,26 +214,28 @@ impl Client {
     /// use stac_duckdb::Client;
     ///
     /// let client = Client::new().unwrap();
-    /// let record_batches = client.search_to_arrow("data/100-sentinel-2-items.parquet", Default::default()).unwrap();
+    /// let mut total = 0;
+    /// for batch in client
+    ///     .search_to_arrow("data/100-sentinel-2-items.parquet", Default::default())
+    ///     .unwrap()
+    /// {
+    ///     let batch = batch.unwrap();
+    ///     total += batch.num_rows();
+    /// }
+    /// assert_eq!(total, 100);
     /// ```
-    pub fn search_to_arrow(&self, href: &str, search: Search) -> Result<Vec<RecordBatch>> {
-        // TODO can we return an iterator?
+    pub fn search_to_arrow<'conn>(
+        &'conn self,
+        href: &str,
+        search: Search,
+    ) -> Result<SearchArrowBatchIter<'conn>> {
         if let Some((sql, params)) = self.build_query(href, search)? {
             log::debug!("duckdb sql: {sql}");
             let mut statement = self.prepare(&sql)?;
-            statement
-                .query_arrow(duckdb::params_from_iter(params))?
-                .map(|record_batch| {
-                    let record_batch = if self.convert_wkb {
-                        stac::geoarrow::with_native_geometry(record_batch, "geometry")?
-                    } else {
-                        stac::geoarrow::add_wkb_metadata(record_batch, "geometry")?
-                    };
-                    Ok(record_batch)
-                })
-                .collect::<Result<_>>()
+            statement.execute(duckdb::params_from_iter(params))?;
+            Ok(SearchArrowBatchIter::new(statement, self.convert_wkb))
         } else {
-            Ok(Vec::new())
+            Ok(SearchArrowBatchIter::empty(self.convert_wkb))
         }
     }
 
@@ -449,6 +467,83 @@ impl From<Connection> for Client {
     }
 }
 
+/// Iterator returned by [`Client::search_to_arrow`].
+pub struct SearchArrowBatchIter<'conn> {
+    statement: Option<Statement<'conn>>,
+    convert_wkb: bool,
+    schema: Option<SchemaRef>,
+}
+
+impl<'conn> SearchArrowBatchIter<'conn> {
+    fn new(statement: Statement<'conn>, convert_wkb: bool) -> Self {
+        let schema = Some(statement.schema());
+        Self {
+            statement: Some(statement),
+            convert_wkb,
+            schema,
+        }
+    }
+
+    fn empty(convert_wkb: bool) -> Self {
+        Self {
+            statement: None,
+            convert_wkb,
+            schema: None,
+        }
+    }
+
+    pub fn schema(&self) -> Option<SchemaRef> {
+        self.schema.clone()
+    }
+
+    fn finalize_batch(&self, record_batch: RecordBatch) -> Result<RecordBatch> {
+        if self.convert_wkb {
+            stac::geoarrow::with_native_geometry(record_batch, "geometry").map_err(|err| err.into())
+        } else {
+            stac::geoarrow::add_wkb_metadata(record_batch, "geometry").map_err(|err| err.into())
+        }
+    }
+}
+
+impl<'conn> Iterator for SearchArrowBatchIter<'conn> {
+    type Item = Result<RecordBatch>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let statement = match self.statement.as_ref() {
+            Some(statement) => statement,
+            None => return None,
+        };
+
+        match statement.step() {
+            Some(struct_array) => {
+                let record_batch = RecordBatch::from(&struct_array);
+                match self.finalize_batch(record_batch) {
+                    Ok(batch) => Some(Ok(batch)),
+                    Err(err) => {
+                        self.statement = None;
+                        Some(Err(err))
+                    }
+                }
+            }
+            None => {
+                self.statement = None;
+                None
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ArrowExternalError(String);
+
+impl fmt::Display for ArrowExternalError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for ArrowExternalError {}
+
 #[cfg(test)]
 mod tests {
     use super::Client;
@@ -492,6 +587,8 @@ mod tests {
     fn search_to_arrow(client: Client) {
         let record_batches = client
             .search_to_arrow("data/100-sentinel-2-items.parquet", Search::default())
+            .unwrap()
+            .collect::<std::result::Result<Vec<_>, _>>()
             .unwrap();
         assert_eq!(record_batches.len(), 1);
     }
@@ -663,6 +760,8 @@ mod tests {
         client.convert_wkb = false;
         let record_batches = client
             .search_to_arrow("data/100-sentinel-2-items.parquet", Search::default())
+            .unwrap()
+            .collect::<std::result::Result<Vec<_>, _>>()
             .unwrap();
         let schema = record_batches[0].schema();
         assert_eq!(
