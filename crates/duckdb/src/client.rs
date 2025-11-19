@@ -399,7 +399,7 @@ impl Client {
 
     fn format_parquet_href(&self, href: &str) -> String {
         format!(
-            "read_parquet('{}', filename=true, hive_partitioning={}, union_by_name={})",
+            "read_parquet('{}', hive_partitioning={}, union_by_name={})",
             href,
             if self.use_hive_partitioning {
                 "true"
