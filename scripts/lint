@@ -4,3 +4,11 @@ set -e
 
 cargo fmt --check
 cargo clippy --workspace -- -D warnings
+
+if ! command -v markdownlint-cli2 > /dev/null 2>&1; then
+    echo "Warning: markdownlint-cli2 is not installed"
+    echo "To install it, run: npm install markdownlint-cli2@0.18.1"
+    echo "Skipping markdown linting..."
+else
+    markdownlint-cli2
+fi
