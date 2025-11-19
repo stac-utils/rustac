@@ -509,10 +509,7 @@ impl<'conn> Iterator for SearchArrowBatchIter<'conn> {
     type Item = Result<RecordBatch>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let statement = match self.statement.as_ref() {
-            Some(statement) => statement,
-            None => return None,
-        };
+        let statement = self.statement.as_ref()?;
 
         match statement.step() {
             Some(struct_array) => {
