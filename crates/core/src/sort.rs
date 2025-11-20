@@ -515,4 +515,30 @@ mod tests {
         assert_eq!(items[4].id, "3");
         assert_eq!(items[5].id, "1");
     }
+
+    #[test]
+    fn test_sort_streams() {
+        use futures::stream::{self, StreamExt};
+
+        let stream1 = stream::iter(vec![Item::new("a"), Item::new("c")]);
+        let stream2 = stream::iter(vec![Item::new("b"), Item::new("d")]);
+        let config = json!({
+            "sortby": [
+                { "field": "id", "direction": "asc" }
+            ]
+        });
+        let mut sorted = sort_streams(vec![stream1, stream2], config).unwrap();
+
+        let mut items = Vec::new();
+        tokio_test::block_on(async {
+            while let Some(item) = sorted.next().await {
+                items.push(item);
+            }
+        });
+
+        assert_eq!(items[0].id, "a");
+        assert_eq!(items[1].id, "b");
+        assert_eq!(items[2].id, "c");
+        assert_eq!(items[3].id, "d");
+    }
 }
