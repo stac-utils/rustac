@@ -17,6 +17,7 @@ bundled = ["duckdb/bundled"]
 
 [dependencies]
 arrow-array.workspace = true
+arrow-schema.workspace = true
 chrono.workspace = true
 cql2.workspace = true
 duckdb.workspace = true
