@@ -153,9 +153,10 @@ fn compare_field(l: &Item, r: &Item, field: &str) -> Ordering {
         "created" => l.properties.created.cmp(&r.properties.created),
         "updated" => l.properties.updated.cmp(&r.properties.updated),
         "collection" => l.collection.cmp(&r.collection),
-        _ => {
-             compare_values(l.properties.additional_fields.get(field), r.properties.additional_fields.get(field))
-        }
+        _ => compare_values(
+            l.properties.additional_fields.get(field),
+            r.properties.additional_fields.get(field),
+        ),
     }
 }
 
@@ -187,14 +188,14 @@ fn compare_json_values(l: &Value, r: &Value) -> Ordering {
         }
         (Value::String(a), Value::String(b)) => a.cmp(b),
         (Value::Array(a), Value::Array(b)) => {
-             let len = std::cmp::min(a.len(), b.len());
-             for i in 0..len {
-                 let ord = compare_json_values(&a[i], &b[i]);
-                 if ord != Ordering::Equal {
-                     return ord;
-                 }
-             }
-             a.len().cmp(&b.len())
+            let len = std::cmp::min(a.len(), b.len());
+            for i in 0..len {
+                let ord = compare_json_values(&a[i], &b[i]);
+                if ord != Ordering::Equal {
+                    return ord;
+                }
+            }
+            a.len().cmp(&b.len())
         }
         (Value::Object(_), Value::Object(_)) => Ordering::Equal,
         (Value::Bool(_), _) => Ordering::Less,
@@ -275,11 +276,7 @@ mod tests {
 
     #[test]
     fn test_sort() {
-        let mut items = vec![
-            Item::new("c"),
-            Item::new("a"),
-            Item::new("b"),
-        ];
+        let mut items = vec![Item::new("c"), Item::new("a"), Item::new("b")];
         let config = json!({
             "sortby": [
                 { "field": "id", "direction": "asc" }
@@ -294,11 +291,7 @@ mod tests {
 
     #[test]
     fn test_sort_desc() {
-        let mut items = vec![
-            Item::new("c"),
-            Item::new("a"),
-            Item::new("b"),
-        ];
+        let mut items = vec![Item::new("c"), Item::new("a"), Item::new("b")];
         let config = json!({
             "sortby": [
                 { "field": "id", "direction": "desc" }
@@ -332,10 +325,7 @@ mod tests {
 
     #[test]
     fn test_sort_method_direct() {
-        let mut items = vec![
-            Item::new("b"),
-            Item::new("a"),
-        ];
+        let mut items = vec![Item::new("b"), Item::new("a")];
         let config = json!({
             "sortby": [
                 { "field": "id", "direction": "asc" }
@@ -488,7 +478,10 @@ mod tests {
         // Create items with custom property "cloud_cover"
         for i in 0..6 {
             let mut item = Item::new(i.to_string());
-            let _ = item.properties.additional_fields.insert("cloud_cover".to_string(), json!(i % 2)); // 0, 1, 0, 1, 0, 1
+            let _ = item
+                .properties
+                .additional_fields
+                .insert("cloud_cover".to_string(), json!(i % 2)); // 0, 1, 0, 1, 0, 1
             item.properties.datetime = Some("2023-01-01T00:00:00Z".parse().unwrap());
             items.push(item);
         }
