@@ -241,9 +241,16 @@ impl Client {
             log::debug!("duckdb sql: {sql}");
             let mut statement = self.prepare(&sql)?;
             statement.execute(duckdb::params_from_iter(params))?;
-            Ok(SearchArrowBatchIter::new(statement, self.convert_wkb, self.remove_filename_column))
+            Ok(SearchArrowBatchIter::new(
+                statement,
+                self.convert_wkb,
+                self.remove_filename_column,
+            ))
         } else {
-            Ok(SearchArrowBatchIter::empty(self.convert_wkb, self.remove_filename_column))
+            Ok(SearchArrowBatchIter::empty(
+                self.convert_wkb,
+                self.remove_filename_column,
+            ))
         }
     }
 
@@ -556,7 +563,6 @@ impl fmt::Display for ArrowExternalError {
 }
 
 impl std::error::Error for ArrowExternalError {}
-
 
 fn remove_column(mut record_batch: RecordBatch, name: &str) -> RecordBatch {
     if let Some((index, _)) = record_batch.schema().column_with_name(name) {
