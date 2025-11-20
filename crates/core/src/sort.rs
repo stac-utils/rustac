@@ -1,5 +1,4 @@
 use crate::Item;
-use compare::Compare;
 use futures::Stream;
 use serde::Deserialize;
 use serde_json::Value;
@@ -26,8 +25,7 @@ enum Direction {
 
 /// A comparator for STAC Items.
 ///
-/// This struct implements [compare::Compare] for [Item], allowing it to be used
-/// to sort items based on a configuration.
+/// This struct allows it to be used to sort items based on a configuration.
 ///
 /// # Examples
 ///
@@ -97,6 +95,20 @@ impl ItemComparator {
     pub fn sort(&self, items: &mut [Item]) {
         items.sort_by(|a, b| self.compare(a, b));
     }
+
+    /// Compares two items.
+    pub fn compare(&self, l: &Item, r: &Item) -> Ordering {
+        for sort_field in &self.sort_fields {
+            let ord = compare_field(l, r, &sort_field.field);
+            if ord != Ordering::Equal {
+                return match sort_field.direction {
+                    Direction::Asc => ord,
+                    Direction::Desc => ord.reverse(),
+                };
+            }
+        }
+        Ordering::Equal
+    }
 }
 
 impl Default for ItemComparator {
@@ -116,21 +128,6 @@ impl Default for ItemComparator {
                 },
             ],
         }
-    }
-}
-
-impl Compare<Item> for ItemComparator {
-    fn compare(&self, l: &Item, r: &Item) -> Ordering {
-        for sort_field in &self.sort_fields {
-            let ord = compare_field(l, r, &sort_field.field);
-            if ord != Ordering::Equal {
-                return match sort_field.direction {
-                    Direction::Asc => ord,
-                    Direction::Desc => ord.reverse(),
-                };
-            }
-        }
-        Ordering::Equal
     }
 }
 
@@ -209,7 +206,7 @@ fn compare_json_values(l: &Value, r: &Value) -> Ordering {
     }
 }
 
-/// Creates a function that returns a struct that implements Compare from the compare crate that can be used to compare stac items.
+/// Creates a function that returns a struct that can be used to compare stac items.
 ///
 /// # Examples
 ///

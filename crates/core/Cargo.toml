@@ -44,7 +44,6 @@ indexmap.workspace = true
 log.workspace = true
 mime.workspace = true
 parquet = { workspace = true, optional = true }
-compare = "0.1.0"
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 stac-derive.workspace = true
