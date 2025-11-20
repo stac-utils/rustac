@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.19.0
+    hooks:
+      - id: markdownlint-cli2
+        pass_filenames: false
+  - repo: local
+    hooks:
+      - id: cargo fmt
+        name: cargo fmt
+        entry: cargo
+        language: system
+        pass_filenames: false
+        args: ["fmt", "--all"]
+      - id: cargo clippy
+        name: cargo clippy
+        entry: cargo
+        language: system
+        pass_filenames: false
+        args: ["clippy", "--workspace", "--fix"]
