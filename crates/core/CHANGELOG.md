@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- Add `stac::sort` module for sorting items and streams of items based on a JSON configuration ([#856](https://github.com/stac-utils/rustac/pull/856))
 - Add `max_row_group_size` parameter to `geoparquet::WriterBuilder` with default value of `150_000` ([#846](https://github.com/stac-utils/rustac/pull/846))
 
 ## [0.14.0] - 2025-11-14
