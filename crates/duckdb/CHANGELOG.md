@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Remove `filename` column by default ([#855](https://github.com/stac-utils/rustac/pull/855))
+
 ## [0.2.2] - 2025-11-14
 
 Update **stac** dependency.

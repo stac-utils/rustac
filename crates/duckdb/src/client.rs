@@ -26,6 +26,9 @@ pub const DEFAULT_COLLECTION_DESCRIPTION: &str =
 /// The default union by name value.
 pub const DEFAULT_UNION_BY_NAME: bool = true;
 
+/// Whether to remove the filename column by default.
+pub const DEFAULT_REMOVE_FILENAME_COLUMN: bool = true;
+
 /// A client for making DuckDB requests for STAC objects.
 #[derive(Debug)]
 pub struct Client {
@@ -43,6 +46,11 @@ pub struct Client {
     ///
     /// Defaults to true.
     pub union_by_name: bool,
+
+    /// Whether to remove the `filename` column that DuckDB adds automatically.
+    ///
+    /// Defaults to true.
+    pub remove_filename_column: bool,
 }
 
 impl Client {
@@ -233,9 +241,9 @@ impl Client {
             log::debug!("duckdb sql: {sql}");
             let mut statement = self.prepare(&sql)?;
             statement.execute(duckdb::params_from_iter(params))?;
-            Ok(SearchArrowBatchIter::new(statement, self.convert_wkb))
+            Ok(SearchArrowBatchIter::new(statement, self.convert_wkb, self.remove_filename_column))
         } else {
-            Ok(SearchArrowBatchIter::empty(self.convert_wkb))
+            Ok(SearchArrowBatchIter::empty(self.convert_wkb, self.remove_filename_column))
         }
     }
 
@@ -406,7 +414,7 @@ impl Client {
 
     fn format_parquet_href(&self, href: &str) -> String {
         format!(
-            "read_parquet('{}', filename=true, hive_partitioning={}, union_by_name={})",
+            "read_parquet('{}', hive_partitioning={}, union_by_name={})",
             href,
             if self.use_hive_partitioning {
                 "true"
@@ -463,6 +471,7 @@ impl From<Connection> for Client {
             use_hive_partitioning: DEFAULT_USE_HIVE_PARTITIONING,
             convert_wkb: DEFAULT_CONVERT_WKB,
             union_by_name: DEFAULT_UNION_BY_NAME,
+            remove_filename_column: DEFAULT_REMOVE_FILENAME_COLUMN,
         }
     }
 }
@@ -471,23 +480,26 @@ impl From<Connection> for Client {
 pub struct SearchArrowBatchIter<'conn> {
     statement: Option<Statement<'conn>>,
     convert_wkb: bool,
+    remove_filename_column: bool,
     schema: Option<SchemaRef>,
 }
 
 impl<'conn> SearchArrowBatchIter<'conn> {
-    fn new(statement: Statement<'conn>, convert_wkb: bool) -> Self {
+    fn new(statement: Statement<'conn>, convert_wkb: bool, remove_filename_column: bool) -> Self {
         let schema = Some(statement.schema());
         Self {
             statement: Some(statement),
             convert_wkb,
+            remove_filename_column,
             schema,
         }
     }
 
-    fn empty(convert_wkb: bool) -> Self {
+    fn empty(convert_wkb: bool, remove_filename_column: bool) -> Self {
         Self {
             statement: None,
             convert_wkb,
+            remove_filename_column,
             schema: None,
         }
     }
@@ -497,11 +509,15 @@ impl<'conn> SearchArrowBatchIter<'conn> {
     }
 
     fn finalize_batch(&self, record_batch: RecordBatch) -> Result<RecordBatch> {
-        if self.convert_wkb {
-            stac::geoarrow::with_native_geometry(record_batch, "geometry").map_err(|err| err.into())
+        let mut record_batch = if self.convert_wkb {
+            stac::geoarrow::with_native_geometry(record_batch, "geometry")?
         } else {
-            stac::geoarrow::add_wkb_metadata(record_batch, "geometry").map_err(|err| err.into())
+            stac::geoarrow::add_wkb_metadata(record_batch, "geometry")?
+        };
+        if self.remove_filename_column {
+            record_batch = remove_column(record_batch, "filename");
         }
+        Ok(record_batch)
     }
 }
 
@@ -540,6 +556,14 @@ impl fmt::Display for ArrowExternalError {
 }
 
 impl std::error::Error for ArrowExternalError {}
+
+
+fn remove_column(mut record_batch: RecordBatch, name: &str) -> RecordBatch {
+    if let Some((index, _)) = record_batch.schema().column_with_name(name) {
+        record_batch.remove_column(index);
+    }
+    record_batch
+}
 
 #[cfg(test)]
 mod tests {
@@ -823,5 +847,21 @@ mod tests {
         let _ = client
             .search("data/*.parquet", Default::default())
             .unwrap_err();
+    }
+
+    #[rstest]
+    fn remove_filename_column(client: Client) {
+        let item_collection = client
+            .search("data/100-sentinel-2-items.parquet", Default::default())
+            .unwrap();
+        for item in item_collection.items {
+            assert!(
+                !item["properties"]
+                    .as_object()
+                    .as_ref()
+                    .unwrap()
+                    .contains_key("filename")
+            );
+        }
     }
 }

@@ -16,7 +16,9 @@ members = [
 default-members = [
     "crates/api",
     "crates/core",
+    "crates/cli",
     "crates/derive",
+    "crates/duckdb",
     "crates/extensions",
     "crates/io",
     "crates/server",
