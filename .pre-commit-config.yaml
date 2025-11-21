@@ -22,4 +22,4 @@ repos:
         entry: cargo
         language: system
         pass_filenames: false
-        args: ["clippy", "--workspace", "--fix"]
+        args: ["clippy", "--workspace"]
