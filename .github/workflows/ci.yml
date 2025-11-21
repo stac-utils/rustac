@@ -60,8 +60,6 @@ jobs:
           unzip libduckdb-linux-amd64.zip -d /opt/duckdb
           rm libduckdb-linux-amd64.zip
       - uses: j178/prek-action@v1
-      - name: Build
-        run: cargo build
       - name: Test
         run: cargo test
       - name: Validate stac-server
