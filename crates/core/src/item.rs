@@ -5,7 +5,7 @@ use chrono::{DateTime, FixedOffset, NaiveDateTime, Utc};
 use geojson::{Feature, Geometry, feature::Id};
 use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize};
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use stac_derive::{Links, Migrate, SelfHref};
 use std::path::Path;
 
@@ -600,6 +600,25 @@ impl Item {
             collection: self.collection,
             properties,
         })
+    }
+
+    /// Gets a property by key looking in order from  root level then properties.
+    pub fn get_property(&self, key: &str) -> Option<Value> {
+        let j: Map<String, Value> = self.clone().try_into().expect("Could not convert item to Map");
+        let val = j
+            .get(key)
+            .or_else(
+                || j.get("properties").unwrap().get(key)
+            )
+            .or_else(
+                || j.get("properties").unwrap().get("additional_fields").unwrap().get(key)
+            )
+            .map(|v| v.clone());
+        if val.is_some() && key.ends_with("datetime") {
+            Some(json!({"timestamp": val.unwrap()}))
+        } else {
+            val
+        }
     }
 }
 

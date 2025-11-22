@@ -87,7 +87,7 @@ pub use error::Error;
 pub use fields::Fields;
 pub use filter::Filter;
 pub use item_collection::{Context, ItemCollection};
-pub use items::{GetItems, Items};
+pub use items::{GetItems, Items, JsonOps};
 pub use root::Root;
 pub use search::{GetSearch, Search};
 pub use sort::{Direction, Sortby};
