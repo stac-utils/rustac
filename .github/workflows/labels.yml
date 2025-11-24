@@ -15,7 +15,7 @@ jobs:
     if: ${{ github.event.label.name == '[build] bundled-duckdb' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
       - name: Build
         run: cargo build -p rustac -F duckdb-bundled
