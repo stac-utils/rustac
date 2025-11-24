@@ -8,10 +8,7 @@ use geo::BoundingRect;
 use geojson::Geometry;
 use stac::{Collection, SpatialExtent, TemporalExtent, geoarrow::DATETIME_COLUMNS};
 use stac_api::{Direction, Search};
-use std::{
-    fmt,
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 /// Default hive partitioning value
 pub const DEFAULT_USE_HIVE_PARTITIONING: bool = false;
@@ -202,11 +199,7 @@ impl Client {
 
         let batches = std::iter::once(Ok(first_batch))
             .chain(arrow_iter)
-            .map(|batch| {
-                batch.map_err(|err| {
-                    ArrowError::ExternalError(Box::new(ArrowExternalError(err.to_string())))
-                })
-            });
+            .map(|batch| batch.map_err(|err| ArrowError::ExternalError(Box::new(err))));
 
         let item_collection = stac::geoarrow::json::from_record_batch_reader(
             RecordBatchIterator::new(batches, schema),
@@ -552,17 +545,6 @@ impl<'conn> Iterator for SearchArrowBatchIter<'conn> {
         }
     }
 }
-
-#[derive(Debug)]
-struct ArrowExternalError(String);
-
-impl fmt::Display for ArrowExternalError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
-
-impl std::error::Error for ArrowExternalError {}
 
 fn remove_column(mut record_batch: RecordBatch, name: &str) -> RecordBatch {
     if let Some((index, _)) = record_batch.schema().column_with_name(name) {
