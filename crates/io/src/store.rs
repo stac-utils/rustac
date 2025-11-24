@@ -166,9 +166,61 @@ where
     }
 }
 
+#[cfg(feature = "geoparquet")]
+pub mod geoparquet {
+    use crate::Result;
+    use object_store::{ObjectStore, path::Path};
+    use parquet::arrow::async_writer::{AsyncArrowWriter, ParquetObjectWriter};
+    use stac::Item;
+    use stac::geoarrow::Options;
+    use stac::geoparquet::{WriterEncoder, WriterOptions};
+    use std::sync::Arc;
+
+    /// Writes stac-geoparquet to an object store.
+    pub struct StacGeoparquetObjectWriter {
+        encoder: WriterEncoder,
+        writer: AsyncArrowWriter<ParquetObjectWriter>,
+    }
+
+    impl StacGeoparquetObjectWriter {
+        pub async fn new(
+            store: Arc<dyn ObjectStore>,
+            path: Path,
+            items: Vec<Item>,
+            options: Options,
+            writer_options: WriterOptions,
+        ) -> Result<StacGeoparquetObjectWriter> {
+            let (encoder, record_batch) = WriterEncoder::new(options, items)?;
+            let object_store_writer = ParquetObjectWriter::new(store.clone(), path);
+            let mut writer = AsyncArrowWriter::try_new(
+                object_store_writer,
+                record_batch.schema(),
+                Some(writer_options.into()),
+            )?;
+            writer.write(&record_batch).await?;
+            Ok(StacGeoparquetObjectWriter { encoder, writer })
+        }
+
+        pub async fn write(&mut self, items: Vec<Item>) -> Result<()> {
+            let record_batch = self.encoder.encode(items)?;
+            self.writer.write(&record_batch).await?;
+            Ok(())
+        }
+
+        pub async fn close(mut self) -> Result<()> {
+            self.writer
+                .append_key_value_metadata(self.encoder.into_keyvalue()?);
+            self.writer.close().await?;
+            Ok(())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use object_store::{memory::InMemory, path::Path};
     use stac::{Item, SelfHref};
+    use std::sync::Arc;
 
     #[tokio::test]
     async fn get_local() {
@@ -185,5 +237,37 @@ mod tests {
         let (store, path) = super::parse_href("examples/simple-item.json").unwrap();
         let href = format!("file:///{path}");
         let _: Item = store.get(href).await.unwrap();
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "geoparquet")]
+    async fn write_parquet() {
+        use object_store::ObjectStore;
+
+        use super::geoparquet::StacGeoparquetObjectWriter;
+
+        let store = Arc::new(InMemory::new());
+        let item: Item = stac::read("examples/simple-item.json").unwrap();
+        let mut writer = StacGeoparquetObjectWriter::new(
+            store.clone(),
+            Path::from("test"),
+            vec![item.clone()],
+            Default::default(),
+            Default::default(),
+        )
+        .await
+        .unwrap();
+        writer.write(vec![item]).await.unwrap();
+        writer.close().await.unwrap();
+
+        let bytes = store
+            .get(&Path::from("test"))
+            .await
+            .unwrap()
+            .bytes()
+            .await
+            .unwrap();
+        let item_collection = stac::geoparquet::from_reader(bytes).unwrap();
+        assert_eq!(item_collection.items.len(), 2);
     }
 }

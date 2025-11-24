@@ -25,7 +25,7 @@ bytes.workspace = true
 fluent-uri = { workspace = true, optional = true }
 jsonschema = { workspace = true, optional = true }
 object_store = { workspace = true, optional = true }
-parquet = { workspace = true, optional = true }
+parquet = { workspace = true, optional = true, features = ["arrow", "async", "object_store"] }
 reqwest = { workspace = true, optional = true, features = ["json", "blocking"] }
 serde.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }

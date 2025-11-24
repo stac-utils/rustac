@@ -7,7 +7,7 @@ mod ndjson;
 mod read;
 mod realized_href;
 #[cfg(feature = "store")]
-mod store;
+pub mod store;
 mod write;
 
 #[cfg(feature = "geoparquet")]
