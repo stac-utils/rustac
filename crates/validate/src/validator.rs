@@ -175,7 +175,7 @@ impl Validator {
                     .into_iter()
                     .filter_map(|value| {
                         if let Value::String(s) = value {
-                            Some(Uri::parse(s))
+                            Some(Uri::parse(s).map_err(|(err, _)| err))
                         } else {
                             None
                         }
@@ -307,8 +307,7 @@ fn prebuild_resources() -> Vec<(String, Resource)> {
         ($url:expr_2021, $path:expr_2021) => {
             let _ = resources.push((
                 $url.to_string(),
-                Resource::from_contents(serde_json::from_str(include_str!($path)).unwrap())
-                    .unwrap(),
+                Resource::from_contents(serde_json::from_str(include_str!($path)).unwrap()),
             ));
         };
     }
