@@ -2,7 +2,7 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    /// [fluent_uri::error::ParseError]
+    /// [fluent_uri::ParseError]
     #[error(transparent)]
     FluentUriParse(#[from] fluent_uri::ParseError),
 
