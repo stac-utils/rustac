@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Search into an iterator (breaking) ([#853](https://github.com/stac-utils/rustac/pull/853))
+
 ### Fixed
 
 - Remove `filename` column by default ([#855](https://github.com/stac-utils/rustac/pull/855))
