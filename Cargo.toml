@@ -81,7 +81,7 @@ quote = "1.0"
 reqwest = { version = "0.12.8", default-features = false, features = [
     "rustls-tls",
 ] }
-referencing = "0.33.0"
+referencing = "0.37.1"
 rstest = "0.26.1"
 rustls = { version = "0.23.22", default-features = false }
 serde = "1.0"
