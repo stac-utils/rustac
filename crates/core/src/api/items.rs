@@ -55,7 +55,7 @@ pub struct Items {
 
 /// GET parameters for the items endpoint from STAC API - Features.
 ///
-/// This is a lot like [Search](crate::Search), but without intersects, ids, and
+/// This is a lot like [Search](crate::api::Search), but without intersects, ids, and
 /// collections.
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
 pub struct GetItems {
