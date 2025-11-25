@@ -44,7 +44,7 @@ impl Conformance {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Conformance;
+    /// use stac::api::Conformance;
     /// let conformance = Conformance::new();
     /// ```
     pub fn new() -> Conformance {
@@ -60,7 +60,7 @@ impl Conformance {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Conformance;
+    /// use stac::api::Conformance;
     /// let conformance = Conformance::new().ogcapi_features();
     /// ```
     pub fn ogcapi_features(mut self) -> Conformance {
@@ -78,7 +78,7 @@ impl Conformance {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Conformance;
+    /// use stac::api::Conformance;
     /// let conformance = Conformance::new().item_search();
     /// ```
     pub fn item_search(mut self) -> Conformance {
@@ -92,7 +92,7 @@ impl Conformance {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Conformance;
+    /// use stac::api::Conformance;
     /// let conformance = Conformance::new().item_search();
     /// ```
     pub fn filter(mut self) -> Conformance {

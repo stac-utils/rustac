@@ -198,7 +198,7 @@ impl TryFrom<Vec<f64>> for Bbox {
                 bbox[0], bbox[1], bbox[2], bbox[3], bbox[4], bbox[5],
             ]))
         } else {
-            Err(Error::InvalidBbox(bbox))
+            Err(Error::InvalidBbox(bbox, "must have 4 or 6 values"))
         }
     }
 }

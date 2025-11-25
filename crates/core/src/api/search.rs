@@ -1,4 +1,5 @@
-use crate::{Error, Fields, GetItems, Items, Result, Sortby};
+use super::{Fields, GetItems, Items, Result, Sortby};
+use crate::Error;
 use geojson::Geometry;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -55,7 +56,7 @@ impl Search {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     ///
     /// let search = Search::new();
     /// ```
@@ -68,7 +69,7 @@ impl Search {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// let search = Search::new().ids(vec!["an-id".to_string()]);
     /// ```
     pub fn ids(mut self, ids: Vec<String>) -> Search {
@@ -125,7 +126,7 @@ impl Search {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use geojson::{Geometry, Value};
     ///
     /// let mut search = Search::default();
@@ -149,7 +150,7 @@ impl Search {
     ///
     /// ```
     /// use stac::Item;
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     ///
     /// let item = Item::new("an-id");
     /// assert!(Search::new().matches(&item).unwrap());
@@ -167,7 +168,7 @@ impl Search {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use stac::Item;
     ///
     /// let mut search = Search::new();
@@ -195,7 +196,7 @@ impl Search {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use stac::Item;
     ///
     /// let mut search = Search::new();
@@ -217,7 +218,7 @@ impl Search {
     /// ```
     /// # #[cfg(feature = "geo")]
     /// # {
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use stac::Item;
     /// use geojson::{Geometry, Value};
     ///
@@ -318,7 +319,7 @@ impl From<Items> for Search {
     }
 }
 
-impl stac::Fields for Search {
+impl crate::Fields for Search {
     fn fields(&self) -> &Map<String, Value> {
         &self.items.additional_fields
     }

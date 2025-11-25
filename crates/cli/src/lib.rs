@@ -7,11 +7,11 @@ use async_stream::try_stream;
 use clap::{Parser, Subcommand};
 use futures_core::TryStream;
 use futures_util::{TryStreamExt, pin_mut};
+use stac::api::{GetItems, GetSearch, Search};
 use stac::{
     Assets, Collection, Item, Links, Migrate, SelfHref,
     geoparquet::{Compression, default_compression},
 };
-use stac_api::{GetItems, GetSearch, Search};
 use stac_io::{Format, StacStore};
 use stac_server::Backend;
 use stac_validate::Validate;

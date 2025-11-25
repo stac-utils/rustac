@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add `max_row_group_size` parameter to `geoparquet::WriterBuilder` with default value of `150_000` ([#846](https://github.com/stac-utils/rustac/pull/846))
 - An intermediate `WriterEncoder` for writing **stac-geoparquet** ([#863](https://github.com/stac-utils/rustac/pull/863))
+- `stac::api` (moved from the `stac_api` crate) ([#869](https://github.com/stac-utils/rustac/pull/869))
 
 ### Changed
 

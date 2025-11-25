@@ -2,7 +2,7 @@ use super::Backend;
 use crate::{Error, Result};
 use bb8::{ManageConnection, Pool};
 use stac::Collection;
-use stac_api::Search;
+use stac::api::Search;
 use stac_duckdb::Client;
 
 /// A backend that uses [DuckDB](https://duckdb.org/) to query
@@ -93,8 +93,8 @@ impl Backend for DuckdbBackend {
     async fn items(
         &self,
         collection_id: &str,
-        items: stac_api::Items,
-    ) -> Result<Option<stac_api::ItemCollection>> {
+        items: stac::api::Items,
+    ) -> Result<Option<stac::api::ItemCollection>> {
         let item_collection = self
             .search(Search {
                 items,
@@ -106,7 +106,7 @@ impl Backend for DuckdbBackend {
         Ok(Some(item_collection))
     }
 
-    async fn search(&self, search: Search) -> Result<stac_api::ItemCollection> {
+    async fn search(&self, search: Search) -> Result<stac::api::ItemCollection> {
         let client = self.pool.get().await.map_err(Box::new)?;
         client.search(search)
     }
@@ -150,7 +150,7 @@ impl DuckdbConnection {
             .find(|collection| collection.id == id))
     }
 
-    fn search(&self, search: Search) -> Result<stac_api::ItemCollection> {
+    fn search(&self, search: Search) -> Result<stac::api::ItemCollection> {
         let item_collection = self.client.search(&self.href, search)?;
         Ok(item_collection)
     }

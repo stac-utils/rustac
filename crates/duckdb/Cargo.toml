@@ -28,7 +28,6 @@ getrandom.workspace = true
 log.workspace = true
 serde_json.workspace = true
 stac = { workspace = true, features = ["geoarrow", "geo"] }
-stac-api.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]

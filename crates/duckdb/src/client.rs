@@ -6,8 +6,8 @@ use cql2::{Expr, ToDuckSQL};
 use duckdb::{Connection, Statement, types::Value};
 use geo::BoundingRect;
 use geojson::Geometry;
+use stac::api::{Direction, Search};
 use stac::{Collection, SpatialExtent, TemporalExtent, geoarrow::DATETIME_COLUMNS};
-use stac_api::{Direction, Search};
 use std::ops::{Deref, DerefMut};
 
 /// Default hive partitioning value
@@ -186,7 +186,7 @@ impl Client {
     /// let client = Client::new().unwrap();
     /// let item_collection = client.search("data/100-sentinel-2-items.parquet", Default::default()).unwrap();
     /// ```
-    pub fn search(&self, href: &str, search: Search) -> Result<stac_api::ItemCollection> {
+    pub fn search(&self, href: &str, search: Search) -> Result<stac::api::ItemCollection> {
         let mut arrow_iter = self.search_to_arrow(href, search)?;
         let Some(schema) = arrow_iter.schema() else {
             return Ok(Default::default());
@@ -560,7 +560,7 @@ mod tests {
     use geo::Geometry;
     use rstest::{fixture, rstest};
     use stac::Bbox;
-    use stac_api::{Items, Search, Sortby};
+    use stac::api::{Items, Search, Sortby};
     use stac_validate::Validate;
 
     #[fixture]

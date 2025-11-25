@@ -6,7 +6,7 @@ use url::{ParseError, Url};
 /// # Examples
 ///
 /// ```
-/// # use stac_api::UrlBuilder;
+/// # use stac::api::UrlBuilder;
 /// let url_builder = UrlBuilder::new("http://stac-api.test/api/v1").unwrap();
 /// assert_eq!(
 ///     url_builder.items("my-great-collection").unwrap().as_str(),
@@ -29,7 +29,7 @@ impl UrlBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::UrlBuilder;
+    /// # use stac::api::UrlBuilder;
     /// let url_builder = UrlBuilder::new("http://stac-api.test").unwrap();
     /// ```
     pub fn new(url: &str) -> Result<UrlBuilder, ParseError> {
@@ -56,7 +56,7 @@ impl UrlBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::UrlBuilder;
+    /// # use stac::api::UrlBuilder;
     /// let url_builder = UrlBuilder::new("http://stac-api.test").unwrap();
     /// assert_eq!(url_builder.root().as_str(), "http://stac-api.test/");
     /// ```
@@ -71,7 +71,7 @@ impl UrlBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::UrlBuilder;
+    /// # use stac::api::UrlBuilder;
     /// let url_builder = UrlBuilder::new("http://stac-api.test").unwrap();
     /// assert_eq!(url_builder.collections().as_str(), "http://stac-api.test/collections");
     /// ```
@@ -84,7 +84,7 @@ impl UrlBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::UrlBuilder;
+    /// # use stac::api::UrlBuilder;
     /// let url_builder = UrlBuilder::new("http://stac-api.test").unwrap();
     /// assert_eq!(
     ///     url_builder.collection("a-collection").unwrap().as_str(),
@@ -100,7 +100,7 @@ impl UrlBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::UrlBuilder;
+    /// # use stac::api::UrlBuilder;
     /// let url_builder = UrlBuilder::new("http://stac-api.test").unwrap();
     /// assert_eq!(
     ///     url_builder.items("a-collection").unwrap().as_str(),
@@ -116,7 +116,7 @@ impl UrlBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::UrlBuilder;
+    /// # use stac::api::UrlBuilder;
     /// let url_builder = UrlBuilder::new("http://stac-api.test").unwrap();
     /// assert_eq!(
     ///     url_builder.item("a-collection", "an-item").unwrap().as_str(),
@@ -133,7 +133,7 @@ impl UrlBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::UrlBuilder;
+    /// # use stac::api::UrlBuilder;
     /// let url_builder = UrlBuilder::new("http://stac-api.test").unwrap();
     /// assert_eq!(
     ///     url_builder.conformance().as_str(),
@@ -149,7 +149,7 @@ impl UrlBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::UrlBuilder;
+    /// # use stac::api::UrlBuilder;
     /// let url_builder = UrlBuilder::new("http://stac-api.test").unwrap();
     /// assert_eq!(
     ///     url_builder.service_desc().as_str(),
@@ -165,7 +165,7 @@ impl UrlBuilder {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::UrlBuilder;
+    /// # use stac::api::UrlBuilder;
     /// let url_builder = UrlBuilder::new("http://stac-api.test").unwrap();
     /// assert_eq!(
     ///     url_builder.search().as_str(),

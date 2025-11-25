@@ -45,7 +45,7 @@ jobs:
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin
       - name: Test w/ coverage
-        run: cargo tarpaulin -p stac -p stac-api --all-features --out xml
+        run: cargo tarpaulin -p stac --all-features --out xml
       - uses: codecov/codecov-action@v5
         with:
           files: ./cobertura.xml

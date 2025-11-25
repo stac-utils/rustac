@@ -1,4 +1,4 @@
-use crate::Conformance;
+use super::Conformance;
 use serde::{Deserialize, Serialize};
 use stac::Catalog;
 

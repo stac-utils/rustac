@@ -18,6 +18,9 @@ pub fn bbox(coordinates: &[f64]) -> Result<Rect> {
         ))
     } else {
         // TODO support three dimensional
-        Err(Error::InvalidBbox(coordinates.to_vec()))
+        Err(Error::InvalidBbox(
+            coordinates.to_vec(),
+            "unsupported 3D bbox",
+        ))
     }
 }

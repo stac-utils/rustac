@@ -32,7 +32,6 @@ reqwest = { workspace = true, features = ["json", "blocking"] }
 serde.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
 stac.workspace = true
-stac-api.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true

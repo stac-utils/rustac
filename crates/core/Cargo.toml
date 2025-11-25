@@ -33,6 +33,7 @@ arrow-json = { workspace = true, optional = true }
 arrow-schema = { workspace = true, optional = true }
 bytes.workspace = true
 chrono = { workspace = true, features = ["serde"] }
+cql2.workspace = true
 geo = { workspace = true, optional = true }
 geo-traits = { workspace = true, optional = true }
 geo-types = { workspace = true, optional = true }
@@ -46,6 +47,7 @@ mime.workspace = true
 parquet = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
+serde_urlencoded.workspace = true
 stac-derive.workspace = true
 thiserror.workspace = true
 tracing.workspace = true

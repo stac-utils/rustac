@@ -33,7 +33,7 @@ impl Sortby {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::Sortby;
+    /// # use stac::api::Sortby;
     /// let sortby = Sortby::asc("id");
     /// ```
     pub fn asc(field: impl ToString) -> Sortby {
@@ -48,7 +48,7 @@ impl Sortby {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::Sortby;
+    /// # use stac::api::Sortby;
     /// let sortby = Sortby::desc("id");
     /// ```
     pub fn desc(field: impl ToString) -> Sortby {
