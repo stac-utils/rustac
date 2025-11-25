@@ -29,7 +29,6 @@ stac-api.workspace = true
 stac-duckdb.workspace = true
 stac-io = { workspace = true, features = [
     "store-all",
-    "reqwest",
     "geoparquet",
 ] }
 stac-server = { workspace = true, features = ["axum", "duckdb"] }

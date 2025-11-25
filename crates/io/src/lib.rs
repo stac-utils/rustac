@@ -86,7 +86,6 @@ mod tests {
         ItemCollection
     );
 
-    #[cfg(feature = "reqwest")]
     mod read_with_reqwest {
         use stac::{Catalog, Collection, Item};
 
@@ -105,15 +104,6 @@ mod tests {
             "https://raw.githubusercontent.com/radiantearth/stac-spec/master/examples/collection.json",
             Collection
         );
-    }
-
-    #[test]
-    #[cfg(not(feature = "reqwest"))]
-    fn read_without_reqwest() {
-        assert!(matches!(
-            super::read::<Item>("http://rustac.test/item.json").unwrap_err(),
-            crate::Error::FeatureNotEnabled("reqwest")
-        ));
     }
 
     #[test]
