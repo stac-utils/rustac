@@ -12,7 +12,6 @@ rust-version.workspace = true
 
 [features]
 geoparquet = ["stac/geoparquet", "dep:parquet"]
-reqwest = ["dep:reqwest"]
 store = ["dep:object_store"]
 store-aws = ["store", "object_store/aws"]
 store-azure = ["store", "object_store/azure"]
@@ -21,23 +20,30 @@ store-http = ["store", "object_store/http"]
 store-all = ["store-aws", "store-azure", "store-gcp", "store-http"]
 
 [dependencies]
+async-stream.workspace = true
 bytes.workspace = true
 fluent-uri = { workspace = true, optional = true }
+futures.workspace = true
+http.workspace = true
 jsonschema = { workspace = true, optional = true }
 object_store = { workspace = true, optional = true }
 parquet = { workspace = true, optional = true }
-reqwest = { workspace = true, optional = true, features = ["json", "blocking"] }
+reqwest = { workspace = true, features = ["json", "blocking"] }
 serde.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
 stac.workspace = true
+stac-api.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
 tracing.workspace = true
 url.workspace = true
 
 [dev-dependencies]
+geojson.workspace = true
+mockito.workspace = true
 rstest.workspace = true
 tempfile.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["rt", "macros"] }
 tokio-test.workspace = true
 
 [[test]]

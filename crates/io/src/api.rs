@@ -1,6 +1,6 @@
 //! A STAC API client.
 
-use crate::{Error, GetItems, Item, ItemCollection, Items, Result, Search, UrlBuilder};
+use crate::{Error, Result};
 use async_stream::try_stream;
 use futures::{Stream, StreamExt, pin_mut};
 use http::header::{HeaderName, USER_AGENT};
@@ -8,6 +8,7 @@ use reqwest::{ClientBuilder, IntoUrl, Method, StatusCode, header::HeaderMap};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 use stac::{Collection, Link, Links, SelfHref};
+use stac_api::{GetItems, Item, ItemCollection, Items, Search, UrlBuilder};
 use std::pin::Pin;
 use tokio::{
     runtime::{Builder, Runtime},
@@ -48,7 +49,8 @@ pub async fn search(
             }
         }
     }
-    ItemCollection::new(items)
+    let item_collection = ItemCollection::new(items)?;
+    Ok(item_collection)
 }
 
 /// A client for interacting with STAC APIs.
@@ -76,7 +78,7 @@ impl Client {
     /// # Examples
     ///
     /// ```
-    /// # use stac_api::Client;
+    /// # use stac_io::api::Client;
     /// let client = Client::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
     /// ```
     pub fn new(url: &str) -> Result<Client> {
@@ -98,7 +100,7 @@ impl Client {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Client;
+    /// use stac_io::api::Client;
     ///
     /// let client = reqwest::Client::new();
     /// let client = Client::with_client(client, "https://earth-search.aws.element84.com/v1/").unwrap();
@@ -116,7 +118,7 @@ impl Client {
     /// # Examples
     ///
     /// ```no_run
-    /// # use stac_api::Client;
+    /// # use stac_io::api::Client;
     /// let client = Client::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
     /// # tokio_test::block_on(async {
     /// let collection = client.collection("sentinel-2-l2a").await.unwrap().unwrap();
@@ -136,7 +138,8 @@ impl Client {
     /// # Examples
     ///
     /// ```no_run
-    /// use stac_api::{Items, Client};
+    /// use stac_io::api::Client;
+    /// use stac_api::Items;
     /// use futures::StreamExt;
     ///
     /// let client = Client::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
@@ -176,7 +179,8 @@ impl Client {
     /// # Examples
     ///
     /// ```no_run
-    /// use stac_api::{Search, Client};
+    /// use stac_io::api::Client;
+    /// use stac_api::Search;
     /// use futures::StreamExt;
     ///
     /// let client = Client::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
@@ -287,7 +291,7 @@ impl BlockingClient {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::BlockingClient;
+    /// use stac_io::api::BlockingClient;
     ///
     /// let client = BlockingClient::new("https://planetarycomputer.microsoft.com/api/stac/vi").unwrap();
     /// ```
@@ -302,7 +306,8 @@ impl BlockingClient {
     /// # Examples
     ///
     /// ```no_run
-    /// use stac_api::{Search, BlockingClient};
+    /// use stac_io::api::BlockingClient;
+    /// use stac_api::Search;
     ///
     /// let client = BlockingClient::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
     /// let mut search = Search { collections: vec!["sentinel-2-l2a".to_string()], ..Default::default() };
@@ -404,11 +409,11 @@ fn not_found_to_none<T>(result: Result<T>) -> Result<Option<T>> {
 #[cfg(test)]
 mod tests {
     use super::Client;
-    use crate::{ItemCollection, Items, Search};
     use futures::StreamExt;
     use mockito::{Matcher, Server};
     use serde_json::json;
     use stac::Links;
+    use stac_api::{ItemCollection, Items, Search};
     use url::Url;
 
     #[tokio::test]

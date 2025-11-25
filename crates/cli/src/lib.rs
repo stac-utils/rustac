@@ -374,7 +374,7 @@ impl Rustac {
                 let item_collection = if use_duckdb {
                     stac_duckdb::search(href, search, *max_items)?
                 } else {
-                    stac_api::client::search(href, search, *max_items).await?
+                    stac_io::api::search(href, search, *max_items).await?
                 };
                 self.put(
                     outfile.as_deref(),

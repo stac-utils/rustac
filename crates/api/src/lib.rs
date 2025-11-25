@@ -62,8 +62,6 @@
     warnings
 )]
 
-#[cfg(feature = "client")]
-pub mod client;
 mod collections;
 mod conformance;
 mod error;
@@ -76,8 +74,6 @@ mod search;
 mod sort;
 mod url_builder;
 
-#[cfg(feature = "client")]
-pub use client::{BlockingClient, Client};
 pub use collections::Collections;
 pub use conformance::{
     COLLECTIONS_URI, CORE_URI, Conformance, FEATURES_URI, FILTER_URIS, GEOJSON_URI,
@@ -117,12 +113,8 @@ pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
-#[cfg(not(feature = "client"))]
-use tracing as _;
 #[cfg(test)]
-use {geojson as _, tokio_test as _};
-#[cfg(all(not(feature = "client"), test))]
-use {mockito as _, tokio as _};
+use geojson as _;
 
 // From https://github.com/rust-lang/cargo/issues/383#issuecomment-720873790,
 // may they be forever blessed.
