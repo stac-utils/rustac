@@ -27,7 +27,7 @@ futures.workspace = true
 http.workspace = true
 jsonschema = { workspace = true, optional = true }
 object_store = { workspace = true, optional = true }
-parquet = { workspace = true, optional = true }
+parquet = { workspace = true, optional = true, features = ["arrow", "async", "object_store"] }
 reqwest = { workspace = true, features = ["json", "blocking"] }
 serde.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
