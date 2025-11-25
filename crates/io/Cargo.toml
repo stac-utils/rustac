@@ -43,6 +43,7 @@ geojson.workspace = true
 mockito.workspace = true
 rstest.workspace = true
 tempfile.workspace = true
+tokio = { workspace = true, features = ["rt", "macros"] }
 tokio-test.workspace = true
 
 [[test]]
