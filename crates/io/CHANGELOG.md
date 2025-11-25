@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- API client ([#864](https://github.com/stac-utils/rustac/pull/864))
+
 ## [0.1.2] - 2025-11-14
 
 Update **stac** dependency.
