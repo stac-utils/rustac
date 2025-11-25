@@ -109,11 +109,6 @@ pub enum Error {
     #[cfg(feature = "geoarrow")]
     Wkb(#[from] wkb::error::WkbError),
 
-    /// The geoparquet writer has been closed.
-    #[error("The geoparquet writer has already been closed")]
-    #[cfg(feature = "geoparquet")]
-    ClosedGeoparquetWriter,
-
     /// No geoparquet metadata in a stac-geoparquet file.
     #[error("no geoparquet metadata")]
     #[cfg(feature = "geoparquet")]
