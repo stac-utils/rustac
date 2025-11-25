@@ -4,20 +4,6 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// An error occurred when getting an href.
-    #[error("error when getting href={href}: {message}")]
-    Get {
-        /// The href that we were trying to get.
-        href: String,
-
-        /// The underling error message.
-        message: String,
-    },
-
-    /// A required feature is not enabled.
-    #[error("{0} is not enabled")]
-    FeatureNotEnabled(&'static str),
-
     /// Returned when unable to read a STAC value from a path.
     #[error("{io}: {path}")]
     FromPath {

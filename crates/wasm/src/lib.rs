@@ -9,6 +9,7 @@ use thiserror::Error;
 use wasm_bindgen::prelude::*;
 
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum Error {
     #[error(transparent)]
     Arrow(#[from] ArrowError),

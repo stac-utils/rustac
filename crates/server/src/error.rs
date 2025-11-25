@@ -2,6 +2,7 @@ use thiserror::Error;
 
 /// A crate-specific error type.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum Error {
     /// [bb8::RunError]
     #[cfg(feature = "pgstac")]
@@ -12,10 +13,6 @@ pub enum Error {
     #[cfg(feature = "duckdb")]
     #[error(transparent)]
     Bb8DuckdbRun(#[from] Box<bb8::RunError<Error>>),
-
-    /// A generic backend error.
-    #[error("backend error: {0}")]
-    Backend(String),
 
     /// [stac_duckdb::Error]
     #[cfg(feature = "duckdb")]
