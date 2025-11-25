@@ -1,4 +1,4 @@
-use crate::{Error, Result};
+use super::{Error, Result};
 use cql2::Expr;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};

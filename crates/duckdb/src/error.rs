@@ -32,9 +32,9 @@ pub enum Error {
     #[error(transparent)]
     Stac(#[from] stac::Error),
 
-    /// [stac_api::Error]
+    /// [stac::api::Error]
     #[error(transparent)]
-    StacApi(#[from] stac_api::Error),
+    StacApi(#[from] stac::api::Error),
 
     /// The query search extension is not implemented.
     #[error("query is not implemented")]

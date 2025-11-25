@@ -99,6 +99,7 @@
 // https://users.rust-lang.org/t/use-of-imported-types-in-derive-macro/94676/3
 extern crate self as stac;
 
+pub mod api;
 mod asset;
 mod band;
 mod bbox;

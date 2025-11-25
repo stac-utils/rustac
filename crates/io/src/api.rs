@@ -7,8 +7,8 @@ use http::header::{HeaderName, USER_AGENT};
 use reqwest::{ClientBuilder, IntoUrl, Method, StatusCode, header::HeaderMap};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
+use stac::api::{GetItems, Item, ItemCollection, Items, Search, UrlBuilder};
 use stac::{Collection, Link, Links, SelfHref};
-use stac_api::{GetItems, Item, ItemCollection, Items, Search, UrlBuilder};
 use std::pin::Pin;
 use tokio::{
     runtime::{Builder, Runtime},
@@ -139,7 +139,7 @@ impl Client {
     ///
     /// ```no_run
     /// use stac_io::api::Client;
-    /// use stac_api::Items;
+    /// use stac::api::Items;
     /// use futures::StreamExt;
     ///
     /// let client = Client::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
@@ -180,7 +180,7 @@ impl Client {
     ///
     /// ```no_run
     /// use stac_io::api::Client;
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use futures::StreamExt;
     ///
     /// let client = Client::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
@@ -307,7 +307,7 @@ impl BlockingClient {
     ///
     /// ```no_run
     /// use stac_io::api::BlockingClient;
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     ///
     /// let client = BlockingClient::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
     /// let mut search = Search { collections: vec!["sentinel-2-l2a".to_string()], ..Default::default() };
@@ -413,7 +413,7 @@ mod tests {
     use mockito::{Matcher, Server};
     use serde_json::json;
     use stac::Links;
-    use stac_api::{ItemCollection, Items, Search};
+    use stac::api::{ItemCollection, Items, Search};
     use url::Url;
 
     #[tokio::test]

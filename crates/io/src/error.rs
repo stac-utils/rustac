@@ -58,8 +58,8 @@ pub enum Error {
     Stac(#[from] stac::Error),
 
     #[error(transparent)]
-    /// [stac_api::Error]
-    StacApi(#[from] stac_api::Error),
+    /// [stac::api::Error]
+    StacApi(#[from] stac::api::Error),
 
     /// [std::num::TryFromIntError]
     #[error(transparent)]

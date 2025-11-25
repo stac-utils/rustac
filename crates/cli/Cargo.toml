@@ -25,7 +25,6 @@ futures-core.workspace = true
 futures-util.workspace = true
 serde_json.workspace = true
 stac.workspace = true
-stac-api.workspace = true
 stac-duckdb.workspace = true
 stac-io = { workspace = true, features = [
     "store-all",

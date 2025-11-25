@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use stac::Link;
-use stac_api::{Context, Item};
+use stac::api::{Context, Item};
 
 /// A page of search results.
 #[derive(Debug, Deserialize, Serialize)]

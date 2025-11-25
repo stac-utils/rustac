@@ -19,9 +19,9 @@ use getrandom as _;
 /// ```
 pub fn search(
     href: &str,
-    mut search: stac_api::Search,
+    mut search: stac::api::Search,
     max_items: Option<usize>,
-) -> Result<stac_api::ItemCollection> {
+) -> Result<stac::api::ItemCollection> {
     if let Some(max_items) = max_items {
         search.limit = Some(max_items.try_into()?);
     } else {

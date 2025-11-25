@@ -1,4 +1,4 @@
-use crate::{Error, Fields, Filter, Result, Search, Sortby};
+use super::{Error, Fields, Filter, Result, Search, Sortby};
 use chrono::{DateTime, FixedOffset};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -108,14 +108,14 @@ impl Items {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Items;
+    /// use stac::api::Items;
     ///
     /// let items = Items::default().valid().unwrap();
     /// ```
     pub fn valid(self) -> Result<Items> {
         if let Some(bbox) = self.bbox.as_ref() {
             if !bbox.is_valid() {
-                return Err(Error::from(stac::Error::InvalidBbox((*bbox).into())));
+                return Err(Error::from(crate::Error::InvalidBbox((*bbox).into())));
             }
         }
         if let Some(datetime) = self.datetime.as_deref() {
@@ -145,7 +145,7 @@ impl Items {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Items;
+    /// use stac::api::Items;
     /// use stac::Item;
     ///
     /// assert!(Items::default().matches(&Item::new("an-id")).unwrap());
@@ -159,14 +159,14 @@ impl Items {
 
     /// Returns true if this item's geometry matches this search's bbox.
     ///
-    /// If **stac-api** is not built with the `geo` feature, this will return an error.
+    /// If **stac** is not built with the `geo` feature, this will return an error.
     ///
     /// # Examples
     ///
     /// ```
     /// # #[cfg(feature = "geo")]
     /// # {
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use stac::Item;
     /// use geojson::{Geometry, Value};
     ///
@@ -201,7 +201,7 @@ impl Items {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use stac::Item;
     ///
     /// let mut search = Search::new();
@@ -227,7 +227,7 @@ impl Items {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use stac::Item;
     ///
     /// let mut search = Search::new();
@@ -252,7 +252,7 @@ impl Items {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use stac::Item;
     ///
     /// let mut search = Search::new();
@@ -275,7 +275,7 @@ impl Items {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Items;
+    /// use stac::api::Items;
     /// let items = Items {
     ///     datetime: Some("2023".to_string()),
     ///     ..Default::default()
@@ -400,7 +400,7 @@ impl TryFrom<GetItems> for Items {
     }
 }
 
-impl stac::Fields for Items {
+impl crate::Fields for Items {
     fn fields(&self) -> &Map<String, Value> {
         &self.additional_fields
     }
@@ -422,7 +422,7 @@ fn maybe_parse_from_rfc3339(s: &str) -> Result<Option<DateTime<FixedOffset>>> {
 #[cfg(test)]
 mod tests {
     use super::{GetItems, Items};
-    use crate::{Fields, Filter, Sortby, sort::Direction};
+    use crate::api::{Fields, Filter, Sortby, sort::Direction};
     use indexmap::IndexMap;
     use serde_json::{Map, Value, json};
 

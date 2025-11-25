@@ -1,10 +1,10 @@
 //! Rust implementation of the [STAC API](https://github.com/radiantearth/stac-api-spec) specification.
 //!
-//! This crate **is**:
+//! This module **is**:
 //!
 //! - Data structures
 //!
-//! This crate **is not**:
+//! This module **is not**:
 //!
 //! - A server implementation
 //!
@@ -23,7 +23,7 @@
 //!
 //! ```
 //! use stac::Catalog;
-//! use stac_api::{Root, Conformance, CORE_URI};
+//! use stac::api::{Root, Conformance, CORE_URI};
 //! let root = Root {
 //!     catalog: Catalog::new("an-id", "a description"),
 //!     conformance: Conformance {
@@ -32,35 +32,7 @@
 //! };
 //! ```
 
-#![deny(
-    elided_lifetimes_in_paths,
-    explicit_outlives_requirements,
-    keyword_idents,
-    macro_use_extern_crate,
-    meta_variable_misuse,
-    missing_abi,
-    missing_debug_implementations,
-    missing_docs,
-    non_ascii_idents,
-    noop_method_call,
-    rust_2021_incompatible_closure_captures,
-    rust_2021_incompatible_or_patterns,
-    rust_2021_prefixes_incompatible_syntax,
-    rust_2021_prelude_collisions,
-    single_use_lifetimes,
-    trivial_casts,
-    trivial_numeric_casts,
-    unreachable_pub,
-    unsafe_code,
-    unsafe_op_in_unsafe_fn,
-    unused_crate_dependencies,
-    unused_extern_crates,
-    unused_import_braces,
-    unused_lifetimes,
-    unused_qualifications,
-    unused_results,
-    warnings
-)]
+#![warn(missing_docs, unused_qualifications)]
 
 mod collections;
 mod conformance;
@@ -107,7 +79,7 @@ pub type Item = serde_json::Map<String, serde_json::Value>;
 /// # Examples
 ///
 /// ```
-/// println!("{}", stac_api::version());
+/// println!("{}", stac::api::version());
 /// ```
 pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
@@ -115,17 +87,3 @@ pub fn version() -> &'static str {
 
 #[cfg(test)]
 use geojson as _;
-
-// From https://github.com/rust-lang/cargo/issues/383#issuecomment-720873790,
-// may they be forever blessed.
-#[cfg(doctest)]
-mod readme {
-    macro_rules! external_doc_test {
-        ($x:expr) => {
-            #[doc = $x]
-            unsafe extern "C" {}
-        };
-    }
-
-    external_doc_test!(include_str!("../README.md"));
-}

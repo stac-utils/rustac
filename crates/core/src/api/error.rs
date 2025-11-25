@@ -1,4 +1,4 @@
-use crate::Search;
+use super::Search;
 use chrono::{DateTime, FixedOffset};
 use serde_json::{Map, Value};
 use thiserror::Error;
@@ -61,9 +61,9 @@ pub enum Error {
     #[error(transparent)]
     SerdeUrlencodedSer(#[from] serde_urlencoded::ser::Error),
 
-    /// [stac::Error]
+    /// [crate::Error]
     #[error(transparent)]
-    Stac(#[from] stac::Error),
+    Stac(#[from] crate::Error),
 
     /// The start time is after the end time.
     #[error("start ({0}) is after end ({1})")]

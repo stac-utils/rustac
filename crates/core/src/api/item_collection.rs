@@ -1,4 +1,4 @@
-use crate::{Item, Result};
+use crate::{Result, api::Item};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use stac::Link;
@@ -126,8 +126,8 @@ impl ItemCollection {
     /// # Examples
     ///
     /// ```
-    /// let item: stac_api::Item = stac::Item::new("an-id").try_into().unwrap();
-    /// let item_collection = stac_api::ItemCollection::new(vec![item]).unwrap();
+    /// let item: stac::api::Item = stac::Item::new("an-id").try_into().unwrap();
+    /// let item_collection = stac::api::ItemCollection::new(vec![item]).unwrap();
     /// ```
     pub fn new(items: Vec<Item>) -> Result<ItemCollection> {
         let number_returned = items.len();
