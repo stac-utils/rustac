@@ -84,6 +84,7 @@ use tokio_postgres::{GenericClient, Row, types::ToSql};
 
 /// Crate-specific error enum.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
     /// [serde_json::Error]
     #[error(transparent)]

@@ -20,6 +20,7 @@ use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
 /// Errors for our axum routes.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// An server error.
     Server(crate::Error),

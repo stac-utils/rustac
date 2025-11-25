@@ -9,10 +9,6 @@ pub enum Error {
     #[error(transparent)]
     ChronoParse(#[from] chrono::ParseError),
 
-    /// A required feature is not enabled.
-    #[error("{0} is not enabled")]
-    FeatureNotEnabled(&'static str),
-
     /// [geojson::Error]
     #[error(transparent)]
     Geojson(#[from] Box<geojson::Error>),
@@ -93,11 +89,6 @@ pub enum Error {
     #[cfg(feature = "geoarrow")]
     #[error("Arrow schema mismatch")]
     ArrowSchemaMismatch,
-
-    /// The arrow table is empty
-    #[cfg(feature = "geoarrow")]
-    #[error("Empty arrow table")]
-    EmptyArrowTable,
 
     /// [geoarrow_schema::error::GeoArrowError]
     #[error(transparent)]
