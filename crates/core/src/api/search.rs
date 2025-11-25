@@ -1,4 +1,5 @@
-use super::{Error, Fields, GetItems, Items, Result, Sortby};
+use super::{Fields, GetItems, Items, Result, Sortby};
+use crate::Error;
 use geojson::Geometry;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};

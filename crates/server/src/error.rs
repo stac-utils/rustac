@@ -40,10 +40,6 @@ pub enum Error {
     #[error(transparent)]
     Stac(#[from] stac::Error),
 
-    /// [stac::api::Error]
-    #[error(transparent)]
-    StacApi(#[from] stac::api::Error),
-
     /// The backend is read-only.
     #[error("this backend is read-only")]
     ReadOnly,

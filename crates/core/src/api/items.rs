@@ -1,4 +1,5 @@
-use super::{Error, Fields, Filter, Result, Search, Sortby};
+use super::{Fields, Filter, Result, Search, Sortby};
+use crate::Error;
 use chrono::{DateTime, FixedOffset};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -115,7 +116,7 @@ impl Items {
     pub fn valid(self) -> Result<Items> {
         if let Some(bbox) = self.bbox.as_ref() {
             if !bbox.is_valid() {
-                return Err(Error::from(crate::Error::InvalidBbox((*bbox).into())));
+                return Err(Error::InvalidBbox((*bbox).into(), "invalid bbox"));
             }
         }
         if let Some(datetime) = self.datetime.as_deref() {
@@ -310,7 +311,9 @@ impl TryFrom<Items> for GetItems {
         }
         let filter = if let Some(filter) = items.filter {
             match filter {
-                Filter::Cql2Json(json) => return Err(Error::CannotConvertCql2JsonToString(json)),
+                Filter::Cql2Json(json) => {
+                    return Err(Error::CannotConvertCql2JsonToString(json));
+                }
                 Filter::Cql2Text(text) => Some(text),
             }
         } else {

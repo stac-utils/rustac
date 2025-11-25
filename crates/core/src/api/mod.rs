@@ -36,7 +36,6 @@
 
 mod collections;
 mod conformance;
-mod error;
 mod fields;
 mod filter;
 mod item_collection;
@@ -51,7 +50,6 @@ pub use conformance::{
     COLLECTIONS_URI, CORE_URI, Conformance, FEATURES_URI, FILTER_URIS, GEOJSON_URI,
     ITEM_SEARCH_URI, OGC_API_FEATURES_URI,
 };
-pub use error::Error;
 pub use fields::Fields;
 pub use filter::Filter;
 pub use item_collection::{Context, ItemCollection};
@@ -62,7 +60,7 @@ pub use sort::{Direction, Sortby};
 pub use url_builder::UrlBuilder;
 
 /// Crate-specific result type.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, crate::Error>;
 
 /// A STAC API Item type definition.
 ///

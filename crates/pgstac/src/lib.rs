@@ -90,9 +90,9 @@ pub enum Error {
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
 
-    /// [stac::api::Error]
+    /// [stac::Error]
     #[error(transparent)]
-    StacApi(#[from] stac::api::Error),
+    Stac(#[from] stac::Error),
 
     /// [tokio_postgres::Error]
     #[error(transparent)]
