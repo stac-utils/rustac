@@ -1,3 +1,4 @@
+pub mod api;
 mod error;
 mod format;
 #[cfg(feature = "geoparquet")]

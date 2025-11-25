@@ -29,6 +29,22 @@ pub enum Error {
         path: String,
     },
 
+    /// [http::header::InvalidHeaderName]
+    #[error(transparent)]
+    InvalidHeaderName(#[from] http::header::InvalidHeaderName),
+
+    /// [http::header::InvalidHeaderValue]
+    #[error(transparent)]
+    InvalidHeaderValue(#[from] http::header::InvalidHeaderValue),
+
+    /// [http::method::InvalidMethod]
+    #[error(transparent)]
+    InvalidMethod(#[from] http::method::InvalidMethod),
+
+    /// [tokio::task::JoinError]
+    #[error(transparent)]
+    Join(#[from] tokio::task::JoinError),
+
     /// [std::io::Error]
     #[error(transparent)]
     Io(#[from] std::io::Error),
@@ -55,6 +71,14 @@ pub enum Error {
     #[error(transparent)]
     /// [stac::Error]
     Stac(#[from] stac::Error),
+
+    #[error(transparent)]
+    /// [stac_api::Error]
+    StacApi(#[from] stac_api::Error),
+
+    /// [std::num::TryFromIntError]
+    #[error(transparent)]
+    TryFromInt(#[from] std::num::TryFromIntError),
 
     /// Unsupported file format.
     #[error("unsupported format: {0}")]
