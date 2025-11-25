@@ -17,19 +17,15 @@ geo = ["dep:geo", "stac/geo"]
 [dependencies]
 chrono.workspace = true
 cql2.workspace = true
-futures = { workspace = true, optional = true }
 geo = { workspace = true, optional = true }
 geojson.workspace = true
-http = { workspace = true, optional = true }
 indexmap.workspace = true
-reqwest = { workspace = true, features = ["json"], optional = true }
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded.workspace = true
 stac-derive.workspace = true
 stac.workspace = true
 thiserror.workspace = true
-tokio = { workspace = true, optional = true }
 url.workspace = true
 
 [dev-dependencies]
