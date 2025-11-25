@@ -172,7 +172,7 @@ where
     WriterBuilder::new(writer)
         .writer_options(WriterOptions::new().with_compression(compression))
         .build(item_collection.into().items)
-        .and_then(|mut writer| writer.finish())
+        .and_then(|writer| writer.finish())
 }
 
 /// Builder for a stac-geoparquet writer.
@@ -186,8 +186,7 @@ pub struct WriterBuilder<W: Write + Send> {
 /// Write items to stac-geoparquet.
 #[allow(missing_debug_implementations)]
 pub struct Writer<W: Write + Send> {
-    // We make this an option so we can consume the encoder without dropping it.
-    encoder: Option<WriterEncoder>,
+    encoder: WriterEncoder,
     arrow_writer: ArrowWriter<W>,
 }
 
@@ -354,7 +353,7 @@ impl<W: Write + Send> Writer<W> {
             ArrowWriter::try_new(writer, record_batch.schema(), Some(writer_options.into()))?;
         arrow_writer.write(&record_batch)?;
         Ok(Writer {
-            encoder: Some(encoder),
+            encoder,
             arrow_writer,
         })
     }
@@ -377,11 +376,7 @@ impl<W: Write + Send> Writer<W> {
     /// writer.finish().unwrap();
     /// ```
     pub fn write(&mut self, items: Vec<Item>) -> Result<()> {
-        let record_batch = if let Some(encoder) = self.encoder.as_mut() {
-            encoder.encode(items)?
-        } else {
-            return Err(Error::ClosedGeoparquetWriter);
-        };
+        let record_batch = self.encoder.encode(items)?;
         self.arrow_writer.write(&record_batch)?;
         Ok(())
     }
@@ -398,16 +393,12 @@ impl<W: Write + Send> Writer<W> {
     ///
     /// let item: Item = stac::read("examples/simple-item.json").unwrap();
     /// let cursor = Cursor::new(Vec::new());
-    /// let mut writer = WriterBuilder::new(cursor).build(vec![item]).unwrap();
+    /// let writer = WriterBuilder::new(cursor).build(vec![item]).unwrap();
     /// writer.finish().unwrap();
     /// ```
-    pub fn finish(&mut self) -> Result<()> {
-        if let Some(encoder) = self.encoder.take() {
-            self.arrow_writer
-                .append_key_value_metadata(encoder.into_keyvalue()?);
-        } else {
-            return Err(Error::ClosedGeoparquetWriter);
-        }
+    pub fn finish(mut self) -> Result<()> {
+        self.arrow_writer
+            .append_key_value_metadata(self.encoder.into_keyvalue()?);
         self.arrow_writer.append_key_value_metadata(KeyValue::new(
             VERSION_KEY.to_string(),
             Some(VERSION.to_string()),
