@@ -74,15 +74,8 @@ impl Format {
         let mut href = href.to_string();
         let mut value: T = match href.as_str().into() {
             RealizedHref::Url(url) => {
-                #[cfg(feature = "reqwest")]
-                {
-                    let bytes = reqwest::blocking::get(url)?.bytes()?;
-                    self.from_bytes(bytes)?
-                }
-                #[cfg(not(feature = "reqwest"))]
-                {
-                    return Err(Error::FeatureNotEnabled("reqwest"));
-                }
+                let bytes = reqwest::blocking::get(url)?.bytes()?;
+                self.from_bytes(bytes)?
             }
             RealizedHref::PathBuf(path) => {
                 let path = path.canonicalize()?;
