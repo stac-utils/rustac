@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add `parquet-max-row-group-size` parameter to commands that write parquet files with default value of `150_000` ([#846](https://github.com/stac-utils/rustac/pull/846))
 - `--bind` argument to `rustac serve` ([#871](https://github.com/stac-utils/rustac/pull/871))
+- Completions ([#874](https://github.com/stac-utils/rustac/pull/874))
 
 ## [0.1.2] - 2025-11-14
 
