@@ -4,10 +4,10 @@ site_url: https://stac-utils.github.io/rustac/
 repo_url: https://github.com/stac-utils/rustac
 theme:
   name: material
-  logo: img/stac-ferris.png
+  logo: img/rustac-notext.svg
   icon:
     repo: fontawesome/brands/github
-  favicon: img/stac-ferris.png
+  favicon: img/rustac-notext.svg
   features:
     - navigation.indexes
     - navigation.footer
@@ -17,8 +17,10 @@ theme:
 
 nav:
   - Home: index.md
-  - Command-line interface:
-      - cli/index.md
+  - Formats: formats.md
+  - Command-line interface: cli.md
+  - History: history.md
+  - Pronunciation: pronunciation.md
 
 plugins:
   - search
