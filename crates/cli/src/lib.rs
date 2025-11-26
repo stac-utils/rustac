@@ -459,7 +459,8 @@ impl Rustac {
                         let backend =
                             stac_server::PgstacBackend::new_from_stringlike(pgstac).await?;
                         eprintln!("Backend: pgstac");
-                        load_and_serve(bind, addr, backend, collections, items, create_collections).await
+                        load_and_serve(bind, addr, backend, collections, items, create_collections)
+                            .await
                     }
                     #[cfg(not(feature = "pgstac"))]
                     {
@@ -468,7 +469,8 @@ impl Rustac {
                 } else {
                     let backend = stac_server::MemoryBackend::new();
                     eprintln!("Backend: memory");
-                    load_and_serve(bind, addr, backend, collections, items, create_collections).await
+                    load_and_serve(bind, addr, backend, collections, items, create_collections)
+                        .await
                 }
             }
             Command::Crawl {
@@ -724,7 +726,9 @@ async fn load_and_serve(
         ));
     }
 
-    let root = Url::parse(addr).map(|url| url.to_string()).unwrap_or(format!("http://{addr}"));
+    let root = Url::parse(addr)
+        .map(|url| url.to_string())
+        .unwrap_or(format!("http://{addr}"));
     let api = stac_server::Api::new(backend, &root)?;
     let router = stac_server::routes::from_api(api);
     let listener = TcpListener::bind(&bind).await?;
