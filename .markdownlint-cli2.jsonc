@@ -9,5 +9,6 @@
     "crates/*/examples/README.md",
     "target/**/*.md",
     "LICENSE-*",
+    ".github/pull_request_template.md",
   ],
 }
