@@ -92,13 +92,14 @@ This monorepo contains several crates:
 graph TD
     stac --> stac-io
     stac --> stac-extensions
-    stac --> rustac
     stac --> pgstac
     stac --> stac-duckdb
     stac --> stac-server
+    pgstac -.-> stac-server
+    stac-duckdb -.-> stac-server
+    stac --> rustac
     stac-io --> rustac
-    pgstac --> stac-server
-    stac-duckdb --> stac-server
+    stac-duckdb --> rustac
     stac-server --> rustac
 ```
 
