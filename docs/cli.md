@@ -25,4 +25,12 @@ If you don't have DuckDB on your system, you can also use the Python wheel, whic
 python -m pip install rustac
 ```
 
+To get shell completions, use:
+
+```shell
+rustac generate-completions <your-shell> > <completion-file>
+```
+
+## History
+
 The CLI was announced at [@gadomski's](https://github.com/gadomski/) [2024 FOSS4G-NA presentation](https://www.gadom.ski/2024-09-FOSS4G-NA-rustac/).

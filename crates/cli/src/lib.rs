@@ -4,7 +4,7 @@
 
 use anyhow::{Error, Result, anyhow};
 use async_stream::try_stream;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use futures_core::TryStream;
 use futures_util::{TryStreamExt, pin_mut};
 use stac::api::{GetItems, GetSearch, Search};
@@ -287,6 +287,12 @@ pub enum Command {
         /// To read from standard input, pass `-` or don't provide an argument at all.
         infile: Option<String>,
     },
+
+    /// Generate completion scripts for a given shell.
+    GenerateCompletions {
+        /// The shell to generate completion scripts for.
+        shell: clap_complete::Shell,
+    },
 }
 
 #[derive(Debug)]
@@ -543,6 +549,11 @@ impl Rustac {
                 } else {
                     Ok(())
                 }
+            }
+            Command::GenerateCompletions { shell } => {
+                let mut command = Rustac::command();
+                clap_complete::generate(shell, &mut command, "rustac", &mut std::io::stdout());
+                Ok(())
             }
         }
     }
