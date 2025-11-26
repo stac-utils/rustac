@@ -232,9 +232,14 @@ pub enum Command {
         /// The hrefs of collections, items, and item collections to load into the API on startup.
         hrefs: Vec<String>,
 
-        /// The address of the server.
+        /// The address of the server. Defaults to `127.0.0.1:7822`.
+        /// Either a URL `https://some-host.io/stac` or a local address like `127.0.0.1:7822`.
         #[arg(short = 'a', long = "addr", default_value = "127.0.0.1:7822")]
         addr: String,
+
+        /// The address to bind the server to, if different from `--addr`.
+        #[arg(short = 'b', long = "bind")]
+        bind: Option<String>,
 
         /// The pgstac connection string, e.g. `postgresql://username:password@localhost:5432/postgis`
         ///
@@ -385,17 +390,20 @@ impl Rustac {
             Command::Serve {
                 ref hrefs,
                 ref addr,
+                ref bind,
                 ref pgstac,
                 use_duckdb,
                 load_collection_items,
                 create_collections,
             } => {
+                let bind = bind.as_deref().unwrap_or(&addr);
                 if matches!(use_duckdb, Some(true))
                     || (use_duckdb.is_none() && hrefs.len() == 1 && hrefs[0].ends_with("parquet"))
                 {
                     let backend = stac_server::DuckdbBackend::new(&hrefs[0]).await?;
                     eprintln!("Backend: duckdb");
                     return load_and_serve(
+                        bind,
                         addr,
                         backend,
                         Vec::new(),
@@ -451,7 +459,8 @@ impl Rustac {
                         let backend =
                             stac_server::PgstacBackend::new_from_stringlike(pgstac).await?;
                         eprintln!("Backend: pgstac");
-                        load_and_serve(addr, backend, collections, items, create_collections).await
+                        load_and_serve(bind, addr, backend, collections, items, create_collections)
+                            .await
                     }
                     #[cfg(not(feature = "pgstac"))]
                     {
@@ -460,7 +469,8 @@ impl Rustac {
                 } else {
                     let backend = stac_server::MemoryBackend::new();
                     eprintln!("Backend: memory");
-                    load_and_serve(addr, backend, collections, items, create_collections).await
+                    load_and_serve(bind, addr, backend, collections, items, create_collections)
+                        .await
                 }
             }
             Command::Crawl {
@@ -678,6 +688,7 @@ impl FromStr for KeyValue {
 }
 
 async fn load_and_serve(
+    bind: &str,
     addr: &str,
     mut backend: impl Backend,
     collections: Vec<Collection>,
@@ -714,10 +725,13 @@ async fn load_and_serve(
             "items don't have a collection and `create_collections` is false"
         ));
     }
-    let root = format!("http://{addr}");
+
+    let root = Url::parse(addr)
+        .map(|url| url.to_string())
+        .unwrap_or(format!("http://{addr}"));
     let api = stac_server::Api::new(backend, &root)?;
     let router = stac_server::routes::from_api(api);
-    let listener = TcpListener::bind(&addr).await?;
+    let listener = TcpListener::bind(&bind).await?;
     eprintln!("Serving a STAC API at {root}");
     axum::serve(listener, router).await.map_err(Error::from)
 }
