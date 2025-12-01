@@ -25,4 +25,5 @@ async-recursion.workspace = true
 
 [dev-dependencies]
 stac-io.workspace = true
+rstest.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
