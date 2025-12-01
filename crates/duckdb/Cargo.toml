@@ -27,11 +27,11 @@ geojson.workspace = true
 getrandom.workspace = true
 log.workspace = true
 serde_json.workspace = true
-stac = { workspace = true, features = ["geoarrow", "geo"] }
+stac = { version = "0.14.0", path = "../core", features = ["geoarrow", "geo"] }
 thiserror.workspace = true
 
 [dev-dependencies]
 geo.workspace = true
 rstest.workspace = true
-stac-validate = { path = "../validate" }
+stac-validate = { version = "0.5.0", path = "../validate" }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

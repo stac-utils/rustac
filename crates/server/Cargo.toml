@@ -30,13 +30,13 @@ bb8-postgres = { workspace = true, optional = true }
 bytes = { workspace = true, optional = true }
 http.workspace = true
 mime = { workspace = true, optional = true }
-pgstac = { workspace = true, optional = true }
+pgstac = { version = "0.3.0", path = "../pgstac", optional = true }
 rustls = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded.workspace = true
-stac.workspace = true
-stac-duckdb = { workspace = true, optional = true }
+stac = { version = "0.14.0", path = "../core" }
+stac-duckdb = { version = "0.2.0", path = "../duckdb", optional = true }
 thiserror.workspace = true
 tokio-postgres = { workspace = true, optional = true }
 tokio-postgres-rustls = { workspace = true, optional = true }
