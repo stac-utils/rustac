@@ -1,5 +1,5 @@
 {
-  "crates/cli": "0.1.2",
+  "crates/cli": "0.2.0",
   "crates/core": "0.14.0",
   "crates/derive": "0.3.0",
   "crates/duckdb": "0.2.2",
