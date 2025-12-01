@@ -34,10 +34,10 @@ rust-version = "1.85"
 
 [workspace.dependencies]
 anyhow = "1.0"
-arrow-array = "56.0.0"
-arrow-cast = "56.0.0"
-arrow-json = "56.0.0"
-arrow-schema = "56.0.0"
+arrow-array = "57.1.0"
+arrow-cast = "57.1.0"
+arrow-json = "57.1.0"
+arrow-schema = "57.1.0"
 assert-json-diff = "2.0"
 assert_cmd = "2.0"
 async-recursion = "1.1.1"
@@ -74,7 +74,7 @@ log = "0.4.25"
 mime = "0.3.17"
 mockito = "1.5"
 object_store = "0.12.0"
-parquet = { version = "56.0.0" }
+parquet = { version = "57.1.0" }
 pgstac = { version = "0.3.0", path = "crates/pgstac" }
 quote = "1.0"
 reqwest = { version = "0.12.8", default-features = false, features = [
