@@ -2,6 +2,15 @@
   "plugins": ["cargo-workspace"],
   "release-type": "rust",
   "packages": {
-    "crates/core": {}
+    "crates/cli": {},
+    "crates/core": {},
+    "crates/derive": {},
+    "crates/duckdb": {},
+    "crates/extensions": {},
+    "crates/io": {},
+    "crates/pgstac": {},
+    "crates/server": {},
+    "crates/validate": {},
+    "crates/wasm": {}
   }
 }
