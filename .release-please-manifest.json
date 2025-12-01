@@ -7,6 +7,6 @@
   "crates/io": "0.1.2",
   "crates/pgstac": "0.3.2",
   "crates/server": "0.3.6",
-  "crates/validate": "0.5.1",
+  "crates/validate": "0.6.0",
   "crates/wasm": "0.0.4"
 }
