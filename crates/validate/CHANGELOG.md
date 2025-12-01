@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/stac-utils/rustac/compare/stac-validate-v0.5.1...stac-validate-v0.6.0) (2025-12-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove unused error enums ([#868](https://github.com/stac-utils/rustac/issues/868))
+
+### Bug Fixes
+
+* remove circular dev depependency ([#886](https://github.com/stac-utils/rustac/issues/886)) ([dcb9b49](https://github.com/stac-utils/rustac/commit/dcb9b496d4979984178b279c245e897621b9ca76))
+* remove unused error enums ([#868](https://github.com/stac-utils/rustac/issues/868)) ([cf0e815](https://github.com/stac-utils/rustac/commit/cf0e815e03433e8ef219a79a67161174f3e99e84))
+
 ## [Unreleased]
 
 ## [0.5.1] - 2025-11-14

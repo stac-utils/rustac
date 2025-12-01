@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/stac-utils/rustac/compare/rustac-v0.1.2...rustac-v0.2.0) (2025-12-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* move stac_api crate into stac crate ([#869](https://github.com/stac-utils/rustac/issues/869))
+* move api client to stac-io crate ([#864](https://github.com/stac-utils/rustac/issues/864))
+
+### Features
+
+* add bind argument when serving ([#871](https://github.com/stac-utils/rustac/issues/871)) ([f3a3517](https://github.com/stac-utils/rustac/commit/f3a35179cf5026cc100313faa2010e6a1af4efb7))
+* shell completions ([#874](https://github.com/stac-utils/rustac/issues/874)) ([717c4ee](https://github.com/stac-utils/rustac/commit/717c4ee62b993730d54dcf91534b39d69242db0e)), closes [#650](https://github.com/stac-utils/rustac/issues/650)
+* specify max_row_group_size in geoparquet WriterBuilder ([#846](https://github.com/stac-utils/rustac/issues/846)) ([2bde538](https://github.com/stac-utils/rustac/commit/2bde538b41e5900b5be2d75587b1f8904520b3a1))
+
+
+### Code Refactoring
+
+* move api client to stac-io crate ([#864](https://github.com/stac-utils/rustac/issues/864)) ([e06de28](https://github.com/stac-utils/rustac/commit/e06de28787f9868f000ccc884979dcede1984f01)), closes [#764](https://github.com/stac-utils/rustac/issues/764)
+* move stac_api crate into stac crate ([#869](https://github.com/stac-utils/rustac/issues/869)) ([d0f7405](https://github.com/stac-utils/rustac/commit/d0f7405a811dd2c3b044404b4a6a48cf07926a89))
+
 ## [Unreleased]
 
 ### Added
