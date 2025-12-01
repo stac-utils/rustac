@@ -75,7 +75,6 @@ mime = "0.3.17"
 mockito = "1.5"
 object_store = "0.12.0"
 parquet = { version = "56.0.0" }
-pgstac = { version = "0.3.0", path = "crates/pgstac" }
 quote = "1.0"
 reqwest = { version = "0.12.8", default-features = false, features = [
     "rustls-tls",
@@ -86,13 +85,6 @@ rustls = { version = "0.23.22", default-features = false }
 serde = "1.0"
 serde_json = "1.0"
 serde_urlencoded = "0.7.1"
-stac = { version = "0.14.0", path = "crates/core" }
-stac-derive = { version = "0.3.0", path = "crates/derive" }
-stac-duckdb = { version = "0.2.0", path = "crates/duckdb" }
-stac-extensions = { version = "0.1.0", path = "crates/extensions" }
-stac-io = { version = "0.1.0", path = "crates/io" }
-stac-server = { version = "0.3.2", path = "crates/server" }
-stac-validate = { version = "0.5.0", path = "crates/validate" }
 syn = "2.0"
 tempfile = "3.16"
 thiserror = "2.0"

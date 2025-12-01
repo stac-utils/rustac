@@ -17,13 +17,13 @@ jsonschema.workspace = true
 reqwest = { workspace = true, features = ["blocking", "json"] }
 serde.workspace = true
 serde_json.workspace = true
-stac.workspace = true
+stac = { version = "0.14.0", path = "../core" }
 thiserror.workspace = true
 async-trait.workspace = true
 referencing.workspace = true
 async-recursion.workspace = true
 
 [dev-dependencies]
-stac-io.workspace = true
+stac-io = { version = "0.1.0", path = "../io" }
 rstest.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
