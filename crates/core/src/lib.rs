@@ -285,7 +285,6 @@ pub fn version() -> &'static str {
 #[cfg(test)]
 mod tests {
     use rstest as _;
-    use stac_validate as _;
     use tokio as _;
     use tokio_test as _;
 

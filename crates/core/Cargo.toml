@@ -58,7 +58,6 @@ wkb = { workspace = true, optional = true }
 assert-json-diff.workspace = true
 bytes.workspace = true
 rstest.workspace = true
-stac-validate = { path = "../validate" }
 tokio = { workspace = true, features = ["macros"] }
 tokio-test.workspace = true
 
