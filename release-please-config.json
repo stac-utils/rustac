@@ -3,7 +3,7 @@
   "release-type": "rust",
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": true,
-  "separate-pull-requests": false,
+  "separate-pull-requests": true,
   "packages": {
     "crates/cli": {},
     "crates/core": {},
