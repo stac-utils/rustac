@@ -715,4 +715,14 @@ mod tests {
         // Should have a single row group
         assert_eq!(reader.metadata().num_row_groups(), 1);
     }
+
+    #[test]
+    fn no_assets() {
+        let mut item: Item = crate::read("examples/simple-item.json").unwrap();
+        item.assets = Default::default();
+        let mut writer = Cursor::new(Vec::new());
+        super::into_writer(&mut writer, vec![item]).unwrap();
+        let item_collection = super::from_reader(Bytes::from(writer.into_inner())).unwrap();
+        assert!(item_collection.items[0].assets.is_empty());
+    }
 }
