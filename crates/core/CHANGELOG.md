@@ -16,6 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Consume a geoparquet writer on close ([#867](https://github.com/stac-utils/rustac/pull/867))
 
+### Fixed
+
+- Allow writing stac-geoparquet with no assets ([#882](https://github.com/stac-utils/rustac/pull/882))
+
 ## [0.14.0] - 2025-11-14
 
 ### Changed

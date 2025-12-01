@@ -160,6 +160,7 @@ pub struct FlatItem {
     pub links: Vec<Link>,
 
     /// Dictionary of asset objects that can be downloaded, each with a unique key.
+    #[serde(skip_serializing_if = "IndexMap::is_empty")]
     pub assets: IndexMap<String, Asset>,
 
     /// The ID of the collection this Item is a part of.
