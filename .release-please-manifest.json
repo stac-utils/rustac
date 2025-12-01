@@ -3,9 +3,9 @@
   "crates/core": "0.14.0",
   "crates/derive": "0.3.0",
   "crates/duckdb": "0.2.2",
-  "crates/extensions": "0.1.1",
+  "crates/extensions": "0.1.2",
   "crates/io": "0.1.2",
-  "crates/pgstac": "0.3.2",
+  "crates/pgstac": "0.4.0",
   "crates/server": "0.3.6",
   "crates/validate": "0.5.1",
   "crates/wasm": "0.0.4"
