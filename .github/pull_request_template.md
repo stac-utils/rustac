@@ -15,4 +15,3 @@ Delete any checklist items that do not apply (e.g. if your change is minor, it m
 - [ ] Documentation, including doctests
 - [ ] Pull request title follows [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
 - [ ] Pre-commit hooks pass (`prek run --all-files`)
-- [ ] Changes are added to the appropriate CHANGELOGs
