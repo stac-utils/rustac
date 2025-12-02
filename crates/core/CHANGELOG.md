@@ -31,22 +31,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 * consume a geoparquet writer on close ([#867](https://github.com/stac-utils/rustac/issues/867)) ([bdd95be](https://github.com/stac-utils/rustac/commit/bdd95be8b9a0c64a4179f0d76dd28b39c52f3fef))
 * move stac_api crate into stac crate ([#869](https://github.com/stac-utils/rustac/issues/869)) ([d0f7405](https://github.com/stac-utils/rustac/commit/d0f7405a811dd2c3b044404b4a6a48cf07926a89))
 
-## [Unreleased]
-
-### Added
-
-- Add `max_row_group_size` parameter to `geoparquet::WriterBuilder` with default value of `150_000` ([#846](https://github.com/stac-utils/rustac/pull/846))
-- An intermediate `WriterEncoder` for writing **stac-geoparquet** ([#863](https://github.com/stac-utils/rustac/pull/863))
-- `stac::api` (moved from the `stac_api` crate) ([#869](https://github.com/stac-utils/rustac/pull/869))
-
-### Changed
-
-- Consume a geoparquet writer on close ([#867](https://github.com/stac-utils/rustac/pull/867))
-
-### Fixed
-
-- Allow writing stac-geoparquet with no assets ([#882](https://github.com/stac-utils/rustac/pull/882))
-
 ## [0.14.0] - 2025-11-14
 
 ### Changed
