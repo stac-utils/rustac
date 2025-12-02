@@ -36,13 +36,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   * dependencies
     * stac bumped from 0.14.0 to 0.15.0
 
-## [Unreleased]
-
-### Added
-
-- Writing **stac-geoparquet** to an object store ([#863](https://github.com/stac-utils/rustac/pull/863))
-- API client ([#864](https://github.com/stac-utils/rustac/pull/864))
-
 ## [0.1.2] - 2025-11-14
 
 Update **stac** dependency.
