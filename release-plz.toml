@@ -6,6 +6,7 @@ name = "stac"
 
 [[package]]
 name = "stac-duckdb"
+semver_check = false
 
 [[package]]
 name = "stac-extensions"
