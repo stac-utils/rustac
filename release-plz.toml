@@ -25,7 +25,6 @@ name = "stac-validate"
 
 [[package]]
 name = "stac-wasm"
-release = false
 
 [[package]]
 name = "rustac"
