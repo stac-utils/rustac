@@ -26,7 +26,8 @@ jobs:
       - &install-rust
         name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-      - uses: actions/create-github-app-token@v2
+      - &generate-token
+        uses: actions/create-github-app-token@v2
         id: generate-token
         with:
           app-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
@@ -49,6 +50,7 @@ jobs:
     steps:
       - *checkout
       - *install-rust
+      - *generate-token
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
