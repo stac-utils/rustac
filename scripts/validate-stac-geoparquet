@@ -59,8 +59,6 @@ try:
         [
             "cargo",
             "run",
-            "-p",
-            "rustac",
             "--",
             "translate",
             path,
@@ -88,8 +86,6 @@ try:
             [
                 "cargo",
                 "run",
-                "-p",
-                "rustac",
                 "--",
                 "translate",
                 parquet_path,
