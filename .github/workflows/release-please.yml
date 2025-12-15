@@ -17,7 +17,7 @@ jobs:
       - uses: actions/create-github-app-token@v2
         id: generate-token
         with:
-          app-id: ${{ secrets.RELEASE_BOT_CLIENT_ID }}
+          app-id: ${{ secrets.RELEASE_BOT_APP_ID }}
           private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
       - uses: googleapis/release-please-action@v4
         with:
