@@ -1,0 +1,5 @@
+[workspace]
+
+[[package]]
+name = "rustac"
+semver_check = false
