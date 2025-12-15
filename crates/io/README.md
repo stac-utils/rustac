@@ -14,7 +14,7 @@ To use the library in your project:
 
 ```toml
 [dependencies]
-stac-io = "0.1"
+stac-io = "*"
 ```
 
 ## Other info
