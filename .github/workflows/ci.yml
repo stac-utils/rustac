@@ -126,6 +126,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
-      - uses: DavidAnson/markdownlint-cli2-action@v21
+      - uses: DavidAnson/markdownlint-cli2-action@v22
       - name: Doc
         run: cargo doc --workspace --no-deps
