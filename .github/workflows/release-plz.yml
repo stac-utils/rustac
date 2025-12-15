@@ -51,6 +51,7 @@ jobs:
       - *checkout
       - *install-rust
       - *generate-token
+      - uses: Swatinem/rust-cache@v2
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
