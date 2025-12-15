@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1](https://github.com/stac-utils/rustac/compare/rustac-v0.2.0...rustac-v0.2.1) (2025-12-15)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * stac bumped from 0.15.0 to 0.15.1
+    * stac-duckdb bumped from 0.3.0 to 0.3.1
+    * stac-io bumped from 0.2.0 to 0.2.1
+    * stac-server bumped from 0.4.0 to 0.4.1
+    * stac-validate bumped from 0.6.0 to 0.6.1
+
 ## [0.2.0](https://github.com/stac-utils/rustac/compare/rustac-v0.1.2...rustac-v0.2.0) (2025-12-01)
 
 

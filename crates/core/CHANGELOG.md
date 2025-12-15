@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.1](https://github.com/stac-utils/rustac/compare/stac-v0.15.0...stac-v0.15.1) (2025-12-15)
+
+
+### Features
+
+* add matches_cql2 ([#909](https://github.com/stac-utils/rustac/issues/909)) ([107eed8](https://github.com/stac-utils/rustac/commit/107eed8a841df65773aa21cfd072e272e7831f0d)), closes [#567](https://github.com/stac-utils/rustac/issues/567)
+
 ## [0.15.0](https://github.com/stac-utils/rustac/compare/stac-v0.14.0...stac-v0.15.0) (2025-12-01)
 
 

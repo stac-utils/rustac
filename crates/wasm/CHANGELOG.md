@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.1](https://github.com/stac-utils/rustac/compare/stac-wasm-v0.1.0...stac-wasm-v0.1.1) (2025-12-15)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * stac bumped from 0.15.0 to 0.15.1
+
 ## [0.1.0](https://github.com/stac-utils/rustac/compare/stac-wasm-v0.0.4...stac-wasm-v0.1.0) (2025-12-01)
 
 
