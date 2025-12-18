@@ -10,6 +10,11 @@ permissions:
   issues: write
   pull-requests: write
 
+env:
+  DUCKDB_VERSION: "1.4.2"
+  DUCKDB_LIB_DIR: /opt/duckdb
+  LD_LIBRARY_PATH: /opt/duckdb
+
 jobs:
   release-plz-release:
     name: Release-plz release
@@ -33,6 +38,11 @@ jobs:
         with:
           app-id: ${{ vars.RELEASE_BOT_CLIENT_ID }}
           private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+      - name: Get DuckDB
+        run: |
+          wget https://github.com/duckdb/duckdb/releases/download/v${{ env.DUCKDB_VERSION }}/libduckdb-linux-amd64.zip
+          unzip libduckdb-linux-amd64.zip -d /opt/duckdb
+          rm libduckdb-linux-amd64.zip
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
