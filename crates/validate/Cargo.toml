@@ -24,6 +24,6 @@ referencing.workspace = true
 async-recursion.workspace = true
 
 [dev-dependencies]
-stac-io = { version = "0.2.1", path = "../io" }
+stac-io = { path = "../io" }
 rstest.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

@@ -33,5 +33,5 @@ thiserror.workspace = true
 [dev-dependencies]
 geo.workspace = true
 rstest.workspace = true
-stac-validate = { version = "0.6.1", path = "../validate" }
+stac-validate = { path = "../validate" }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
