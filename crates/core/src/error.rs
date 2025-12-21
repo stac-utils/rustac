@@ -158,4 +158,12 @@ pub enum Error {
     #[error(transparent)]
     #[cfg(feature = "geoparquet")]
     Parquet(#[from] parquet::errors::ParquetError),
+
+    /// Invalid year value.
+    #[error("invalid year: {0}")]
+    InvalidYear(i32),
+
+    /// Unrecognized date format.
+    #[error("unrecognized date format: {0}")]
+    UnrecognizedDateFormat(String),
 }
