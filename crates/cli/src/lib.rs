@@ -382,6 +382,7 @@ impl Rustac {
                     items: get_items,
                 };
                 let search: Search = get_search.try_into()?;
+                let search = search.normalize_datetimes()?;
                 let item_collection = if use_duckdb {
                     stac_duckdb::search(href, search, *max_items)?
                 } else {
