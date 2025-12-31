@@ -17,6 +17,11 @@ updates:
           - "geoparquet"
           - "arrow-*"
           - "parquet"
+          - "object_store"
+      jsonschema:
+        patterns:
+          - "jsonschema"
+          - "referencing"
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
