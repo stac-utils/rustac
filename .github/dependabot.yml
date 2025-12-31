@@ -17,6 +17,7 @@ updates:
           - "geoparquet"
           - "arrow-*"
           - "parquet"
+          - "object_store"
       jsonschema:
         patterns:
           - "jsonschema"
