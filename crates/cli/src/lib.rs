@@ -4,14 +4,14 @@
 
 use anyhow::{Error, Result, anyhow};
 use async_stream::try_stream;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use futures_core::TryStream;
 use futures_util::{TryStreamExt, pin_mut};
+use stac::api::{GetItems, GetSearch, Search};
 use stac::{
     Assets, Collection, Item, Links, Migrate, SelfHref,
     geoparquet::{Compression, default_compression},
 };
-use stac_api::{GetItems, GetSearch, Search};
 use stac_io::{Format, StacStore};
 use stac_server::Backend;
 use stac_validate::Validate;
@@ -232,9 +232,14 @@ pub enum Command {
         /// The hrefs of collections, items, and item collections to load into the API on startup.
         hrefs: Vec<String>,
 
-        /// The address of the server.
+        /// The address of the server. Defaults to `127.0.0.1:7822`.
+        /// Either a URL `https://some-host.io/stac` or a local address like `127.0.0.1:7822`.
         #[arg(short = 'a', long = "addr", default_value = "127.0.0.1:7822")]
         addr: String,
+
+        /// The address to bind the server to, if different from `--addr`.
+        #[arg(short = 'b', long = "bind")]
+        bind: Option<String>,
 
         /// The pgstac connection string, e.g. `postgresql://username:password@localhost:5432/postgis`
         ///
@@ -281,6 +286,12 @@ pub enum Command {
         ///
         /// To read from standard input, pass `-` or don't provide an argument at all.
         infile: Option<String>,
+    },
+
+    /// Generate completion scripts for a given shell.
+    GenerateCompletions {
+        /// The shell to generate completion scripts for.
+        shell: clap_complete::Shell,
     },
 }
 
@@ -371,10 +382,11 @@ impl Rustac {
                     items: get_items,
                 };
                 let search: Search = get_search.try_into()?;
+                let search = search.normalize_datetimes()?;
                 let item_collection = if use_duckdb {
                     stac_duckdb::search(href, search, *max_items)?
                 } else {
-                    stac_api::client::search(href, search, *max_items).await?
+                    stac_io::api::search(href, search, *max_items).await?
                 };
                 self.put(
                     outfile.as_deref(),
@@ -385,17 +397,20 @@ impl Rustac {
             Command::Serve {
                 ref hrefs,
                 ref addr,
+                ref bind,
                 ref pgstac,
                 use_duckdb,
                 load_collection_items,
                 create_collections,
             } => {
+                let bind = bind.as_deref().unwrap_or(&addr);
                 if matches!(use_duckdb, Some(true))
                     || (use_duckdb.is_none() && hrefs.len() == 1 && hrefs[0].ends_with("parquet"))
                 {
                     let backend = stac_server::DuckdbBackend::new(&hrefs[0]).await?;
                     eprintln!("Backend: duckdb");
                     return load_and_serve(
+                        bind,
                         addr,
                         backend,
                         Vec::new(),
@@ -451,7 +466,8 @@ impl Rustac {
                         let backend =
                             stac_server::PgstacBackend::new_from_stringlike(pgstac).await?;
                         eprintln!("Backend: pgstac");
-                        load_and_serve(addr, backend, collections, items, create_collections).await
+                        load_and_serve(bind, addr, backend, collections, items, create_collections)
+                            .await
                     }
                     #[cfg(not(feature = "pgstac"))]
                     {
@@ -460,7 +476,8 @@ impl Rustac {
                 } else {
                     let backend = stac_server::MemoryBackend::new();
                     eprintln!("Backend: memory");
-                    load_and_serve(addr, backend, collections, items, create_collections).await
+                    load_and_serve(bind, addr, backend, collections, items, create_collections)
+                        .await
                 }
             }
             Command::Crawl {
@@ -533,6 +550,11 @@ impl Rustac {
                 } else {
                     Ok(())
                 }
+            }
+            Command::GenerateCompletions { shell } => {
+                let mut command = Rustac::command();
+                clap_complete::generate(shell, &mut command, "rustac", &mut std::io::stdout());
+                Ok(())
             }
         }
     }
@@ -678,6 +700,7 @@ impl FromStr for KeyValue {
 }
 
 async fn load_and_serve(
+    bind: &str,
     addr: &str,
     mut backend: impl Backend,
     collections: Vec<Collection>,
@@ -714,10 +737,13 @@ async fn load_and_serve(
             "items don't have a collection and `create_collections` is false"
         ));
     }
-    let root = format!("http://{addr}");
+
+    let root = Url::parse(addr)
+        .map(|url| url.to_string())
+        .unwrap_or(format!("http://{addr}"));
     let api = stac_server::Api::new(backend, &root)?;
     let router = stac_server::routes::from_api(api);
-    let listener = TcpListener::bind(&addr).await?;
+    let listener = TcpListener::bind(&bind).await?;
     eprintln!("Serving a STAC API at {root}");
     axum::serve(listener, router).await.map_err(Error::from)
 }
@@ -800,185 +826,4 @@ async fn crawl(value: stac::Value, store: StacStore) -> impl TryStream<Item = Re
 }
 
 #[cfg(test)]
-mod tests {
-    use super::Rustac;
-    use assert_cmd::Command;
-    use clap::Parser;
-    use rstest::{fixture, rstest};
-    use stac::geoparquet::{Compression, WriterOptions};
-    use stac_io::Format;
-
-    #[fixture]
-    fn command() -> Command {
-        Command::cargo_bin("rustac").unwrap()
-    }
-
-    #[rstest]
-    fn translate_json(mut command: Command) {
-        command
-            .arg("translate")
-            .arg("examples/simple-item.json")
-            .assert()
-            .success();
-    }
-
-    #[rstest]
-    fn migrate(mut command: Command) {
-        command
-            .arg("translate")
-            .arg("../../spec-examples/v1.0.0/simple-item.json")
-            .arg("--migrate")
-            .assert()
-            .success();
-    }
-
-    #[rstest]
-    fn translate_to_file(mut command: Command) {
-        let temp_dir = tempfile::env::temp_dir();
-        command
-            .arg("translate")
-            .arg("examples/simple-item.json")
-            .arg(temp_dir.join("simple-item.json"))
-            .assert()
-            .success();
-    }
-
-    #[test]
-    fn input_format() {
-        let rustac = Rustac::parse_from(["rustac", "translate"]);
-        assert_eq!(rustac.input_format(None), Format::Json(false));
-
-        let rustac = Rustac::parse_from(["rustac", "translate"]);
-        assert_eq!(rustac.input_format(Some("file.json")), Format::Json(false));
-
-        let rustac = Rustac::parse_from(["rutsac", "translate"]);
-        assert_eq!(rustac.input_format(Some("file.ndjson")), Format::NdJson);
-
-        let rustac = Rustac::parse_from(["Rustac", "translate"]);
-        assert_eq!(
-            rustac.input_format(Some("file.parquet")),
-            Format::Geoparquet(WriterOptions::new())
-        );
-
-        let rustac = Rustac::parse_from(["rutsac", "--input-format", "json", "translate"]);
-        assert_eq!(rustac.input_format(None), Format::Json(false));
-
-        let rustac = Rustac::parse_from(["rustac", "--input-format", "ndjson", "translate"]);
-        assert_eq!(rustac.input_format(None), Format::NdJson);
-
-        let rustac = Rustac::parse_from(["rustac", "--input-format", "parquet", "translate"]);
-        assert_eq!(
-            rustac.input_format(None),
-            Format::Geoparquet(WriterOptions::new())
-        );
-
-        let rustac = Rustac::parse_from([
-            "rustac",
-            "--input-format",
-            "json",
-            "--compact-json",
-            "false",
-            "translate",
-        ]);
-        assert_eq!(rustac.input_format(None), Format::Json(false));
-    }
-
-    #[test]
-    fn output_format() {
-        let rustac = Rustac::parse_from(["rustac", "translate"]);
-        assert_eq!(rustac.output_format(None), Format::Json(true));
-
-        let rustac = Rustac::parse_from(["rustac", "translate"]);
-        assert_eq!(rustac.output_format(Some("file.json")), Format::Json(false));
-
-        let rustac = Rustac::parse_from(["rustac", "translate"]);
-        assert_eq!(rustac.output_format(Some("file.ndjson")), Format::NdJson);
-
-        let rustac = Rustac::parse_from(["rustac", "translate"]);
-        assert_eq!(
-            rustac.output_format(Some("file.parquet")),
-            Format::Geoparquet(WriterOptions::new())
-        );
-
-        let rustac = Rustac::parse_from(["rustac", "--output-format", "json", "translate"]);
-        assert_eq!(rustac.output_format(None), Format::Json(false));
-
-        let rustac = Rustac::parse_from(["rustac", "--output-format", "ndjson", "translate"]);
-        assert_eq!(rustac.output_format(None), Format::NdJson);
-
-        let rustac = Rustac::parse_from(["rustac", "--output-format", "parquet", "translate"]);
-        assert_eq!(
-            rustac.output_format(None),
-            Format::Geoparquet(WriterOptions::new())
-        );
-
-        let rustac = Rustac::parse_from([
-            "rustac",
-            "--output-format",
-            "json",
-            "--compact-json",
-            "false",
-            "translate",
-        ]);
-        assert_eq!(rustac.output_format(None), Format::Json(true));
-
-        let rustac = Rustac::parse_from([
-            "rustac",
-            "--output-format",
-            "parquet",
-            "--parquet-compression",
-            "lzo",
-            "translate",
-        ]);
-        assert_eq!(
-            rustac.output_format(None),
-            Format::Geoparquet(WriterOptions::new().with_compression(Some(Compression::LZO)))
-        );
-
-        let rustac = Rustac::parse_from([
-            "rustac",
-            "--output-format",
-            "parquet",
-            "--parquet-max-row-group-size",
-            "50000",
-            "translate",
-        ]);
-        assert_eq!(
-            rustac.output_format(None),
-            Format::Geoparquet(WriterOptions::new().with_max_row_group_size(50000))
-        );
-
-        let rustac = Rustac::parse_from([
-            "rustac",
-            "--output-format",
-            "parquet",
-            "--parquet-compression",
-            "snappy",
-            "--parquet-max-row-group-size",
-            "100000",
-            "translate",
-        ]);
-        assert_eq!(
-            rustac.output_format(None),
-            Format::Geoparquet(
-                WriterOptions::new()
-                    .with_compression(Some(Compression::SNAPPY))
-                    .with_max_row_group_size(100000)
-            )
-        );
-    }
-
-    #[rstest]
-    fn validate(mut command: Command) {
-        command
-            .arg("validate")
-            .arg("examples/simple-item.json")
-            .assert()
-            .success();
-        command
-            .arg("validate")
-            .arg("data/invalid-item.json")
-            .assert()
-            .failure();
-    }
-}
+use {assert_cmd as _, rstest as _, tempfile as _};

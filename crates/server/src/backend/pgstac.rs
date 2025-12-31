@@ -4,8 +4,8 @@ use bb8_postgres::PostgresConnectionManager;
 use pgstac::Pgstac;
 use rustls::{ClientConfig, RootCertStore};
 use serde_json::Map;
+use stac::api::{ItemCollection, Items, Search};
 use stac::{Collection, Item};
-use stac_api::{ItemCollection, Items, Search};
 use tokio_postgres::{
     Socket,
     tls::{MakeTlsConnect, TlsConnect},

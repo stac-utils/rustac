@@ -1,0 +1,32 @@
+[workspace]
+semver_check = true
+
+[[package]]
+name = "stac"
+
+[[package]]
+name = "stac-duckdb"
+semver_check = false
+
+[[package]]
+name = "stac-extensions"
+
+[[package]]
+name = "stac-io"
+
+[[package]]
+name = "pgstac"
+
+[[package]]
+name = "stac-server"
+
+[[package]]
+name = "stac-validate"
+
+[[package]]
+name = "stac-wasm"
+publish = false
+
+[[package]]
+name = "rustac"
+semver_check = false

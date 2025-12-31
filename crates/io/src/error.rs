@@ -4,20 +4,6 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// An error occurred when getting an href.
-    #[error("error when getting href={href}: {message}")]
-    Get {
-        /// The href that we were trying to get.
-        href: String,
-
-        /// The underling error message.
-        message: String,
-    },
-
-    /// A required feature is not enabled.
-    #[error("{0} is not enabled")]
-    FeatureNotEnabled(&'static str),
-
     /// Returned when unable to read a STAC value from a path.
     #[error("{io}: {path}")]
     FromPath {
@@ -28,6 +14,22 @@ pub enum Error {
         /// The path.
         path: String,
     },
+
+    /// [http::header::InvalidHeaderName]
+    #[error(transparent)]
+    InvalidHeaderName(#[from] http::header::InvalidHeaderName),
+
+    /// [http::header::InvalidHeaderValue]
+    #[error(transparent)]
+    InvalidHeaderValue(#[from] http::header::InvalidHeaderValue),
+
+    /// [http::method::InvalidMethod]
+    #[error(transparent)]
+    InvalidMethod(#[from] http::method::InvalidMethod),
+
+    /// [tokio::task::JoinError]
+    #[error(transparent)]
+    Join(#[from] tokio::task::JoinError),
 
     /// [std::io::Error]
     #[error(transparent)]
@@ -43,7 +45,6 @@ pub enum Error {
     /// [parquet::errors::ParquetError]
     Parquet(#[from] parquet::errors::ParquetError),
 
-    #[cfg(feature = "reqwest")]
     #[error(transparent)]
     /// [reqwest::Error]
     Reqwest(#[from] reqwest::Error),
@@ -55,6 +56,10 @@ pub enum Error {
     #[error(transparent)]
     /// [stac::Error]
     Stac(#[from] stac::Error),
+
+    /// [std::num::TryFromIntError]
+    #[error(transparent)]
+    TryFromInt(#[from] std::num::TryFromIntError),
 
     /// Unsupported file format.
     #[error("unsupported format: {0}")]

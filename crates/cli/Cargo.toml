@@ -1,7 +1,7 @@
 [package]
 name = "rustac"
 description = "Command line interface for rustac"
-version = "0.1.2"
+version = "0.2.1"
 keywords = ["geospatial", "stac", "metadata", "geo", "raster"]
 authors.workspace = true
 edition.workspace = true
@@ -21,19 +21,18 @@ anyhow.workspace = true
 async-stream.workspace = true
 axum.workspace = true
 clap = { workspace = true, features = ["derive"] }
+clap_complete.workspace = true
 futures-core.workspace = true
 futures-util.workspace = true
 serde_json.workspace = true
-stac.workspace = true
-stac-api = { workspace = true, features = ["client"] }
-stac-duckdb.workspace = true
-stac-io = { workspace = true, features = [
+stac = { version = "0.15.1", path = "../core" }
+stac-duckdb = { version = "0.3.1", path = "../duckdb" }
+stac-io = { version = "0.2.1", path = "../io", features = [
     "store-all",
-    "reqwest",
     "geoparquet",
 ] }
-stac-server = { workspace = true, features = ["axum", "duckdb"] }
-stac-validate.workspace = true
+stac-server = { version = "0.4.1", path = "../server", features = ["axum", "duckdb"] }
+stac-validate = { version = "0.6.1", path = "../validate" }
 tokio = { workspace = true, features = [
     "macros",
     "io-std",

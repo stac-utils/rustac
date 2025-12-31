@@ -2,8 +2,8 @@ use crate::{Backend, DEFAULT_DESCRIPTION, DEFAULT_ID, Error, Result};
 use http::Method;
 use serde::Serialize;
 use serde_json::{Map, Value, json};
+use stac::api::{Collections, Conformance, ItemCollection, Items, Root, Search};
 use stac::{Catalog, Collection, Fields, Item, Link, Links, mime::APPLICATION_OPENAPI_3_0};
-use stac_api::{Collections, Conformance, ItemCollection, Items, Root, Search};
 use url::Url;
 
 /// A STAC server API.
@@ -220,7 +220,7 @@ impl<B: Backend> Api<B> {
     /// ```
     /// use stac_server::{Api, MemoryBackend, Backend};
     /// use stac::{Collection, Item};
-    /// use stac_api::Items;
+    /// use stac::api::Items;
     ///
     /// let mut backend = MemoryBackend::new();
     /// # tokio_test::block_on(async {
@@ -273,7 +273,7 @@ impl<B: Backend> Api<B> {
     /// ```
     /// use stac_server::{Api, MemoryBackend, Backend};
     /// use stac::{Collection, Item};
-    /// use stac_api::Items;
+    /// use stac::api::Items;
     ///
     /// let mut backend = MemoryBackend::new();
     /// # tokio_test::block_on(async {
@@ -307,7 +307,7 @@ impl<B: Backend> Api<B> {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use stac_server::{Api, MemoryBackend, Backend};
     /// use http::Method;
     ///
@@ -385,7 +385,7 @@ impl<B: Backend> Api<B> {
         }
     }
 
-    fn set_item_links(&self, item: &mut stac_api::Item) -> Result<()> {
+    fn set_item_links(&self, item: &mut stac::api::Item) -> Result<()> {
         let mut collection_url = None;
         let mut item_link = None;
         if let Some(item_id) = item.get("id").and_then(|id| id.as_str()) {
@@ -426,8 +426,8 @@ mod tests {
     use super::Api;
     use crate::{Backend, MemoryBackend};
     use http::Method;
+    use stac::api::{ITEM_SEARCH_URI, Items, Search};
     use stac::{Catalog, Collection, Item, Links};
-    use stac_api::{ITEM_SEARCH_URI, Items, Search};
     use std::collections::HashSet;
 
     macro_rules! assert_link {

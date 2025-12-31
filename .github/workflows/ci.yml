@@ -13,7 +13,10 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_TERM_VERBOSE: true
-  duckdb-version: "1.4.2"
+  RUSTDOCFLAGS: -Dwarnings
+  DUCKDB_VERSION: "1.4.2"
+  DUCKDB_LIB_DIR: /opt/duckdb
+  LD_LIBRARY_PATH: /opt/duckdb
 
 jobs:
   test-core:
@@ -27,7 +30,7 @@ jobs:
           - macos-latest
           - windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
       - name: Test
         run: cargo test -p stac --all-features
@@ -38,7 +41,7 @@ jobs:
       run:
         working-directory: crates/core
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
       - name: Install check-all-features
         run: cargo install cargo-all-features
@@ -47,23 +50,27 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    env:
-      DUCKDB_LIB_DIR: /opt/duckdb
-      LD_LIBRARY_PATH: /opt/duckdb
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v7
-      - name: Get DuckDB
+      - &get-duckdb
+        name: Get DuckDB
         run: |
-          wget https://github.com/duckdb/duckdb/releases/download/v${{ env.duckdb-version }}/libduckdb-linux-amd64.zip
+          wget https://github.com/duckdb/duckdb/releases/download/v${{ env.DUCKDB_VERSION }}/libduckdb-linux-amd64.zip
           unzip libduckdb-linux-amd64.zip -d /opt/duckdb
           rm libduckdb-linux-amd64.zip
       - uses: j178/prek-action@v1
-      - name: Build
-        run: cargo build
       - name: Test
         run: cargo test
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v7
+      - *get-duckdb
       - name: Validate stac-server
         run: uv run --group stac-api-validator scripts/validate-stac-server
       - name: Validate stac-geoparquet
@@ -76,9 +83,6 @@ jobs:
         pgstac_version:
           - v0.8.6
           - v0.9.8
-    env:
-      DUCKDB_LIB_DIR: /opt/duckdb
-      LD_LIBRARY_PATH: /opt/duckdb
     services:
       pgstac:
         image: ghcr.io/stac-utils/pgstac:${{ matrix.pgstac_version }}
@@ -92,13 +96,10 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v7
-      - name: Get DuckDB
-        run: |
-          wget https://github.com/duckdb/duckdb/releases/download/v${{ env.duckdb-version }}/libduckdb-linux-amd64.zip
-          unzip libduckdb-linux-amd64.zip -d /opt/duckdb
+      - *get-duckdb
       - name: Test
         run: cargo test -p pgstac --all-features
       - name: Validate
@@ -107,7 +108,7 @@ jobs:
     name: Check (nightly)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
       - name: Check
@@ -115,18 +116,16 @@ jobs:
   msrv:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: taiki-e/install-action@cargo-hack
       - name: Check msrv
         run: cargo hack check --rust-version --workspace --all-targets --ignore-private
   doc:
     name: Docs
     runs-on: ubuntu-latest
-    env:
-      RUSTDOCFLAGS: -Dwarnings
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
-      - uses: DavidAnson/markdownlint-cli2-action@v20
+      - uses: DavidAnson/markdownlint-cli2-action@v22
       - name: Doc
-        run: cargo doc --workspace
+        run: cargo doc --workspace --no-deps

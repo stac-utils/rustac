@@ -11,15 +11,16 @@ use axum::{
 use bytes::{BufMut, BytesMut};
 use http::Method;
 use serde::Serialize;
+use stac::api::{Collections, GetItems, GetSearch, ItemCollection, Items, Root, Search};
 use stac::{
     Collection, Item,
     mime::{APPLICATION_GEOJSON, APPLICATION_OPENAPI_3_0},
 };
-use stac_api::{Collections, GetItems, GetSearch, ItemCollection, Items, Root, Search};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
 /// Errors for our axum routes.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// An server error.
     Server(crate::Error),

@@ -99,6 +99,7 @@
 // https://users.rust-lang.org/t/use-of-imported-types-in-derive-macro/94676/3
 extern crate self as stac;
 
+pub mod api;
 mod asset;
 mod band;
 mod bbox;
@@ -286,7 +287,6 @@ pub fn version() -> &'static str {
 #[cfg(test)]
 mod tests {
     use rstest as _;
-    use stac_validate as _;
     use tokio as _;
     use tokio_test as _;
 

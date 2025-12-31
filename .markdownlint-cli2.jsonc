@@ -7,7 +7,9 @@
   "ignores": [
     "spec-examples/*/README.md",
     "crates/*/examples/README.md",
+    "crates/*/CHANGELOG.md",
     "target/**/*.md",
     "LICENSE-*",
+    ".github/pull_request_template.md",
   ],
 }

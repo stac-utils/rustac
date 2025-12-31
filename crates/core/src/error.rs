@@ -5,17 +5,35 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {
+    /// Queries cannot be converted to strings.
+    #[error("cannot convert queries to strings")]
+    CannotConvertQueryToString(serde_json::Map<String, serde_json::Value>),
+
+    /// CQL2 JSON cannot (currently) be converted to strings.
+    ///
+    /// TODO support conversion
+    #[error("cannot convert cql2-json to strings")]
+    CannotConvertCql2JsonToString(serde_json::Map<String, serde_json::Value>),
+
     /// [chrono::ParseError]
     #[error(transparent)]
     ChronoParse(#[from] chrono::ParseError),
 
-    /// A required feature is not enabled.
-    #[error("{0} is not enabled")]
-    FeatureNotEnabled(&'static str),
+    /// [cql2::Error]
+    #[error(transparent)]
+    Cql2(#[from] Box<cql2::Error>),
 
     /// [geojson::Error]
     #[error(transparent)]
     Geojson(#[from] Box<geojson::Error>),
+
+    /// An empty datetime interval.
+    #[error("empty datetime interval")]
+    EmptyDatetimeInterval,
+
+    /// Some functionality requires a certain optional feature to be enabled.
+    #[error("feature not enabled: {0}")]
+    FeatureNotEnabled(&'static str),
 
     /// Returned when a STAC object has the wrong type field.
     #[error("incorrect type: expected={expected}, actual={actual}")]
@@ -33,8 +51,8 @@ pub enum Error {
     InvalidAttribute(String),
 
     /// This vector is not a valid bounding box.
-    #[error("invalid bbox: {0:?}")]
-    InvalidBbox(Vec<f64>),
+    #[error("invalid bbox ({0:?}): {1}")]
+    InvalidBbox(Vec<f64>, &'static str),
 
     /// This string is not a valid datetime interval.
     #[error("invalid datetime: {0}")]
@@ -60,9 +78,32 @@ pub enum Error {
     #[error("json value is not an object")]
     NotAnObject(serde_json::Value),
 
+    /// [std::num::ParseIntError]
+    #[error(transparent)]
+    ParseIntError(#[from] std::num::ParseIntError),
+
+    /// [std::num::ParseFloatError]
+    #[error(transparent)]
+    ParseFloatError(#[from] std::num::ParseFloatError),
+
+    /// A search has both bbox and intersects.
+    #[error("search has bbox and intersects")]
+    SearchHasBboxAndIntersects(Box<crate::api::Search>),
+
     /// [serde_json::Error]
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
+
+    /// [serde_urlencoded::ser::Error]
+    #[error(transparent)]
+    SerdeUrlencodedSer(#[from] serde_urlencoded::ser::Error),
+
+    /// The start time is after the end time.
+    #[error("start ({0}) is after end ({1})")]
+    StartIsAfterEnd(
+        chrono::DateTime<chrono::FixedOffset>,
+        chrono::DateTime<chrono::FixedOffset>,
+    ),
 
     /// [std::num::TryFromIntError]
     #[error(transparent)]
@@ -71,6 +112,10 @@ pub enum Error {
     /// Returned when the `type` field of a STAC object does not equal `"Feature"`, `"Catalog"`, or `"Collection"`.
     #[error("unknown \"type\": {0}")]
     UnknownType(String),
+
+    /// This functionality is not yet implemented.
+    #[error("this functionality is not yet implemented: {0}")]
+    Unimplemented(&'static str),
 
     /// Unsupported geoparquet type
     #[error("unsupported geoparquet type")]
@@ -94,11 +139,6 @@ pub enum Error {
     #[error("Arrow schema mismatch")]
     ArrowSchemaMismatch,
 
-    /// The arrow table is empty
-    #[cfg(feature = "geoarrow")]
-    #[error("Empty arrow table")]
-    EmptyArrowTable,
-
     /// [geoarrow_schema::error::GeoArrowError]
     #[error(transparent)]
     #[cfg(feature = "geoarrow")]
@@ -109,11 +149,6 @@ pub enum Error {
     #[cfg(feature = "geoarrow")]
     Wkb(#[from] wkb::error::WkbError),
 
-    /// The geoparquet writer has been closed.
-    #[error("The geoparquet writer has already been closed")]
-    #[cfg(feature = "geoparquet")]
-    ClosedGeoparquetWriter,
-
     /// No geoparquet metadata in a stac-geoparquet file.
     #[error("no geoparquet metadata")]
     #[cfg(feature = "geoparquet")]
@@ -123,4 +158,12 @@ pub enum Error {
     #[error(transparent)]
     #[cfg(feature = "geoparquet")]
     Parquet(#[from] parquet::errors::ParquetError),
+
+    /// Invalid year value.
+    #[error("invalid year: {0}")]
+    InvalidYear(i32),
+
+    /// Unrecognized date format.
+    #[error("unrecognized date format: {0}")]
+    UnrecognizedDateFormat(String),
 }

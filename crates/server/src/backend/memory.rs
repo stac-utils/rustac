@@ -1,7 +1,7 @@
 use crate::{Backend, DEFAULT_LIMIT, Error, Result};
 use serde_json::Map;
+use stac::api::{ItemCollection, Items, Search};
 use stac::{Collection, Item};
-use stac_api::{ItemCollection, Items, Search};
 use std::{
     collections::{BTreeMap, HashMap},
     sync::{Arc, RwLock},
@@ -123,7 +123,7 @@ impl Backend for MemoryBackend {
             .into_iter()
             .skip(skip)
             .take(limit)
-            .map(|item| stac_api::Item::try_from(item.clone()).map_err(Error::from))
+            .map(|item| stac::api::Item::try_from(item.clone()).map_err(Error::from))
             .collect::<Result<Vec<_>>>()?;
         let mut item_collection = ItemCollection::new(items)?;
         if len > item_collection.items.len() + skip {

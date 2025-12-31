@@ -79,19 +79,20 @@ mod page;
 
 pub use page::Page;
 use serde::{Serialize, de::DeserializeOwned};
-use stac_api::Search;
+use stac::api::Search;
 use tokio_postgres::{GenericClient, Row, types::ToSql};
 
 /// Crate-specific error enum.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
     /// [serde_json::Error]
     #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
 
-    /// [stac_api::Error]
+    /// [stac::Error]
     #[error(transparent)]
-    StacApi(#[from] stac_api::Error),
+    Stac(#[from] stac::Error),
 
     /// [tokio_postgres::Error]
     #[error(transparent)]
@@ -330,8 +331,8 @@ pub(crate) mod tests {
     use geojson::{Geometry, Value};
     use rstest::{fixture, rstest};
     use serde_json::{Map, json};
+    use stac::api::{Fields, Filter, Search, Sortby};
     use stac::{Collection, Item};
-    use stac_api::{Fields, Filter, Search, Sortby};
     use std::{
         ops::Deref,
         sync::{LazyLock, atomic::AtomicU16},

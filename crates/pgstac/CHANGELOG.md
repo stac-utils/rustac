@@ -4,7 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.1](https://github.com/stac-utils/rustac/compare/pgstac-v0.4.0...pgstac-v0.4.1) - 2025-12-15
+
+### Other
+
+- switch to release-plz ([#911](https://github.com/stac-utils/rustac/pull/911))
+- update releasing to be much simpler ([#899](https://github.com/stac-utils/rustac/pull/899))
+
+## [0.4.0](https://github.com/stac-utils/rustac/compare/pgstac-v0.3.2...pgstac-v0.4.0) (2025-12-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* move stac_api crate into stac crate ([#869](https://github.com/stac-utils/rustac/issues/869))
+* remove unused error enums ([#868](https://github.com/stac-utils/rustac/issues/868))
+
+### Bug Fixes
+
+* remove unused error enums ([#868](https://github.com/stac-utils/rustac/issues/868)) ([cf0e815](https://github.com/stac-utils/rustac/commit/cf0e815e03433e8ef219a79a67161174f3e99e84))
+
+
+### Code Refactoring
+
+* move stac_api crate into stac crate ([#869](https://github.com/stac-utils/rustac/issues/869)) ([d0f7405](https://github.com/stac-utils/rustac/commit/d0f7405a811dd2c3b044404b4a6a48cf07926a89))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * stac bumped from 0.14.0 to 0.15.0
 
 ## [0.3.2] - 2025-11-14
 

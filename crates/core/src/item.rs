@@ -2,6 +2,7 @@
 
 use crate::{Asset, Assets, Bbox, Error, Fields, Link, Result, STAC_VERSION, Version};
 use chrono::{DateTime, FixedOffset, NaiveDateTime, Utc};
+use cql2::Expr;
 use geojson::{Feature, Geometry, feature::Id};
 use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -160,6 +161,7 @@ pub struct FlatItem {
     pub links: Vec<Link>,
 
     /// Dictionary of asset objects that can be downloaded, each with a unique key.
+    #[serde(skip_serializing_if = "IndexMap::is_empty")]
     pub assets: IndexMap<String, Asset>,
 
     /// The ID of the collection this Item is a part of.
@@ -601,6 +603,22 @@ impl Item {
             properties,
         })
     }
+
+    /// Returns true if this item matches the given CQL2 expression.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::Item;
+    ///
+    /// let item = Item::new("an-item");
+    /// assert!(item.clone().matches_cql2("id = 'an-item'".parse().unwrap()).unwrap());
+    /// assert!(!item.matches_cql2("id = 'another-item'".parse().unwrap()).unwrap());
+    /// ```
+    pub fn matches_cql2(self, expr: Expr) -> Result<bool> {
+        let result = self.into_flat_item(true)?.matches_cql2(expr)?;
+        Ok(result)
+    }
 }
 
 impl Assets for Item {
@@ -681,6 +699,15 @@ impl TryFrom<Item> for Feature {
                 Some(item.additional_fields)
             },
         })
+    }
+}
+
+impl FlatItem {
+    /// Returns true if the item matches the given CQL2 expression.
+    pub fn matches_cql2(self, expr: Expr) -> Result<bool> {
+        let value = serde_json::to_value(self)?;
+        let result = expr.matches(Some(&value)).map_err(Box::new)?;
+        Ok(result)
     }
 }
 
@@ -943,5 +970,20 @@ mod tests {
     #[test]
     fn read_invalid_item_datetimes() {
         let _: Item = crate::read("data/invalid-datetimes.json").unwrap();
+    }
+
+    #[test]
+    fn matches_cql2() {
+        let item = Item::new("an-item");
+        assert!(
+            item.clone()
+                .matches_cql2("id = 'an-item'".parse().unwrap())
+                .unwrap()
+        );
+        assert!(
+            !item
+                .matches_cql2("id = 'another-item'".parse().unwrap())
+                .unwrap()
+        );
     }
 }

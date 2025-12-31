@@ -1,7 +1,7 @@
 [package]
 name = "stac-duckdb"
 description = "Client for querying stac-geoparquet using DuckDB"
-version = "0.2.2"
+version = "0.3.1"
 keywords = ["geospatial", "stac", "metadata", "geo", "raster"]
 authors.workspace = true
 edition.workspace = true
@@ -17,6 +17,7 @@ bundled = ["duckdb/bundled"]
 
 [dependencies]
 arrow-array.workspace = true
+arrow-schema.workspace = true
 chrono.workspace = true
 cql2.workspace = true
 duckdb.workspace = true
@@ -26,8 +27,7 @@ geojson.workspace = true
 getrandom.workspace = true
 log.workspace = true
 serde_json.workspace = true
-stac = { workspace = true, features = ["geoarrow", "geo"] }
-stac-api.workspace = true
+stac = { version = "0.15.1", path = "../core", features = ["geoarrow", "geo"] }
 thiserror.workspace = true
 
 [dev-dependencies]

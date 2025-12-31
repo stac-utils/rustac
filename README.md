@@ -12,27 +12,6 @@ The power of Rust for the STAC ecosystem
 We have a Python package derived from **rustac** in its own repository, [rustac-py](https://github.com/stac-utils/rustac-py).
 For more on the difference between **rustac** and **rustac-py**, see [our docs](https://stac-utils.github.io/rustac/).
 
-<!-- markdownlint-disable MD028 -->
-
-> [!TIP]
-> We pronounce **rustac** "ruh-stac".
-
-> [!NOTE]
-> Until 2025-04-17, this repository was named **stac-rs**.
-> See [this RFC](https://github.com/stac-utils/rustac/issues/641) for context on the name change.
-
-<!-- markdownlint-enable MD028 -->
-
-## Formats
-
-**rustac** "speaks" three forms of STAC:
-
-- **JSON**: STAC is derived from [GeoJSON](https://geojson.org/)
-- **Newline-delimited JSON (ndjson)**: One JSON [item](https://github.com/radiantearth/stac-spec/blob/master/item-spec/item-spec.md) per line, often used for bulk item loading and storage
-- **stac-geoparquet**: A newer [specification](https://github.com/stac-utils/stac-geoparquet) for storing STAC items, and optionally collections
-
-We also have interfaces to other storage backends, e.g. Postgres via [pgstac](https://github.com/stac-utils/pgstac).
-
 ## Command line interface
 
 Our command line interface (CLI) can query STAC APIs, validate STAC, and more.
@@ -76,35 +55,32 @@ $ rustac validate item.json
 
 This monorepo contains several crates:
 
-| Crate                                            | Description                                                                                     | Badges                                                                                                                                                                                                                                                                  |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [stac](./crates/core/README.md)                  | Core data structures                                                                            | [![docs.rs](https://img.shields.io/docsrs/stac?style=flat-square)](https://docs.rs/stac/latest/stac/) <br> [![Crates.io](https://img.shields.io/crates/v/stac?style=flat-square)](https://crates.io/crates/stac)                                                        |
-| [stac-io](./crates/io/README.md)                 | Input and output                                                                                | [![docs.rs](https://img.shields.io/docsrs/stac-io?style=flat-square)](https://docs.rs/stac-io/latest/stac_io/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-io?style=flat-square)](https://crates.io/crates/stac-io)                                         |
-| [stac-api](./crates/api/README.md)               | Data structures for the [STAC API](https://github.com/radiantearth/stac-api-spec) specification | [![docs.rs](https://img.shields.io/docsrs/stac-api?style=flat-square)](https://docs.rs/stac-api/latest/stac_api/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-api?style=flat-square)](https://crates.io/crates/stac-api)                                    |
-| [stac-extensions](./crates/extensions/README.md) | Basic support for [STAC extensions](https://stac-extensions.github.io/)                         | [![docs.rs](https://img.shields.io/docsrs/stac-extensions?style=flat-square)](https://docs.rs/stac-extensions/latest/stac_extensions/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-extensions?style=flat-square)](https://crates.io/crates/stac-extensions) |
-| [rustac](./crates/cli/README.md)                 | Command line interface                                                                          | [![docs.rs](https://img.shields.io/docsrs/rustac?style=flat-square)](https://docs.rs/rustac/latest/rustac/) <br> [![Crates.io](https://img.shields.io/crates/v/rustac?style=flat-square)](https://crates.io/crates/rustac)                                              |
-| [stac-server](./crates/server/README.md)         | STAC API server with multiple backends                                                          | [![docs.rs](https://img.shields.io/docsrs/stac-server?style=flat-square)](https://docs.rs/stac-server/latest/stac_server/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-server?style=flat-square)](https://crates.io/crates/stac-server)                     |
-| [pgstac](./crates/pgstac/README.md)              | Bindings for [pgstac](https://github.com/stac-utils/pgstac)                                     | [![docs.rs](https://img.shields.io/docsrs/pgstac?style=flat-square)](https://docs.rs/pgstac/latest/pgstac/) <br> [![Crates.io](https://img.shields.io/crates/v/pgstac?style=flat-square)](https://crates.io/crates/pgstac)                                              |
-| [stac-duckdb](./crates/duckdb/README.md)         | Experimental client for [duckdb](https://duckdb.org/)                                           | [![docs.rs](https://img.shields.io/docsrs/stac-duckdb?style=flat-square)](https://docs.rs/stac-duckdb/latest/stac_duckdb/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-duckdb?style=flat-square)](https://crates.io/crates/stac-duckdb)                     |
+| Crate                                            | Description                                                             | Badges                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [stac](./crates/core/README.md)                  | Core data structures                                                    | [![docs.rs](https://img.shields.io/docsrs/stac?style=flat-square)](https://docs.rs/stac/latest/stac/) <br> [![Crates.io](https://img.shields.io/crates/v/stac?style=flat-square)](https://crates.io/crates/stac)                                                        |
+| [stac-io](./crates/io/README.md)                 | Input and output                                                        | [![docs.rs](https://img.shields.io/docsrs/stac-io?style=flat-square)](https://docs.rs/stac-io/latest/stac_io/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-io?style=flat-square)](https://crates.io/crates/stac-io)                                         |
+| [stac-extensions](./crates/extensions/README.md) | Basic support for [STAC extensions](https://stac-extensions.github.io/) | [![docs.rs](https://img.shields.io/docsrs/stac-extensions?style=flat-square)](https://docs.rs/stac-extensions/latest/stac_extensions/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-extensions?style=flat-square)](https://crates.io/crates/stac-extensions) |
+| [stac-server](./crates/server/README.md)         | STAC API server with multiple backends                                  | [![docs.rs](https://img.shields.io/docsrs/stac-server?style=flat-square)](https://docs.rs/stac-server/latest/stac_server/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-server?style=flat-square)](https://crates.io/crates/stac-server)                     |
+| [pgstac](./crates/pgstac/README.md)              | Bindings for [pgstac](https://github.com/stac-utils/pgstac)             | [![docs.rs](https://img.shields.io/docsrs/pgstac?style=flat-square)](https://docs.rs/pgstac/latest/pgstac/) <br> [![Crates.io](https://img.shields.io/crates/v/pgstac?style=flat-square)](https://crates.io/crates/pgstac)                                              |
+| [stac-duckdb](./crates/duckdb/README.md)         | Search **stac-geoparquet** with [duckdb](https://duckdb.org/)           | [![docs.rs](https://img.shields.io/docsrs/stac-duckdb?style=flat-square)](https://docs.rs/stac-duckdb/latest/stac_duckdb/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-duckdb?style=flat-square)](https://crates.io/crates/stac-duckdb)                     |
+| [stac-validate](./crates/validate/README.md)     | JSON schema validation                                                  | [![docs.rs](https://img.shields.io/docsrs/stac-validate?style=flat-square)](https://docs.rs/stac-validate/latest/stac_validate/) <br> [![Crates.io](https://img.shields.io/crates/v/stac-validate?style=flat-square)](https://crates.io/crates/stac-validate)           |
+| [stac-wasm](./crates/wasm/README.md)             | WebAssembly bindings for Arrow to STAC conversions                      | [![npm](https://img.shields.io/npm/v/stac-wasm?style=flat-square)](https://www.npmjs.com/package/stac-wasm)                                                                                                                                                             |
+| [rustac](./crates/cli/README.md)                 | Command line interface                                                  | [![docs.rs](https://img.shields.io/docsrs/rustac?style=flat-square)](https://docs.rs/rustac/latest/rustac/) <br> [![Crates.io](https://img.shields.io/crates/v/rustac?style=flat-square)](https://crates.io/crates/rustac)                                              |
 
-### Dependency relationships
+They're all related:
 
 ```mermaid
 graph TD
-    stac --> stac-api
     stac --> stac-io
     stac --> stac-extensions
-    stac --> rustac
     stac --> pgstac
     stac --> stac-duckdb
     stac --> stac-server
+    pgstac -.-> stac-server
+    stac-duckdb -.-> stac-server
+    stac --> rustac
     stac-io --> rustac
-    stac-api --> pgstac
-    stac-api --> stac-duckdb
-    stac-api --> stac-server
-    stac-api --> rustac
-    pgstac --> stac-server
-    stac-duckdb --> stac-server
+    stac-duckdb --> rustac
     stac-server --> rustac
 ```
 

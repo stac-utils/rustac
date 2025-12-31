@@ -1,10 +1,11 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
-    /// [fluent_uri::error::ParseError]
+    /// [fluent_uri::ParseError]
     #[error(transparent)]
-    FluentUriParse(#[from] fluent_uri::error::ParseError<String>),
+    FluentUriParse(#[from] fluent_uri::ParseError),
 
     /// [jsonschema::ValidationError]
     #[error(transparent)]
@@ -67,11 +68,10 @@ impl Validation {
 
     /// Converts this validation error into a [serde_json::Value].
     pub fn into_json(self) -> serde_json::Value {
-        let error_description = jsonschema::output::ErrorDescription::from(self.error);
         serde_json::json!({
             "id": self.id,
             "type": self.r#type,
-            "error": error_description,
+            "error": self.error.to_string(),
         })
     }
 }

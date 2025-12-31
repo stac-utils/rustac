@@ -1,3 +1,0 @@
-allow-branch = ["main", "release/*"]
-enable-all-features = true
-sign-tag = true

@@ -389,6 +389,7 @@ fn convert_bbox(bbox: Value) -> Result<Value> {
     } else {
         Err(Error::InvalidBbox(
             bbox.iter().filter_map(|v| v.as_f64()).collect(),
+            "must have 4 or 6 values",
         ))
     }
 }

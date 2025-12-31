@@ -10,8 +10,8 @@ pub use duckdb::DuckdbBackend;
 pub use memory::MemoryBackend;
 #[cfg(feature = "pgstac")]
 pub use pgstac::PgstacBackend;
+use stac::api::{ItemCollection, Items, Search};
 use stac::{Collection, Item};
-use stac_api::{ItemCollection, Items, Search};
 use std::future::Future;
 
 /// Storage backend for a STAC API.
@@ -120,7 +120,7 @@ pub trait Backend: Clone + Sync + Send + 'static {
     ///
     /// ```
     /// use stac::{Collection, Item};
-    /// use stac_api::Items;
+    /// use stac::api::Items;
     /// use stac_server::{MemoryBackend, Backend};
     ///
     /// let mut backend = MemoryBackend::new();
@@ -162,7 +162,7 @@ pub trait Backend: Clone + Sync + Send + 'static {
     /// # Examples
     ///
     /// ```
-    /// use stac_api::Search;
+    /// use stac::api::Search;
     /// use stac_server::{MemoryBackend, Backend};
     ///
     /// let mut backend = MemoryBackend::new();

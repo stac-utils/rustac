@@ -4,6 +4,7 @@ use crate::{
     Catalog, Collection, Error, Item, ItemCollection, Result, Value,
     geoarrow::{Encoder, Options, VERSION, VERSION_KEY},
 };
+use arrow_array::RecordBatch;
 use bytes::Bytes;
 use geoparquet::{
     reader::{GeoParquetReaderBuilder, GeoParquetRecordBatchReader},
@@ -33,6 +34,13 @@ pub struct WriterOptions {
     pub compression: Option<Compression>,
     /// Maximum number of rows in a row group
     pub max_row_group_size: usize,
+}
+
+/// An encoder for writing stac-geoparquet
+#[allow(missing_debug_implementations)]
+pub struct WriterEncoder {
+    geoarrow_encoder: Encoder,
+    encoder: GeoParquetRecordBatchEncoder,
 }
 
 impl WriterOptions {
@@ -164,7 +172,7 @@ where
     WriterBuilder::new(writer)
         .writer_options(WriterOptions::new().with_compression(compression))
         .build(item_collection.into().items)
-        .and_then(|mut writer| writer.finish())
+        .and_then(|writer| writer.finish())
 }
 
 /// Builder for a stac-geoparquet writer.
@@ -178,10 +186,7 @@ pub struct WriterBuilder<W: Write + Send> {
 /// Write items to stac-geoparquet.
 #[allow(missing_debug_implementations)]
 pub struct Writer<W: Write + Send> {
-    geoarrow_encoder: Encoder,
-    // We make this an option so we can consume it during write but keep write
-    // as only requiring a mutable reference.
-    encoder: Option<GeoParquetRecordBatchEncoder>,
+    encoder: WriterEncoder,
     arrow_writer: ArrowWriter<W>,
 }
 
@@ -268,6 +273,74 @@ impl<W: Write + Send> WriterBuilder<W> {
     }
 }
 
+impl WriterEncoder {
+    /// Creates a new writer encoder.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, geoarrow::Options, geoparquet::WriterEncoder};
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let options = Options::default();
+    /// let (encoder, record_batch) = WriterEncoder::new(options, vec![item]).unwrap();
+    /// assert_eq!(record_batch.num_rows(), 1);
+    /// ```
+    pub fn new(options: Options, items: Vec<Item>) -> Result<(WriterEncoder, RecordBatch)> {
+        let (geoarrow_encoder, record_batch) = Encoder::new(items, options)?;
+        let options = GeoParquetWriterOptionsBuilder::default()
+            .set_primary_column("geometry".to_string())
+            .build();
+        let mut encoder = GeoParquetRecordBatchEncoder::try_new(&record_batch.schema(), &options)?;
+        let record_batch = encoder.encode_record_batch(&record_batch)?;
+        Ok((
+            WriterEncoder {
+                geoarrow_encoder,
+                encoder,
+            },
+            record_batch,
+        ))
+    }
+
+    /// Encodes items into a record batch.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, geoarrow::Options, geoparquet::WriterEncoder};
+    ///
+    /// let item1: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let item2 = item1.clone();
+    /// let options = Options::default();
+    /// let (mut encoder, record_batch) = WriterEncoder::new(options, vec![item1]).unwrap();
+    /// let record_batch = encoder.encode(vec![item2]).unwrap();
+    /// assert_eq!(record_batch.num_rows(), 1);
+    /// ```
+    pub fn encode(&mut self, items: Vec<Item>) -> Result<RecordBatch> {
+        let record_batch = self.geoarrow_encoder.encode(items)?;
+        let record_batch = self.encoder.encode_record_batch(&record_batch)?;
+        Ok(record_batch)
+    }
+
+    /// Consumes this encoder and returns the keys and values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, geoarrow::Options, geoparquet::WriterEncoder};
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let options = Options::default();
+    /// let (encoder, _) = WriterEncoder::new(options, vec![item]).unwrap();
+    /// let key_value = encoder.into_keyvalue().unwrap();
+    /// assert_eq!(key_value.key, "geo");
+    /// ```
+    pub fn into_keyvalue(self) -> Result<KeyValue> {
+        let keyvalue = self.encoder.into_keyvalue()?;
+        Ok(keyvalue)
+    }
+}
+
 impl<W: Write + Send> Writer<W> {
     fn new(
         writer: W,
@@ -275,24 +348,12 @@ impl<W: Write + Send> Writer<W> {
         writer_options: WriterOptions,
         items: Vec<Item>,
     ) -> Result<Self> {
-        let (geoarrow_encoder, record_batch) = Encoder::new(items, options)?;
-        let options = GeoParquetWriterOptionsBuilder::default()
-            .set_primary_column("geometry".to_string())
-            .build();
-        let mut encoder = GeoParquetRecordBatchEncoder::try_new(&record_batch.schema(), &options)?;
-        let mut builder = WriterProperties::builder();
-        if let Some(compression) = writer_options.compression {
-            builder = builder.set_compression(compression);
-        }
-        builder = builder.set_max_row_group_size(writer_options.max_row_group_size);
-        let properties = builder.build();
+        let (encoder, record_batch) = WriterEncoder::new(options, items)?;
         let mut arrow_writer =
-            ArrowWriter::try_new(writer, encoder.target_schema(), Some(properties))?;
-        let record_batch = encoder.encode_record_batch(&record_batch)?;
+            ArrowWriter::try_new(writer, record_batch.schema(), Some(writer_options.into()))?;
         arrow_writer.write(&record_batch)?;
         Ok(Writer {
-            geoarrow_encoder,
-            encoder: Some(encoder),
+            encoder,
             arrow_writer,
         })
     }
@@ -315,12 +376,7 @@ impl<W: Write + Send> Writer<W> {
     /// writer.finish().unwrap();
     /// ```
     pub fn write(&mut self, items: Vec<Item>) -> Result<()> {
-        let record_batch = self.geoarrow_encoder.encode(items)?;
-        let record_batch = if let Some(encoder) = self.encoder.as_mut() {
-            encoder.encode_record_batch(&record_batch)?
-        } else {
-            return Err(Error::ClosedGeoparquetWriter);
-        };
+        let record_batch = self.encoder.encode(items)?;
         self.arrow_writer.write(&record_batch)?;
         Ok(())
     }
@@ -337,16 +393,12 @@ impl<W: Write + Send> Writer<W> {
     ///
     /// let item: Item = stac::read("examples/simple-item.json").unwrap();
     /// let cursor = Cursor::new(Vec::new());
-    /// let mut writer = WriterBuilder::new(cursor).build(vec![item]).unwrap();
+    /// let writer = WriterBuilder::new(cursor).build(vec![item]).unwrap();
     /// writer.finish().unwrap();
     /// ```
-    pub fn finish(&mut self) -> Result<()> {
-        if let Some(encoder) = self.encoder.take() {
-            self.arrow_writer
-                .append_key_value_metadata(encoder.into_keyvalue()?);
-        } else {
-            return Err(Error::ClosedGeoparquetWriter);
-        }
+    pub fn finish(mut self) -> Result<()> {
+        self.arrow_writer
+            .append_key_value_metadata(self.encoder.into_keyvalue()?);
         self.arrow_writer.append_key_value_metadata(KeyValue::new(
             VERSION_KEY.to_string(),
             Some(VERSION.to_string()),
@@ -488,6 +540,17 @@ impl IntoGeoparquet for serde_json::Value {
     ) -> Result<()> {
         let item_collection: ItemCollection = serde_json::from_value(self)?;
         item_collection.into_geoparquet_writer(writer, writer_options)
+    }
+}
+
+impl From<WriterOptions> for WriterProperties {
+    fn from(value: WriterOptions) -> Self {
+        let mut builder = WriterProperties::builder();
+        if let Some(compression) = value.compression {
+            builder = builder.set_compression(compression);
+        }
+        builder = builder.set_max_row_group_size(value.max_row_group_size);
+        builder.build()
     }
 }
 
@@ -651,5 +714,15 @@ mod tests {
 
         // Should have a single row group
         assert_eq!(reader.metadata().num_row_groups(), 1);
+    }
+
+    #[test]
+    fn no_assets() {
+        let mut item: Item = crate::read("examples/simple-item.json").unwrap();
+        item.assets = Default::default();
+        let mut writer = Cursor::new(Vec::new());
+        super::into_writer(&mut writer, vec![item]).unwrap();
+        let item_collection = super::from_reader(Bytes::from(writer.into_inner())).unwrap();
+        assert!(item_collection.items[0].assets.is_empty());
     }
 }

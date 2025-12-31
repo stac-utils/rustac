@@ -4,11 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.1](https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.3.0...stac-duckdb-v0.3.1) - 2025-12-15
 
-### Fixed
+### Other
 
-- Remove `filename` column by default ([#855](https://github.com/stac-utils/rustac/pull/855))
+- update releasing to be much simpler ([#899](https://github.com/stac-utils/rustac/pull/899))
+
+## [0.3.0](https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.2.2...stac-duckdb-v0.3.0) (2025-12-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* move stac_api crate into stac crate ([#869](https://github.com/stac-utils/rustac/issues/869))
+
+### Bug Fixes
+
+* remove filename by default ([#855](https://github.com/stac-utils/rustac/issues/855)) ([8bba676](https://github.com/stac-utils/rustac/commit/8bba67652da65f9423fd9fabdeed20d3fab668b1))
+
+
+### Code Refactoring
+
+* move stac_api crate into stac crate ([#869](https://github.com/stac-utils/rustac/issues/869)) ([d0f7405](https://github.com/stac-utils/rustac/commit/d0f7405a811dd2c3b044404b4a6a48cf07926a89))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * stac bumped from 0.14.0 to 0.15.0
+  * dev-dependencies
+    * stac-validate bumped from 0.5.0 to 0.6.0
 
 ## [0.2.2] - 2025-11-14
 
