@@ -1,5 +1,6 @@
 use super::{Fields, GetItems, Items, Result, Sortby};
 use crate::Error;
+use chrono::{DateTime, FixedOffset, NaiveDate, NaiveTime, TimeZone, Utc};
 use geojson::Geometry;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -254,6 +255,188 @@ impl Search {
         self.items = self.items.into_cql2_json()?;
         Ok(self)
     }
+
+    /// Normalizes datetime parameters by expanding partial dates to full RFC 3339 datetime ranges.
+    ///
+    /// This method validates and normalizes datetime parameters by expanding partial dates (year, year-month, year-month-day) to full RFC 3339 datetime ranges:
+    /// - For single dates:
+    ///   - Year only (e.g., "2023") → 2023-01-01T00:00:00Z/2023-12-31T23:59:59Z
+    ///   - Year-Month (e.g., "2023-06") → 2023-06-01T00:00:00Z/2023-06-30T23:59:59Z
+    ///   - ISO 8601 date (e.g., "2023-06-15") → 2023-06-15T00:00:00Z/2023-06-15T23:59:59Z
+    /// - For date ranges:
+    ///   - Year to Year (e.g., "2017/2018") → 2017-01-01T00:00:00Z/2018-12-31T23:59:59Z
+    ///   - Year-Month to Year-Month (e.g., "2017-06/2017-07") → 2017-06-01T00:00:00Z/2017-07-31T23:59:59Z
+    ///   - Date to Date (e.g., "2017-06-10/2017-06-11") → 2017-06-10T00:00:00Z/2017-06-11T23:59:59Z
+    ///
+    /// Datetime values already in RFC 3339 format are preserved. Open-ended ranges using `..` are supported.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::api::Search;
+    ///
+    /// // Partial dates are expanded to ranges
+    /// let search = Search {
+    ///     items: stac::api::Items {
+    ///         datetime: Some("2023".to_string()),
+    ///         ..Default::default()
+    ///     },
+    ///     ..Default::default()
+    /// };
+    /// let normalized = search.normalize_datetimes().unwrap();
+    /// assert_eq!(
+    ///     normalized.datetime.as_ref().unwrap(),
+    ///     "2023-01-01T00:00:00+00:00/2023-12-31T23:59:59+00:00"
+    /// );
+    ///
+    /// // RFC 3339 datetimes are preserved as single values
+    /// let search = Search {
+    ///     items: stac::api::Items {
+    ///         datetime: Some("2023-06-01T00:00:00Z".to_string()),
+    ///         ..Default::default()
+    ///     },
+    ///     ..Default::default()
+    /// };
+    /// let normalized = search.normalize_datetimes().unwrap();
+    /// assert_eq!(
+    ///     normalized.datetime.as_ref().unwrap(),
+    ///     "2023-06-01T00:00:00+00:00"
+    /// );
+    /// ```
+    pub fn normalize_datetimes(mut self) -> Result<Search> {
+        if let Some(datetime) = self.datetime.as_deref() {
+            if let Some((start_str, end_str)) = datetime.split_once('/') {
+                // Start and end datetime range
+                let start = if start_str.is_empty() || start_str == ".." {
+                    None
+                } else {
+                    Some(
+                        DateTime::parse_from_rfc3339(start_str)
+                            .or_else(|_| expand_datetime_to_start(start_str))?,
+                    )
+                };
+
+                let end = if end_str.is_empty() || end_str == ".." {
+                    None
+                } else {
+                    Some(
+                        DateTime::parse_from_rfc3339(end_str)
+                            .or_else(|_| expand_datetime_to_end(end_str))?,
+                    )
+                };
+
+                if let Some(start) = start {
+                    if let Some(end) = end {
+                        if end < start {
+                            return Err(Error::StartIsAfterEnd(start, end));
+                        }
+                        self.datetime =
+                            Some(format!("{}/{}", start.to_rfc3339(), end.to_rfc3339()));
+                    } else {
+                        // Open end datetime
+                        self.datetime = Some(format!("{}/..", start.to_rfc3339()));
+                    }
+                } else if let Some(end) = end {
+                    // Open start datetime
+                    self.datetime = Some(format!("../{}", end.to_rfc3339()));
+                } else {
+                    return Err(Error::EmptyDatetimeInterval);
+                }
+            } else {
+                // Single datetime
+                if let Ok(parsed) = DateTime::parse_from_rfc3339(datetime) {
+                    self.datetime = Some(parsed.to_rfc3339());
+                } else {
+                    let start = expand_datetime_to_start(datetime)?;
+                    let end = expand_datetime_to_end(datetime)?;
+                    self.datetime = Some(format!("{}/{}", start.to_rfc3339(), end.to_rfc3339()));
+                }
+            }
+        }
+        Ok(self)
+    }
+}
+
+/// Expands a partial datetime string to the start of the period.
+fn expand_datetime_to_start(s: &str) -> Result<DateTime<FixedOffset>> {
+    let trimmed = s.trim();
+    let midnight = NaiveTime::from_hms_opt(0, 0, 0).expect("midnight (0, 0, 0) is always valid");
+
+    // Case 1: Year only (e.g., "2023") -> 2023-01-01T00:00:00Z
+    if trimmed.len() == 4 && trimmed.chars().all(|c| c.is_numeric()) {
+        if let Ok(year) = trimmed.parse::<i32>() {
+            let date = NaiveDate::from_ymd_opt(year, 1, 1).ok_or(Error::InvalidYear(year))?;
+            let datetime = date.and_time(midnight);
+            return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
+        }
+    }
+
+    // Case 2: Year-Month (e.g., "2023-01") -> 2023-01-01T00:00:00Z
+    if trimmed.len() == 7 && trimmed.chars().nth(4) == Some('-') {
+        if let Some((year_str, month_str)) = trimmed.split_once('-') {
+            if let (Ok(year), Ok(month)) = (year_str.parse::<i32>(), month_str.parse::<u32>()) {
+                if (1..=12).contains(&month) {
+                    let date =
+                        NaiveDate::from_ymd_opt(year, month, 1).ok_or(Error::InvalidYear(year))?;
+                    let datetime = date.and_time(midnight);
+                    return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
+                }
+            }
+        }
+    }
+
+    // Case 3: ISO 8601 date (e.g., "2023-06-15") -> 2023-06-15T00:00:00Z
+    if let Ok(date) = NaiveDate::parse_from_str(trimmed, "%Y-%m-%d") {
+        let datetime = date.and_time(midnight);
+        return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
+    }
+
+    Err(Error::UnrecognizedDateFormat(s.to_string()))
+}
+
+/// Expands a partial datetime string to the end of the period.
+fn expand_datetime_to_end(s: &str) -> Result<DateTime<FixedOffset>> {
+    let trimmed = s.trim();
+    let end_of_day = NaiveTime::from_hms_opt(23, 59, 59).expect("23:59:59 is always valid");
+
+    // Case 1: Year only (e.g., "2023") -> 2023-12-31T23:59:59Z
+    if trimmed.len() == 4 && trimmed.chars().all(|c| c.is_numeric()) {
+        if let Ok(year) = trimmed.parse::<i32>() {
+            let date = NaiveDate::from_ymd_opt(year, 12, 31).ok_or(Error::InvalidYear(year))?;
+            let datetime = date.and_time(end_of_day);
+            return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
+        }
+    }
+
+    // Case 2: Year-Month (e.g., "2023-01") -> 2023-01-31T23:59:59Z (last day of month)
+    if trimmed.len() == 7 && trimmed.chars().nth(4) == Some('-') {
+        if let Some((year_str, month_str)) = trimmed.split_once('-') {
+            if let (Ok(year), Ok(month)) = (year_str.parse::<i32>(), month_str.parse::<u32>()) {
+                if (1..=12).contains(&month) {
+                    // Get the last day of the month by going to first day of next month, then back one day
+                    let last_day = if month == 12 {
+                        NaiveDate::from_ymd_opt(year + 1, 1, 1)
+                    } else {
+                        NaiveDate::from_ymd_opt(year, month + 1, 1)
+                    }
+                    .ok_or(Error::InvalidYear(year))?
+                    .pred_opt()
+                    .ok_or(Error::InvalidYear(year))?;
+
+                    let datetime = last_day.and_time(end_of_day);
+                    return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
+                }
+            }
+        }
+    }
+
+    // Case 3: ISO 8601 date (e.g., "2023-06-15") -> 2023-06-15T23:59:59Z
+    if let Ok(date) = NaiveDate::parse_from_str(trimmed, "%Y-%m-%d") {
+        let datetime = date.and_time(end_of_day);
+        return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
+    }
+
+    Err(Error::UnrecognizedDateFormat(s.to_string()))
 }
 
 impl TryFrom<Search> for GetSearch {
@@ -338,5 +521,202 @@ impl Deref for Search {
 impl DerefMut for Search {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.items
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn datetime_year_only_expands_to_full_year() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2023".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2023-01-01T00:00:00+00:00/2023-12-31T23:59:59+00:00"
+        );
+    }
+
+    #[test]
+    fn datetime_year_month_expands_to_full_month() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2023-06".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2023-06-01T00:00:00+00:00/2023-06-30T23:59:59+00:00"
+        );
+    }
+
+    #[test]
+    fn datetime_date_expands_to_full_day() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2023-06-10".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2023-06-10T00:00:00+00:00/2023-06-10T23:59:59+00:00"
+        );
+    }
+
+    #[test]
+    fn datetime_rfc3339_stays_as_single_datetime() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2023-06-01T00:00:00Z".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2023-06-01T00:00:00+00:00"
+        );
+    }
+
+    #[test]
+    fn datetime_range_year_to_year() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2017/2018".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2017-01-01T00:00:00+00:00/2018-12-31T23:59:59+00:00"
+        );
+    }
+
+    #[test]
+    fn datetime_range_year_month_to_year_month() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2017-06/2017-07".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2017-06-01T00:00:00+00:00/2017-07-31T23:59:59+00:00"
+        );
+    }
+
+    #[test]
+    fn datetime_range_date_to_date() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2017-06-10/2017-06-11".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2017-06-10T00:00:00+00:00/2017-06-11T23:59:59+00:00"
+        );
+    }
+
+    #[test]
+    fn datetime_open_end_range() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2020-01-01/..".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2020-01-01T00:00:00+00:00/.."
+        );
+    }
+
+    #[test]
+    fn datetime_open_start_range() {
+        let search = Search {
+            items: Items {
+                datetime: Some("../2020-12-31".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "../2020-12-31T23:59:59+00:00"
+        );
+    }
+
+    #[test]
+    fn datetime_february_leap_year() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2024-02".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2024-02-01T00:00:00+00:00/2024-02-29T23:59:59+00:00"
+        );
+    }
+
+    #[test]
+    fn datetime_february_non_leap_year() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2023-02".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2023-02-01T00:00:00+00:00/2023-02-28T23:59:59+00:00"
+        );
+    }
+
+    #[test]
+    fn datetime_range_rfc3339_to_rfc3339() {
+        let search = Search {
+            items: Items {
+                datetime: Some("2023-01-01T00:00:00Z/2023-12-31T23:59:59Z".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let normalized = search.normalize_datetimes().unwrap();
+        assert_eq!(
+            normalized.datetime.as_ref().unwrap(),
+            "2023-01-01T00:00:00+00:00/2023-12-31T23:59:59+00:00"
+        );
     }
 }
