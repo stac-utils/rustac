@@ -50,6 +50,8 @@ serde_json = { workspace = true, features = ["preserve_order"] }
 serde_urlencoded.workspace = true
 stac-derive = { version = "0.3.0", path = "../derive" }
 thiserror.workspace = true
+stream-kmerge = "0.2.0"
+futures = { workspace = true }
 tracing.workspace = true
 url = { workspace = true, features = ["serde"] }
 wkb = { workspace = true, optional = true }
