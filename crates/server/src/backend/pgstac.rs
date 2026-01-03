@@ -41,6 +41,9 @@ impl PgstacBackend<MakeRustlsConnect> {
     pub async fn new_from_stringlike(
         params: impl ToString,
     ) -> Result<PgstacBackend<MakeRustlsConnect>> {
+        let _ = rustls::crypto::aws_lc_rs::default_provider()
+            .install_default()
+            .expect("The default provider should install without problems");
         let config = ClientConfig::builder()
             .with_root_certificates(RootCertStore::empty())
             .with_no_client_auth();
