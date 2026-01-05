@@ -193,9 +193,8 @@ pub struct WriterBuilder<W: Write + Send> {
 /// Write items to stac-geoparquet.
 #[allow(missing_debug_implementations)]
 pub struct Writer<W: Write + Send> {
-    encoder: WriterEncoder,
+    state: WriterState,
     arrow_writer: ArrowWriter<W>,
-    metadata: Metadata,
 }
 
 /// stac-geoparquet metadata
@@ -360,6 +359,113 @@ impl WriterEncoder {
     }
 }
 
+/// Shared state for STAC geoparquet writers (both sync and async).
+///
+/// This struct encapsulates the common logic for encoding items and
+/// managing metadata across different writer implementations.
+#[allow(missing_debug_implementations)]
+pub struct WriterState {
+    encoder: WriterEncoder,
+    metadata: Metadata,
+}
+
+impl WriterState {
+    /// Creates a new WriterState and returns the initial record batch.
+    ///
+    /// This should be called during writer construction to initialize
+    /// the encoder and create the first record batch.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, geoarrow::Options, geoparquet::WriterState};
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let (state, record_batch) = WriterState::new(Options::default(), vec![item]).unwrap();
+    /// assert_eq!(record_batch.num_rows(), 1);
+    /// ```
+    pub fn new(options: Options, items: Vec<Item>) -> Result<(WriterState, RecordBatch)> {
+        let (encoder, record_batch) = WriterEncoder::new(options, items)?;
+        Ok((
+            WriterState {
+                encoder,
+                metadata: Metadata::default(),
+            },
+            record_batch,
+        ))
+    }
+
+    /// Encodes items into a record batch.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, geoarrow::Options, geoparquet::WriterState};
+    ///
+    /// let item1: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let item2 = item1.clone();
+    /// let (mut state, _) = WriterState::new(Options::default(), vec![item1]).unwrap();
+    /// let record_batch = state.encode(vec![item2]).unwrap();
+    /// assert_eq!(record_batch.num_rows(), 1);
+    /// ```
+    pub fn encode(&mut self, items: Vec<Item>) -> Result<RecordBatch> {
+        self.encoder.encode(items)
+    }
+
+    /// Adds a collection to the metadata.
+    ///
+    /// Warns and overwrites if there's already a collection with the same id.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, Collection, geoarrow::Options, geoparquet::WriterState};
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let (mut state, _) = WriterState::new(Options::default(), vec![item]).unwrap();
+    /// state.add_collection(Collection::new("test-id", "description"));
+    /// ```
+    pub fn add_collection(&mut self, collection: Collection) {
+        if let Some(previous_collection) = self
+            .metadata
+            .collections
+            .insert(collection.id.clone(), collection)
+        {
+            log::warn!(
+                "Collection with id={} already existed in writer, overwriting",
+                previous_collection.id
+            )
+        }
+    }
+
+    /// Consumes the state and returns the metadata key-value pairs.
+    ///
+    /// This returns both the geo metadata and the stac-geoparquet metadata
+    /// that should be appended to the parquet file.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, geoarrow::Options, geoparquet::WriterState};
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let (state, _) = WriterState::new(Options::default(), vec![item]).unwrap();
+    /// let metadata = state.into_metadata().unwrap();
+    /// assert_eq!(metadata.len(), 2); // geo + stac-geoparquet metadata
+    /// assert_eq!(metadata[0].key, "geo");
+    /// assert_eq!(metadata[1].key, "stac-geoparquet");
+    /// ```
+    pub fn into_metadata(self) -> Result<Vec<KeyValue>> {
+        let mut metadata = Vec::with_capacity(2);
+        metadata.push(self.encoder.into_keyvalue()?);
+        metadata.push(KeyValue::new(
+            METADATA_KEY.to_string(),
+            serde_json::to_string(&self.metadata)?,
+        ));
+        Ok(metadata)
+    }
+}
+
 impl<W: Write + Send> Writer<W> {
     fn new(
         writer: W,
@@ -367,14 +473,13 @@ impl<W: Write + Send> Writer<W> {
         writer_options: WriterOptions,
         items: Vec<Item>,
     ) -> Result<Self> {
-        let (encoder, record_batch) = WriterEncoder::new(options, items)?;
+        let (state, record_batch) = WriterState::new(options, items)?;
         let mut arrow_writer =
             ArrowWriter::try_new(writer, record_batch.schema(), Some(writer_options.into()))?;
         arrow_writer.write(&record_batch)?;
         Ok(Writer {
-            encoder,
+            state,
             arrow_writer,
-            metadata: Metadata::default(),
         })
     }
 
@@ -396,7 +501,7 @@ impl<W: Write + Send> Writer<W> {
     /// writer.finish().unwrap();
     /// ```
     pub fn write(&mut self, items: Vec<Item>) -> Result<()> {
-        let record_batch = self.encoder.encode(items)?;
+        let record_batch = self.state.encode(items)?;
         self.arrow_writer.write(&record_batch)?;
         Ok(())
     }
@@ -421,16 +526,7 @@ impl<W: Write + Send> Writer<W> {
     /// writer.finish().unwrap();
     /// ```
     pub fn add_collection(mut self, collection: Collection) -> Result<Writer<W>> {
-        if let Some(previous_collection) = self
-            .metadata
-            .collections
-            .insert(collection.id.clone(), collection)
-        {
-            log::warn!(
-                "Collection with id={} already existed in writer, overwriting",
-                previous_collection.id
-            )
-        }
+        self.state.add_collection(collection);
         Ok(self)
     }
 
@@ -450,12 +546,10 @@ impl<W: Write + Send> Writer<W> {
     /// writer.finish().unwrap();
     /// ```
     pub fn finish(mut self) -> Result<()> {
-        self.arrow_writer
-            .append_key_value_metadata(self.encoder.into_keyvalue()?);
-        self.arrow_writer.append_key_value_metadata(KeyValue::new(
-            METADATA_KEY.to_string(),
-            serde_json::to_string(&self.metadata)?,
-        ));
+        let metadata = self.state.into_metadata()?;
+        for kv in metadata {
+            self.arrow_writer.append_key_value_metadata(kv);
+        }
         let _ = self.arrow_writer.finish()?;
         Ok(())
     }

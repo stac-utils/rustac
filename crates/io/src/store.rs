@@ -171,14 +171,14 @@ pub mod geoparquet {
     use crate::Result;
     use object_store::{ObjectStore, path::Path};
     use parquet::arrow::async_writer::{AsyncArrowWriter, ParquetObjectWriter};
-    use stac::Item;
     use stac::geoarrow::Options;
-    use stac::geoparquet::{WriterEncoder, WriterOptions};
+    use stac::geoparquet::{WriterOptions, WriterState};
+    use stac::{Collection, Item};
     use std::sync::Arc;
 
     /// Writes stac-geoparquet to an object store.
     pub struct StacGeoparquetObjectWriter {
-        encoder: WriterEncoder,
+        state: WriterState,
         writer: AsyncArrowWriter<ParquetObjectWriter>,
     }
 
@@ -190,7 +190,7 @@ pub mod geoparquet {
             options: Options,
             writer_options: WriterOptions,
         ) -> Result<StacGeoparquetObjectWriter> {
-            let (encoder, record_batch) = WriterEncoder::new(options, items)?;
+            let (state, record_batch) = WriterState::new(options, items)?;
             let object_store_writer = ParquetObjectWriter::new(store.clone(), path);
             let mut writer = AsyncArrowWriter::try_new(
                 object_store_writer,
@@ -198,18 +198,28 @@ pub mod geoparquet {
                 Some(writer_options.into()),
             )?;
             writer.write(&record_batch).await?;
-            Ok(StacGeoparquetObjectWriter { encoder, writer })
+            Ok(StacGeoparquetObjectWriter { state, writer })
         }
 
         pub async fn write(&mut self, items: Vec<Item>) -> Result<()> {
-            let record_batch = self.encoder.encode(items)?;
+            let record_batch = self.state.encode(items)?;
             self.writer.write(&record_batch).await?;
             Ok(())
         }
 
+        /// Adds a collection to this writer's metadata.
+        ///
+        /// Warns and overwrites if there's already a collection with the same id.
+        pub fn add_collection(mut self, collection: Collection) -> StacGeoparquetObjectWriter {
+            self.state.add_collection(collection);
+            self
+        }
+
         pub async fn close(mut self) -> Result<()> {
-            self.writer
-                .append_key_value_metadata(self.encoder.into_keyvalue()?);
+            let metadata = self.state.into_metadata()?;
+            for kv in metadata {
+                self.writer.append_key_value_metadata(kv);
+            }
             self.writer.close().await?;
             Ok(())
         }
@@ -269,5 +279,57 @@ mod tests {
             .unwrap();
         let item_collection = stac::geoparquet::from_reader(bytes).unwrap();
         assert_eq!(item_collection.items.len(), 2);
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "geoparquet")]
+    async fn write_parquet_with_collection() {
+        use object_store::ObjectStore;
+        use parquet::file::reader::{FileReader, SerializedFileReader};
+
+        use super::geoparquet::StacGeoparquetObjectWriter;
+
+        let store = Arc::new(InMemory::new());
+        let item: Item = stac::read("examples/simple-item.json").unwrap();
+        let collection = stac::Collection::new("test-collection", "Test description");
+
+        let writer = StacGeoparquetObjectWriter::new(
+            store.clone(),
+            Path::from("test-with-collection"),
+            vec![item.clone()],
+            Default::default(),
+            Default::default(),
+        )
+        .await
+        .unwrap()
+        .add_collection(collection);
+
+        writer.close().await.unwrap();
+
+        let bytes = store
+            .get(&Path::from("test-with-collection"))
+            .await
+            .unwrap()
+            .bytes()
+            .await
+            .unwrap();
+
+        let reader = SerializedFileReader::new(bytes.clone()).unwrap();
+        let file_metadata = reader.metadata().file_metadata();
+        let key_value_metadata = file_metadata.key_value_metadata().unwrap();
+        let stac_metadata = key_value_metadata
+            .iter()
+            .find(|kv| kv.key == "stac-geoparquet")
+            .expect("stac-geoparquet metadata should exist");
+        let metadata: stac::geoparquet::Metadata =
+            serde_json::from_str(stac_metadata.value.as_ref().unwrap()).unwrap();
+        assert!(metadata.collections.contains_key("test-collection"));
+        assert_eq!(
+            metadata.collections["test-collection"].description,
+            "Test description"
+        );
+
+        let item_collection = stac::geoparquet::from_reader(bytes).unwrap();
+        assert_eq!(item_collection.items.len(), 1);
     }
 }
