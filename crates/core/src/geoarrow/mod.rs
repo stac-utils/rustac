@@ -16,12 +16,6 @@ use geoarrow_schema::{GeoArrowType, GeometryType, Metadata};
 use serde_json::{Value, json};
 use std::{io::Cursor, sync::Arc};
 
-/// The stac-geoparquet version metadata key.
-pub const VERSION_KEY: &str = "stac:geoparquet_version";
-
-/// The stac-geoparquet version.
-pub const VERSION: &str = "1.0.0";
-
 /// Datetime columns.
 pub const DATETIME_COLUMNS: [&str; 8] = [
     "datetime",
@@ -215,9 +209,6 @@ impl Writer {
             columns.push(Arc::new(proj_geometry_array));
             schema_builder.push(Field::new("proj:geometry", data_type, true));
         }
-        let _ = schema_builder
-            .metadata_mut()
-            .insert(VERSION_KEY.to_string(), VERSION.into());
         let schema = Arc::new(schema_builder.finish());
         let record_batch = RecordBatch::try_new(schema, columns)?;
         Ok(record_batch)
@@ -399,13 +390,6 @@ mod tests {
     use super::Encoder;
     use crate::{Item, ItemCollection};
     use arrow_array::RecordBatchIterator;
-
-    #[test]
-    fn encode() {
-        let item: Item = crate::read("examples/simple-item.json").unwrap();
-        let (_, schema) = super::encode(vec![item]).unwrap();
-        assert_eq!(schema.metadata["stac:geoparquet_version"], "1.0.0");
-    }
 
     #[test]
     fn has_type() {
