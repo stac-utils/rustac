@@ -210,9 +210,8 @@ pub mod geoparquet {
         /// Adds a collection to this writer's metadata.
         ///
         /// Warns and overwrites if there's already a collection with the same id.
-        pub fn add_collection(mut self, collection: Collection) -> StacGeoparquetObjectWriter {
+        pub fn add_collection(&mut self, collection: Collection) {
             self.state.add_collection(collection);
-            self
         }
 
         pub async fn close(mut self) -> Result<()> {
@@ -293,7 +292,7 @@ mod tests {
         let item: Item = stac::read("examples/simple-item.json").unwrap();
         let collection = stac::Collection::new("test-collection", "Test description");
 
-        let writer = StacGeoparquetObjectWriter::new(
+        let mut writer = StacGeoparquetObjectWriter::new(
             store.clone(),
             Path::from("test-with-collection"),
             vec![item.clone()],
@@ -301,8 +300,8 @@ mod tests {
             Default::default(),
         )
         .await
-        .unwrap()
-        .add_collection(collection);
+        .unwrap();
+        writer.add_collection(collection);
 
         writer.close().await.unwrap();
 
