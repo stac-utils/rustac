@@ -314,17 +314,13 @@ mod tests {
             .await
             .unwrap();
 
-        // Verify metadata was written
         let reader = SerializedFileReader::new(bytes.clone()).unwrap();
         let file_metadata = reader.metadata().file_metadata();
         let key_value_metadata = file_metadata.key_value_metadata().unwrap();
-
-        // Check that stac-geoparquet metadata exists
         let stac_metadata = key_value_metadata
             .iter()
             .find(|kv| kv.key == "stac-geoparquet")
             .expect("stac-geoparquet metadata should exist");
-
         let metadata: stac::geoparquet::Metadata =
             serde_json::from_str(stac_metadata.value.as_ref().unwrap()).unwrap();
         assert!(metadata.collections.contains_key("test-collection"));
@@ -333,7 +329,6 @@ mod tests {
             "Test description"
         );
 
-        // Verify items can still be read
         let item_collection = stac::geoparquet::from_reader(bytes).unwrap();
         assert_eq!(item_collection.items.len(), 1);
     }
