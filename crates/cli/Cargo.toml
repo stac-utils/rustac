@@ -1,7 +1,7 @@
 [package]
 name = "stac-cli"
 description = "Command line interface for stac-rs"
-version = "0.5.3"
+version = "0.5.4"
 keywords = ["geospatial", "stac", "metadata", "geo", "raster"]
 authors.workspace = true
 edition.workspace = true
