@@ -13,7 +13,7 @@ rust-version.workspace = true
 
 [features]
 default = []
-pgstac = ["dep:pgstac", "dep:tokio-postgres", "stac-server/pgstac"]
+pgstac = ["dep:pgstac", "stac-server/pgstac"]
 duckdb-bundled = ["stac-duckdb/bundled"]
 
 [dependencies]
@@ -40,7 +40,6 @@ tokio = { workspace = true, features = [
     "rt-multi-thread",
     "fs",
 ] }
-tokio-postgres = { workspace = true, optional = true }
 tracing.workspace = true
 tracing-indicatif.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
