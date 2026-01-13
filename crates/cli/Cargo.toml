@@ -13,7 +13,7 @@ rust-version.workspace = true
 
 [features]
 default = []
-pgstac = ["stac-server/pgstac"]
+pgstac = ["dep:pgstac", "dep:tokio-postgres", "stac-server/pgstac"]
 duckdb-bundled = ["stac-duckdb/bundled"]
 
 [dependencies]
@@ -24,6 +24,7 @@ clap = { workspace = true, features = ["derive"] }
 clap_complete.workspace = true
 futures-core.workspace = true
 futures-util.workspace = true
+pgstac = { version = "0.4.2", path = "../pgstac", optional = true }
 serde_json.workspace = true
 stac = { version = "0.16.0", path = "../core" }
 stac-duckdb = { version = "0.3.2", path = "../duckdb" }
@@ -39,6 +40,7 @@ tokio = { workspace = true, features = [
     "rt-multi-thread",
     "fs",
 ] }
+tokio-postgres = { workspace = true, optional = true }
 tracing.workspace = true
 tracing-indicatif.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
