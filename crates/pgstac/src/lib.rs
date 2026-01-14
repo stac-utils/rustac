@@ -144,10 +144,10 @@ pub async fn search(
         Vec::new()
     };
 
-    if search.items.limit.is_none()
-        && let Some(max_items) = max_items
-    {
-        search.items.limit = Some(max_items.try_into()?);
+    if search.items.limit.is_none() {
+        if let Some(max_items) = max_items {
+            search.items.limit = Some(max_items.try_into()?);
+        }
     }
 
     loop {
