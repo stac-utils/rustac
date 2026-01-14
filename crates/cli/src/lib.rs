@@ -165,7 +165,7 @@ pub enum Command {
 
     /// Searches a STAC API or stac-geoparquet file.
     Search {
-        /// The href of the STAC API or stac-geoparquet file to search.
+        /// The href of the STAC API, stac-geoparquet file, or pgstac to search.
         href: String,
 
         /// The output file.
@@ -173,13 +173,19 @@ pub enum Command {
         /// To write to standard output, pass `-` or don't provide an argument at all.
         outfile: Option<String>,
 
-        /// Use DuckDB to query the href.
+        /// The search implementation to use.
         ///
-        /// By default, DuckDB will be used if the href ends in `parquet` or
-        /// `geoparquet`. Set this value to `true` to force DuckDB to be used,
-        /// or to `false` to disable this behavior.
-        #[arg(long = "use-duckdb")]
-        use_duckdb: Option<bool>,
+        /// If not provided, the implementation will be inferred from the href:
+        /// - `postgresql://` URLs will use the `postgresql` implementation
+        /// - `.parquet` or `.geoparquet` files will use the `duckdb` implementation
+        /// - All other hrefs will use the `api` implementation
+        ///
+        /// Possible values:
+        /// - api: Search a STAC API endpoint
+        /// - duckdb: Search a stac-geoparquet file using DuckDB
+        /// - postgresql: Search a pgstac database
+        #[arg(long = "search-with", verbatim_doc_comment)]
+        search_with: Option<SearchImplementation>,
 
         /// The maximum number of items to return from the search.
         #[arg(short = 'n', long = "max-items")]
@@ -302,6 +308,17 @@ enum Value {
     Json(serde_json::Value),
 }
 
+/// The search implementation to use.
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum SearchImplementation {
+    /// Search a STAC API endpoint
+    Api,
+    /// Search a stac-geoparquet file using DuckDB
+    Duckdb,
+    /// Search a pgstac database
+    Postgresql,
+}
+
 #[derive(Debug, Clone)]
 struct KeyValue(String, String);
 
@@ -351,7 +368,7 @@ impl Rustac {
             Command::Search {
                 ref href,
                 ref outfile,
-                ref use_duckdb,
+                search_with,
                 ref max_items,
                 ref intersects,
                 ref ids,
@@ -363,9 +380,17 @@ impl Rustac {
                 ref filter,
                 ref limit,
             } => {
-                let use_duckdb = use_duckdb.unwrap_or_else(|| {
-                    matches!(Format::infer_from_href(href), Some(Format::Geoparquet(_)))
+                // Infer the search implementation from the href if not explicitly provided
+                let search_impl = search_with.unwrap_or_else(|| {
+                    if href.starts_with("postgresql://") {
+                        SearchImplementation::Postgresql
+                    } else if matches!(Format::infer_from_href(href), Some(Format::Geoparquet(_))) {
+                        SearchImplementation::Duckdb
+                    } else {
+                        SearchImplementation::Api
+                    }
                 });
+
                 let get_items = GetItems {
                     bbox: bbox.clone(),
                     datetime: datetime.clone(),
@@ -383,10 +408,21 @@ impl Rustac {
                 };
                 let search: Search = get_search.try_into()?;
                 let search = search.normalize_datetimes()?;
-                let item_collection = if use_duckdb {
-                    stac_duckdb::search(href, search, *max_items)?
-                } else {
-                    stac_io::api::search(href, search, *max_items).await?
+                let item_collection = match search_impl {
+                    SearchImplementation::Postgresql => {
+                        #[cfg(feature = "pgstac")]
+                        {
+                            pgstac::search(href, search, *max_items).await?
+                        }
+                        #[cfg(not(feature = "pgstac"))]
+                        {
+                            return Err(anyhow!("rustac is not compiled with pgstac support"));
+                        }
+                    }
+                    SearchImplementation::Duckdb => stac_duckdb::search(href, search, *max_items)?,
+                    SearchImplementation::Api => {
+                        stac_io::api::search(href, search, *max_items).await?
+                    }
                 };
                 self.put(
                     outfile.as_deref(),

@@ -79,8 +79,8 @@ mod page;
 
 pub use page::Page;
 use serde::{Serialize, de::DeserializeOwned};
-use stac::api::Search;
-use tokio_postgres::{GenericClient, Row, types::ToSql};
+use stac::api::{ItemCollection, Search};
+use tokio_postgres::{GenericClient, NoTls, Row, types::ToSql};
 
 /// Crate-specific error enum.
 #[derive(Debug, thiserror::Error)]
@@ -97,6 +97,10 @@ pub enum Error {
     /// [tokio_postgres::Error]
     #[error(transparent)]
     TokioPostgres(#[from] tokio_postgres::Error),
+
+    /// [std::num::TryFromIntError]
+    #[error(transparent)]
+    TryFromInt(#[from] std::num::TryFromIntError),
 }
 
 /// Crate-specific result type.
@@ -104,6 +108,79 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// A [serde_json::Value].
 pub type JsonValue = serde_json::Value;
+
+/// Searches a pgstac database.
+///
+/// This function establishes a connection to the pgstac database, performs the search
+/// with pagination support, and collects all results up to `max_items` if specified.
+///
+/// # Examples
+///
+/// ```no_run
+/// # tokio_test::block_on(async {
+/// let connection_string = "postgresql://username:password@localhost:5432/postgis";
+/// let search = stac::api::Search::default();
+/// let item_collection = pgstac::search(connection_string, search, None).await.unwrap();
+/// # })
+/// ```
+pub async fn search(
+    connection_string: &str,
+    mut search: Search,
+    max_items: Option<usize>,
+) -> Result<ItemCollection> {
+    let (client, connection) = tokio_postgres::connect(connection_string, NoTls).await?;
+    let _ = tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            tracing::error!("pgstac connection error: {}", e);
+        }
+    });
+
+    let mut all_items = if let Some(max_items) = max_items {
+        if max_items == 0 {
+            return Ok(ItemCollection::new(Vec::new())?);
+        }
+        Vec::with_capacity(max_items)
+    } else {
+        Vec::new()
+    };
+
+    if search.items.limit.is_none() {
+        if let Some(max_items) = max_items {
+            search.items.limit = Some(max_items.try_into()?);
+        }
+    }
+
+    loop {
+        tracing::info!("Fetching page");
+        let page = client.search(search.clone()).await?;
+        let next_token = page.next_token();
+        let has_next_token = next_token.is_some();
+        if let Some(token) = next_token {
+            let _ = search
+                .additional_fields
+                .insert("token".into(), token.into());
+        }
+        for item in page.features {
+            all_items.push(item);
+            if let Some(max_items) = max_items {
+                if all_items.len() >= max_items {
+                    break;
+                }
+            }
+        }
+        let should_continue = if let Some(max_items) = max_items {
+            all_items.len() < max_items && has_next_token
+        } else {
+            has_next_token
+        };
+        if !should_continue {
+            break;
+        }
+        tracing::debug!("Found {} item(s), continuing...", all_items.len());
+    }
+
+    Ok(ItemCollection::new(all_items)?)
+}
 
 /// Methods for working with **pgstac**.
 #[allow(async_fn_in_trait)]

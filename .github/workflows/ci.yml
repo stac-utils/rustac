@@ -104,6 +104,8 @@ jobs:
         run: cargo test -p pgstac --all-features
       - name: Validate
         run: uv run --group stac-api-validator scripts/validate-stac-server --pgstac
+      - name: Search
+        run: cargo run -F pgstac search postgresql://username:password@localhost:5432/postgis
   check-nightly:
     name: Check (nightly)
     runs-on: ubuntu-latest

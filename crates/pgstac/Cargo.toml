@@ -16,7 +16,9 @@ serde.workspace = true
 serde_json.workspace = true
 stac = { version = "0.16.0", path = "../core" }
 thiserror.workspace = true
+tokio = { workspace = true, features = ["rt"] }
 tokio-postgres = { workspace = true, features = ["with-serde_json-1"] }
+tracing.workspace = true
 
 [dev-dependencies]
 geojson.workspace = true

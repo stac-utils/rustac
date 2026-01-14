@@ -44,11 +44,32 @@ pub struct Page {
 impl Page {
     /// Returns this page's next token, if it has one.
     pub fn next_token(&self) -> Option<String> {
-        self.next.as_ref().map(|next| format!("next:{next}"))
+        if let Some(next) = &self.next {
+            return Some(format!("next:{next}"));
+        }
+
+        self.links
+            .iter()
+            .find(|link| link.rel == "next")
+            .and_then(|link| extract_token_from_href(&link.href))
     }
 
     /// Returns this page's prev token, if it has one.
     pub fn prev_token(&self) -> Option<String> {
-        self.prev.as_ref().map(|prev| format!("prev:{prev}"))
+        if let Some(prev) = &self.prev {
+            return Some(format!("prev:{prev}"));
+        }
+
+        self.links
+            .iter()
+            .find(|link| link.rel == "prev")
+            .and_then(|link| extract_token_from_href(&link.href))
     }
+}
+
+fn extract_token_from_href(href: &str) -> Option<String> {
+    href.split("token=")
+        .nth(1)
+        .and_then(|token_part| token_part.split('&').next())
+        .map(|token| token.to_string())
 }
