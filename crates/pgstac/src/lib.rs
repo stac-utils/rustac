@@ -79,7 +79,7 @@ mod page;
 
 pub use page::Page;
 use serde::{Serialize, de::DeserializeOwned};
-use stac::api::Search;
+use stac::api::{ItemCollection, Search};
 use tokio_postgres::{GenericClient, NoTls, Row, types::ToSql};
 
 /// Crate-specific error enum.
@@ -127,7 +127,7 @@ pub async fn search(
     connection_string: &str,
     mut search: Search,
     max_items: Option<usize>,
-) -> Result<stac::api::ItemCollection> {
+) -> Result<ItemCollection> {
     let (client, connection) = tokio_postgres::connect(connection_string, NoTls).await?;
     let _ = tokio::spawn(async move {
         if let Err(e) = connection.await {
@@ -137,7 +137,7 @@ pub async fn search(
 
     let mut all_items = if let Some(max_items) = max_items {
         if max_items == 0 {
-            return Ok(stac::api::ItemCollection::new(Vec::new())?);
+            return Ok(ItemCollection::new(Vec::new())?);
         }
         Vec::with_capacity(max_items)
     } else {
@@ -160,7 +160,6 @@ pub async fn search(
                 .additional_fields
                 .insert("token".into(), token.into());
         }
-        let num_features = page.features.len();
         for item in page.features {
             all_items.push(item);
             if let Some(max_items) = max_items {
@@ -177,15 +176,10 @@ pub async fn search(
         if !should_continue {
             break;
         }
-        if let Some(limit) = search.items.limit {
-            if num_features < limit as usize {
-                break;
-            }
-        }
         tracing::debug!("Found {} item(s), continuing...", all_items.len());
     }
 
-    Ok(stac::api::ItemCollection::new(all_items)?)
+    Ok(ItemCollection::new(all_items)?)
 }
 
 /// Methods for working with **pgstac**.
