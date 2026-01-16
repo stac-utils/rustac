@@ -1,7 +1,7 @@
 [package]
 name = "stac-server"
 description = "SpatioTemporal Asset Catalog (STAC) API server"
-version = "0.4.2"
+version = "0.4.3"
 keywords = ["geospatial", "stac", "metadata", "geo", "server"]
 categories = ["science", "data-structures"]
 edition.workspace = true
@@ -30,7 +30,7 @@ bb8-postgres = { workspace = true, optional = true }
 bytes = { workspace = true, optional = true }
 http.workspace = true
 mime = { workspace = true, optional = true }
-pgstac = { version = "0.4.2", path = "../pgstac", optional = true }
+pgstac = { version = "0.4.3", path = "../pgstac", optional = true }
 rustls = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
