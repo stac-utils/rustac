@@ -28,6 +28,9 @@ pub const DATETIME_COLUMNS: [&str; 8] = [
     "unpublished",
 ];
 
+/// Columns to dictionary-encode (repeated/invariant string values).
+const DICTIONARY_COLUMNS: [&str; 3] = ["type", "stac_version", "collection"];
+
 /// Encodes items into a record batch.
 pub fn encode(items: Vec<Item>) -> Result<(RecordBatch, SchemaRef)> {
     encode_with_options(items, Options::default())
@@ -198,8 +201,29 @@ impl Writer {
         let mut decoder = ReaderBuilder::new(base_schema.clone()).build_decoder()?;
         decoder.serialize(&self.values)?;
         let record_batch = decoder.flush()?.ok_or(Error::NoItems)?;
-        let mut schema_builder = SchemaBuilder::from(base_schema.fields());
-        let mut columns = record_batch.columns().to_vec();
+
+        let dict_type = DataType::Dictionary(Box::new(DataType::Int32), Box::new(DataType::Utf8));
+        let mut schema_builder = SchemaBuilder::new();
+        let mut columns = Vec::with_capacity(record_batch.num_columns());
+
+        // Dictionary-encoded columns: type, stac_version, collection
+        for (i, field) in record_batch.schema().fields().iter().enumerate() {
+            let should_dictionary_encode = DICTIONARY_COLUMNS.contains(&field.name().as_str())
+                && field.data_type() == &DataType::Utf8;
+
+            if should_dictionary_encode {
+                let dict_array = arrow_cast::cast(record_batch.column(i), &dict_type)?;
+                columns.push(dict_array);
+                schema_builder.push(Field::new(
+                    field.name(),
+                    dict_type.clone(),
+                    field.is_nullable(),
+                ));
+            } else {
+                columns.push(record_batch.column(i).clone());
+                schema_builder.push(field.as_ref().clone());
+            }
+        }
         let geometry_array = self.geometry_builder.finish();
         columns.push(geometry_array.to_array_ref());
         schema_builder.push(geometry_array.data_type().to_field("geometry", true));
@@ -446,5 +470,27 @@ mod tests {
         let item: Item = crate::read("examples/simple-item.json").unwrap();
         let (encoder, _) = Encoder::new(vec![item.clone()], Default::default()).unwrap();
         let _ = encoder.encode(vec![item]).unwrap();
+    }
+
+    #[test]
+    fn dictionary_encoded_columns() {
+        use arrow_schema::DataType;
+
+        let item: Item = crate::read("examples/simple-item.json").unwrap();
+        let (record_batch, _) = super::encode(vec![item]).unwrap();
+        let schema = record_batch.schema();
+
+        for field in schema.fields() {
+            match field.name().as_str() {
+                "type" | "stac_version" | "collection" => {
+                    assert!(
+                        matches!(field.data_type(), DataType::Dictionary(_, _)),
+                        "'{}' should be dictionary-encoded",
+                        field.name()
+                    );
+                }
+                _ => {}
+            }
+        }
     }
 }
