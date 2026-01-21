@@ -15,6 +15,7 @@ use stac::{
 use stac_io::{Format, StacStore};
 use stac_server::Backend;
 use stac_validate::Validate;
+use std::path::Path;
 use std::{
     collections::{HashMap, VecDeque},
     io::Write,
@@ -298,6 +299,24 @@ pub enum Command {
     GenerateCompletions {
         /// The shell to generate completion scripts for.
         shell: clap_complete::Shell,
+    },
+
+    /// Generate a STAC collection from one or more items
+    Collection {
+        /// The input file.
+        ///
+        /// To read from standard input, pass `-` or don't provide an argument at all.
+        infile: Option<String>,
+
+        /// The output file.
+        ///
+        /// To write to standard output, pass `-` or don't provide an argument at all.
+        outfile: Option<String>,
+
+        /// The id of the output collection
+        ///
+        /// If not provided, will default to the file name without an extension.
+        id: Option<String>,
     },
 }
 
@@ -590,6 +609,44 @@ impl Rustac {
             Command::GenerateCompletions { shell } => {
                 let mut command = Rustac::command();
                 clap_complete::generate(shell, &mut command, "rustac", &mut std::io::stdout());
+                Ok(())
+            }
+            Command::Collection {
+                ref infile,
+                ref outfile,
+                ref id,
+            } => {
+                let value = self.get(infile.as_deref()).await?;
+                let id = id.clone().unwrap_or_else(|| {
+                    infile
+                        .as_deref()
+                        .and_then(|infile| {
+                            Path::new(infile)
+                                .file_stem()
+                                .map(|s| s.to_string_lossy().into_owned())
+                        })
+                        .unwrap_or("default-collection-id".to_string())
+                });
+                let collection = match value {
+                    stac::Value::ItemCollection(item_collection) => {
+                        Collection::from_id_and_items(id, &item_collection.items)
+                    }
+                    stac::Value::Item(item) => Collection::from_id_and_items(id, &[item]),
+                    stac::Value::Collection(collection) => collection,
+                    stac::Value::Catalog(catalog) => {
+                        let mut json = serde_json::to_value(catalog)?;
+                        let _ = json
+                            .as_object_mut()
+                            .unwrap()
+                            .insert("type".to_string(), "Collection".into());
+                        serde_json::from_value(json)?
+                    }
+                };
+                self.put(
+                    outfile.as_deref(),
+                    Value::Stac(stac::Value::Collection(collection)),
+                )
+                .await?;
                 Ok(())
             }
         }
