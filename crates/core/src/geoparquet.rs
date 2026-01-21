@@ -13,8 +13,7 @@ use geoparquet::{
 pub use parquet::basic::{BrotliLevel, Compression, GzipLevel, ZstdLevel};
 use parquet::{
     arrow::{ArrowWriter, arrow_reader::ParquetRecordBatchReaderBuilder},
-    file::{properties::WriterProperties, reader::ChunkReader},
-    format::KeyValue,
+    file::{metadata::KeyValue, properties::WriterProperties, reader::ChunkReader},
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, io::Write};
