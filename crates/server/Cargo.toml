@@ -1,7 +1,7 @@
 [package]
 name = "stac-server"
 description = "SpatioTemporal Asset Catalog (STAC) API server"
-version = "0.4.3"
+version = "0.4.4"
 keywords = ["geospatial", "stac", "metadata", "geo", "server"]
 categories = ["science", "data-structures"]
 edition.workspace = true
@@ -30,13 +30,13 @@ bb8-postgres = { workspace = true, optional = true }
 bytes = { workspace = true, optional = true }
 http.workspace = true
 mime = { workspace = true, optional = true }
-pgstac = { version = "0.4.3", path = "../pgstac", optional = true }
+pgstac = { version = "0.4.4", path = "../pgstac", optional = true }
 rustls = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded.workspace = true
-stac = { version = "0.16.0", path = "../core" }
-stac-duckdb = { version = "0.3.2", path = "../duckdb", optional = true }
+stac = { version = "0.16.1", path = "../core" }
+stac-duckdb = { version = "0.3.3", path = "../duckdb", optional = true }
 thiserror.workspace = true
 tokio-postgres = { workspace = true, optional = true }
 tokio-postgres-rustls = { workspace = true, optional = true }
