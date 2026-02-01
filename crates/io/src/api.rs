@@ -77,14 +77,25 @@ pub struct BlockingIterator {
     stream: Pin<Box<dyn Stream<Item = Result<Item>>>>,
 }
 
+/// Builder for configuring and constructing a [`Client`] for STAC APIs.
+///
+/// This type is used to create a `Client` with a specific base URL and a set
+/// of default HTTP headers. A typical usage pattern is:
+///
+/// - Call [`ApiClientBuilder::new`] with the API root URL.
+/// - Optionally call [`ApiClientBuilder::with_headers`] to add extra headers.
+/// - Call [`ApiClientBuilder::build`] to obtain a configured [`Client`].
+///
+/// Internally, `ApiClientBuilder` prepares a `reqwest::Client` and then
+/// delegates to [`Client::with_client`] to produce the final STAC API client.
 pub struct ApiClientBuilder {
     url: String,
     headers: HeaderMap,
 }
 
 impl ApiClientBuilder {
-    
-    // Set USER_AGENT header
+
+    /// Set USER_AGENT header
     pub fn new(url: &str) -> Result<Self> {
         let mut headers = HeaderMap::new();
         let _ = headers.insert(
@@ -97,15 +108,23 @@ impl ApiClientBuilder {
         })
     }
 
-    // Additional headers to pass to default_headers
+    /// Additional headers to pass to default_headers
     pub fn with_headers(mut self, headers: &[(String, String)]) -> Result<Self> {
         for (key, val) in headers.iter() {
-            self.headers
-                .insert(key.parse::<HeaderName>()?, HeaderValue::from_str(val)?);
+            let header_name = key
+                .parse::<HeaderName>()
+                .map_err(|e| Error::from(format!("Failed to parse header name `{key}`: {e}")))?;
+            let header_value = HeaderValue::from_str(val)
+                .map_err(|e| Error::from(format!("Failed to parse header value for `{key}`: {e}")))?;
+            self.headers.insert(header_name, header_value);
         }
         Ok(self)
     }
 
+    /// Builds a [`Client`] from this builder, consuming it.
+    ///
+    /// This finalizes the configuration (including any default and custom headers)
+    /// and constructs the underlying `reqwest::Client`.
     pub fn build(self) -> Result<Client> {
         let client = ClientBuilder::new().default_headers(self.headers).build()?;
         Client::with_client(client, &self.url)
