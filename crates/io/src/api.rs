@@ -23,7 +23,7 @@ pub async fn search(
     href: &str,
     mut search: Search,
     max_items: Option<usize>,
-    headers: &Vec<(String, String)>,
+    headers: &[(String, String)],
 ) -> Result<ItemCollection> {
     let mut builder = ApiClientBuilder::new(href)?;
     if !headers.is_empty() {
@@ -85,7 +85,7 @@ pub struct ApiClientBuilder {
 impl ApiClientBuilder {
     pub fn new(url: &str) -> Result<Self> {
         let mut headers = HeaderMap::new();
-        headers.insert(
+        let _ = headers.insert(
             USER_AGENT,
             format!("rustac/{}", env!("CARGO_PKG_VERSION")).parse()?,
         );
@@ -95,7 +95,7 @@ impl ApiClientBuilder {
         })
     }
 
-    pub fn with_headers(mut self, headers: &Vec<(String, String)>) -> Result<Self> {
+    pub fn with_headers(mut self, headers: &[(String, String)]) -> Result<Self> {
         for (key, val) in headers.iter() {
             self.headers
                 .insert(key.parse::<HeaderName>()?, HeaderValue::from_str(val)?);
