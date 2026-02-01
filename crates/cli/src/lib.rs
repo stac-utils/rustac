@@ -232,6 +232,12 @@ pub enum Command {
         /// The page size to be returned from the server.
         #[arg(long = "limit")]
         limit: Option<String>,
+
+        /// HTTP headers to include in requests.
+        ///
+        /// Headers should be provided in `KEY: VALUE` format, e.g.: `rustac search --header "Authorization: Bearer token" --header "X-Custom: value"`
+        #[arg(long = "headers")]
+        headers: Option<String>,
     },
 
     /// Serves a STAC API.
@@ -398,6 +404,7 @@ impl Rustac {
                 ref sortby,
                 ref filter,
                 ref limit,
+                ref headers,
             } => {
                 // Infer the search implementation from the href if not explicitly provided
                 let search_impl = search_with.unwrap_or_else(|| {
@@ -440,7 +447,7 @@ impl Rustac {
                     }
                     SearchImplementation::Duckdb => stac_duckdb::search(href, search, *max_items)?,
                     SearchImplementation::Api => {
-                        stac_io::api::search(href, search, *max_items).await?
+                        stac_io::api::search(href, search, *max_items, headers).await?
                     }
                 };
                 self.put(

@@ -23,8 +23,9 @@ pub async fn search(
     href: &str,
     mut search: Search,
     max_items: Option<usize>,
+    headers: &Option<String>,
 ) -> Result<ItemCollection> {
-    let client = Client::new(href)?;
+    let client = Client::new(href, headers)?;
     if search.limit.is_none() {
         if let Some(max_items) = max_items {
             search.limit = Some(max_items.try_into()?);
@@ -81,13 +82,32 @@ impl Client {
     /// # use stac_io::api::Client;
     /// let client = Client::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
     /// ```
-    pub fn new(url: &str) -> Result<Client> {
+    pub fn new(url: &str, req_headers: &Option<String>) -> Result<Client> {
         // TODO support HATEOS (aka look up the urls from the root catalog)
         let mut headers = HeaderMap::new();
         let _ = headers.insert(
             USER_AGENT,
             format!("rustac/{}", env!("CARGO_PKG_VERSION")).parse()?,
         );
+        match req_headers {
+            Some(h) => {
+                let map: Map<String, Value> = h
+                    .split(",")
+                    .map(|s| {
+                        let mut pair = s.splitn(2,": ");
+                        let key = pair.next().unwrap_or("").trim().to_string();
+                        let val = pair.next().unwrap_or("").trim().to_string();
+                        (key, Value::String(val))
+                    })
+                .collect();
+                println!("Found request headers {:?}", map);
+                for (key, val) in map.into_iter() {
+                    let header_name: HeaderName = key.parse()?;
+                    let _ = headers.insert(header_name, val.to_string().parse()?);
+                }
+            }
+            None => {}
+        }
         let client = ClientBuilder::new().default_headers(headers).build()?;
         Client::with_client(client, url)
     }
@@ -295,8 +315,8 @@ impl BlockingClient {
     ///
     /// let client = BlockingClient::new("https://planetarycomputer.microsoft.com/api/stac/vi").unwrap();
     /// ```
-    pub fn new(url: &str) -> Result<BlockingClient> {
-        Client::new(url).map(Self)
+    pub fn new(url: &str, request_headers: &Option<String>) -> Result<BlockingClient> {
+        Client::new(url, request_headers).map(Self)
     }
 
     /// Searches an API, returning an iterable of items.
@@ -427,7 +447,8 @@ mod tests {
             .create_async()
             .await;
 
-        let client = Client::new(&server.url()).unwrap();
+        let headers = None;
+        let client = Client::new(&server.url(), &headers).unwrap();
         assert!(
             client
                 .collection("not-a-collection")
@@ -468,7 +489,8 @@ mod tests {
             .create_async()
             .await;
 
-        let client = Client::new(&server.url()).unwrap();
+        let headers = None;
+        let client = Client::new(&server.url(), &headers).unwrap();
         let mut search = Search {
             collections: vec!["sentinel-2-l2a".to_string()],
             ..Default::default()
@@ -515,7 +537,8 @@ mod tests {
             .create_async()
             .await;
 
-        let client = Client::new(&server.url()).unwrap();
+        let headers = None;
+        let client = Client::new(&server.url(), &headers).unwrap();
         let items = Items {
             limit: Some(1),
             ..Default::default()
@@ -556,7 +579,8 @@ mod tests {
             .create_async()
             .await;
 
-        let client = Client::new(&server.url()).unwrap();
+        let headers = None;
+        let client = Client::new(&server.url(), &headers).unwrap();
         let items = Items {
             limit: Some(1),
             ..Default::default()
@@ -584,7 +608,8 @@ mod tests {
             )
             .create_async()
             .await;
-        let client = Client::new(&server.url()).unwrap();
+        let headers = None;
+        let client = Client::new(&server.url(), &headers).unwrap();
         let _ = client.search(Default::default()).await.unwrap();
     }
 }
