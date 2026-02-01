@@ -83,6 +83,8 @@ pub struct ApiClientBuilder {
 }
 
 impl ApiClientBuilder {
+    
+    // Set USER_AGENT header
     pub fn new(url: &str) -> Result<Self> {
         let mut headers = HeaderMap::new();
         let _ = headers.insert(
@@ -95,6 +97,7 @@ impl ApiClientBuilder {
         })
     }
 
+    // Additional headers to pass to default_headers
     pub fn with_headers(mut self, headers: &[(String, String)]) -> Result<Self> {
         for (key, val) in headers.iter() {
             self.headers
