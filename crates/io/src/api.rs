@@ -94,8 +94,14 @@ pub struct ApiClientBuilder {
 }
 
 impl ApiClientBuilder {
-
-    /// Set USER_AGENT header
+    /// Create ApiClientBuilder
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use stac_io::api::ApiClientBuilder;
+    /// let builder = ApiClientBuilder::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
+    /// ```
     pub fn new(url: &str) -> Result<Self> {
         let mut headers = HeaderMap::new();
         let _ = headers.insert(
@@ -109,20 +115,36 @@ impl ApiClientBuilder {
     }
 
     /// Additional headers to pass to default_headers
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use stac_io::api::ApiClientBuilder;
+    /// let headers = vec![("x-my-header".to_string(), "value".to_string())];
+    /// let builder = ApiClientBuilder::new("https://planetarycomputer.microsoft.com/api/stac/v1")
+    ///                 .unwrap()
+    ///                 .with_headers(&headers)
+    ///                 .unwrap();
+    /// ```
     pub fn with_headers(mut self, headers: &[(String, String)]) -> Result<Self> {
         for (key, val) in headers.iter() {
-            let header_name = key
-                .parse::<HeaderName>()?;
+            let header_name = key.parse::<HeaderName>()?;
             let header_value = HeaderValue::from_str(val)?;
             self.headers.insert(header_name, header_value);
         }
         Ok(self)
     }
 
-    /// Builds a [`Client`] from this builder, consuming it.
+    /// Builds a [`Client`] from this builder.
     ///
     /// This finalizes the configuration (including any default and custom headers)
     /// and constructs the underlying `reqwest::Client`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use stac_io::api::ApiClientBuilder;
+    /// let client = ApiClientBuilder::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap().build().unwrap();
     pub fn build(self) -> Result<Client> {
         let client = ClientBuilder::new().default_headers(self.headers).build()?;
         Client::with_client(client, &self.url)
