@@ -112,10 +112,8 @@ impl ApiClientBuilder {
     pub fn with_headers(mut self, headers: &[(String, String)]) -> Result<Self> {
         for (key, val) in headers.iter() {
             let header_name = key
-                .parse::<HeaderName>()
-                .map_err(|e| Error::from(format!("Failed to parse header name `{key}`: {e}")))?;
-            let header_value = HeaderValue::from_str(val)
-                .map_err(|e| Error::from(format!("Failed to parse header value for `{key}`: {e}")))?;
+                .parse::<HeaderName>()?;
+            let header_value = HeaderValue::from_str(val)?;
             self.headers.insert(header_name, header_value);
         }
         Ok(self)
