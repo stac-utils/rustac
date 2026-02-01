@@ -23,11 +23,11 @@ pub async fn search(
     href: &str,
     mut search: Search,
     max_items: Option<usize>,
-    headers: &Option<String>,
+    headers: &Vec<(String, String)>,
 ) -> Result<ItemCollection> {
     let mut builder = ApiClientBuilder::new(href)?;
-    if let Some(h) = headers {
-        builder = builder.with_headers(h)?;
+    if !headers.is_empty() {
+        builder = builder.with_headers(headers)?;
     }
     let client = builder.build()?;
     if search.limit.is_none() {
@@ -95,14 +95,10 @@ impl ApiClientBuilder {
         })
     }
 
-    pub fn with_headers(mut self, headers_str: &str) -> Result<Self> {
-        for header_pair in headers_str.split(',').filter(|s| !s.is_empty()) {
-            if let Some((key, val)) = header_pair.split_once(':') {
-                self.headers.insert(
-                    key.trim().parse::<HeaderName>()?,
-                    HeaderValue::from_str(val.trim())?,
-                );
-            }
+    pub fn with_headers(mut self, headers: &Vec<(String, String)>) -> Result<Self> {
+        for (key, val) in headers.iter() {
+            self.headers
+                .insert(key.parse::<HeaderName>()?, HeaderValue::from_str(val)?);
         }
         Ok(self)
     }
@@ -633,9 +629,13 @@ mod tests {
             .match_header("x-my-other-header", "othervalue")
             .create_async()
             .await;
+        let headers = vec![
+            ("x-my-header".to_string(), "value".to_string()),
+            ("x-my-other-header".to_string(), "othervalue".to_string()),
+        ];
         let builder = ApiClientBuilder::new(&server.url())
             .unwrap()
-            .with_headers("x-my-header: value,x-my-other-header: othervalue")
+            .with_headers(&headers)
             .unwrap();
         let client = builder.build().unwrap();
         let _ = client.search(Default::default()).await.unwrap();

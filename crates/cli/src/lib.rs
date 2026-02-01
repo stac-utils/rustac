@@ -235,10 +235,10 @@ pub enum Command {
 
         /// Request headers to include in STAC API Search, as a comma-delimited string.
         ///
-        /// Each header should be provided in `KEY: VALUE` format 
-        /// e.g.: `rustac search  --headers "X-Custom: value,X-Custom2: othervalue"`
-        #[arg(long = "headers")]
-        headers: Option<String>,
+        /// Each header should be provided in `KEY=VALUE` format
+        /// e.g.: `rustac search  --header "x-my-header=value" --header "x-my-other-header=this"`
+        #[arg(long = "header")]
+        headers: Vec<String>,
     },
 
     /// Serves a STAC API.
@@ -448,7 +448,12 @@ impl Rustac {
                     }
                     SearchImplementation::Duckdb => stac_duckdb::search(href, search, *max_items)?,
                     SearchImplementation::Api => {
-                        stac_io::api::search(href, search, *max_items, headers).await?
+                        let h: Vec<(String, String)> = headers
+                            .iter()
+                            .filter_map(|s| s.split_once("="))
+                            .map(|(k, v)| (k.to_string(), v.to_string()))
+                            .collect();
+                        stac_io::api::search(href, search, *max_items, &h).await?
                     }
                 };
                 self.put(
