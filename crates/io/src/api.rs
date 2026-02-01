@@ -4,7 +4,7 @@ use crate::{Error, Result};
 use async_stream::try_stream;
 use futures::{Stream, StreamExt, pin_mut};
 use http::header::{HeaderName, USER_AGENT};
-use reqwest::{ClientBuilder, IntoUrl, Method, StatusCode, header::HeaderMap};
+use reqwest::{ClientBuilder, IntoUrl, Method, StatusCode, header::HeaderMap, header::HeaderValue};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 use stac::api::{GetItems, Item, ItemCollection, Items, Search, UrlBuilder};
@@ -89,25 +89,18 @@ impl Client {
             USER_AGENT,
             format!("rustac/{}", env!("CARGO_PKG_VERSION")).parse()?,
         );
-        match req_headers {
-            Some(h) => {
-                let map: Map<String, Value> = h
-                    .split(",")
-                    .map(|s| {
-                        let mut pair = s.splitn(2,": ");
-                        let key = pair.next().unwrap_or("").trim().to_string();
-                        let val = pair.next().unwrap_or("").trim().to_string();
-                        (key, Value::String(val))
-                    })
-                .collect();
-                println!("Found request headers {:?}", map);
-                for (key, val) in map.into_iter() {
-                    let header_name: HeaderName = key.parse()?;
-                    let _ = headers.insert(header_name, val.to_string().parse()?);
+
+        if let Some(h) = req_headers {
+            for key_val_frag in h.split(",").filter(|s| !s.is_empty()) {
+                if let Some((key, val)) = key_val_frag.split_once(":") {
+                    let _ = headers.insert(
+                        key.trim().parse::<HeaderName>()?,
+                        HeaderValue::from_str(val.trim())?,
+                    );
                 }
             }
-            None => {}
         }
+
         let client = ClientBuilder::new().default_headers(headers).build()?;
         Client::with_client(client, url)
     }
