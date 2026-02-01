@@ -450,9 +450,17 @@ impl Rustac {
                     SearchImplementation::Api => {
                         let h: Vec<(String, String)> = headers
                             .iter()
-                            .filter_map(|s| s.split_once("="))
-                            .map(|(k, v)| (k.to_string(), v.to_string()))
-                            .collect();
+                            .map(|s| {
+                                s.split_once('=')
+                                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                                    .ok_or_else(|| {
+                                        anyhow!(
+                                            "invalid header '{}', expected format KEY=VALUE",
+                                            s
+                                        )
+                                    })
+                            })
+                            .collect::<Result<Vec<_>>>()?;
                         stac_io::api::search(href, search, *max_items, &h).await?
                     }
                 };
