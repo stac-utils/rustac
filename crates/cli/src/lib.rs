@@ -233,12 +233,17 @@ pub enum Command {
         #[arg(long = "limit")]
         limit: Option<String>,
 
-        /// Request headers to include in STAC API Search, as a comma-delimited string.
+        /// Request headers to include in STAC API Search.
         ///
-        /// Each header should be provided in `KEY=VALUE` format
-        /// e.g.: `rustac search  --header "x-my-header=value" --header "x-my-other-header=this"`
-        #[arg(long = "header")]
-        headers: Vec<String>,
+        /// Headers should be provided in `KEY=VALUE` format. Can be specified multiple
+        /// times or as a comma-delimited string.
+        /// e.g.: `rustac search --header "x-my-header=value" --header "x-my-other-header=this"`
+        #[arg(
+            long = "header",
+            value_delimiter = ',',
+            value_parser = |s: &str| KeyValue::from_str(s).map(|kv| (kv.0, kv.1))
+        )]
+        headers: Vec<(String, String)>,
     },
 
     /// Serves a STAC API.
@@ -448,20 +453,7 @@ impl Rustac {
                     }
                     SearchImplementation::Duckdb => stac_duckdb::search(href, search, *max_items)?,
                     SearchImplementation::Api => {
-                        let h: Vec<(String, String)> = headers
-                            .iter()
-                            .map(|s| {
-                                s.split_once('=')
-                                    .map(|(k, v)| (k.to_string(), v.to_string()))
-                                    .ok_or_else(|| {
-                                        anyhow!(
-                                            "invalid header '{}', expected format KEY=VALUE",
-                                            s
-                                        )
-                                    })
-                            })
-                            .collect::<Result<Vec<_>>>()?;
-                        stac_io::api::search(href, search, *max_items, &h).await?
+                        stac_io::api::search(href, search, *max_items, &headers).await?
                     }
                 };
                 self.put(
