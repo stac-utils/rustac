@@ -233,9 +233,10 @@ pub enum Command {
         #[arg(long = "limit")]
         limit: Option<String>,
 
-        /// HTTP headers to include in requests.
+        /// Request headers to include in STAC API Search, as a comma-delimited string.
         ///
-        /// Headers should be provided in `KEY: VALUE` format, e.g.: `rustac search --header "Authorization: Bearer token" --header "X-Custom: value"`
+        /// Each header should be provided in `KEY: VALUE` format 
+        /// e.g.: `rustac search  --headers "X-Custom: value,X-Custom2: othervalue"`
         #[arg(long = "headers")]
         headers: Option<String>,
     },
