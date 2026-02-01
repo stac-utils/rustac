@@ -25,7 +25,11 @@ pub async fn search(
     max_items: Option<usize>,
     headers: &Option<String>,
 ) -> Result<ItemCollection> {
-    let client = Client::new(href, headers)?;
+    let mut builder = ApiClientBuilder::new(href)?;
+    if let Some(h) = headers {
+        builder = builder.with_headers(h)?;
+    }
+    let client = builder.build()?;
     if search.limit.is_none() {
         if let Some(max_items) = max_items {
             search.limit = Some(max_items.try_into()?);
@@ -73,6 +77,42 @@ pub struct BlockingIterator {
     stream: Pin<Box<dyn Stream<Item = Result<Item>>>>,
 }
 
+pub struct ApiClientBuilder {
+    url: String,
+    headers: HeaderMap,
+}
+
+impl ApiClientBuilder {
+    pub fn new(url: &str) -> Result<Self> {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            USER_AGENT,
+            format!("rustac/{}", env!("CARGO_PKG_VERSION")).parse()?,
+        );
+        Ok(Self {
+            url: url.to_string(),
+            headers,
+        })
+    }
+
+    pub fn with_headers(mut self, headers_str: &str) -> Result<Self> {
+        for header_pair in headers_str.split(',').filter(|s| !s.is_empty()) {
+            if let Some((key, val)) = header_pair.split_once(':') {
+                self.headers.insert(
+                    key.trim().parse::<HeaderName>()?,
+                    HeaderValue::from_str(val.trim())?,
+                );
+            }
+        }
+        Ok(self)
+    }
+
+    pub fn build(self) -> Result<Client> {
+        let client = ClientBuilder::new().default_headers(self.headers).build()?;
+        Client::with_client(client, &self.url)
+    }
+}
+
 impl Client {
     /// Creates a new API client.
     ///
@@ -82,27 +122,8 @@ impl Client {
     /// # use stac_io::api::Client;
     /// let client = Client::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
     /// ```
-    pub fn new(url: &str, req_headers: &Option<String>) -> Result<Client> {
-        // TODO support HATEOS (aka look up the urls from the root catalog)
-        let mut headers = HeaderMap::new();
-        let _ = headers.insert(
-            USER_AGENT,
-            format!("rustac/{}", env!("CARGO_PKG_VERSION")).parse()?,
-        );
-
-        if let Some(h) = req_headers {
-            for key_val_frag in h.split(",").filter(|s| !s.is_empty()) {
-                if let Some((key, val)) = key_val_frag.split_once(":") {
-                    let _ = headers.insert(
-                        key.trim().parse::<HeaderName>()?,
-                        HeaderValue::from_str(val.trim())?,
-                    );
-                }
-            }
-        }
-
-        let client = ClientBuilder::new().default_headers(headers).build()?;
-        Client::with_client(client, url)
+    pub fn new(url: &str) -> Result<Client> {
+        ApiClientBuilder::new(url)?.build()
     }
 
     /// Creates a new API client with the given [Client].
@@ -308,8 +329,8 @@ impl BlockingClient {
     ///
     /// let client = BlockingClient::new("https://planetarycomputer.microsoft.com/api/stac/vi").unwrap();
     /// ```
-    pub fn new(url: &str, request_headers: &Option<String>) -> Result<BlockingClient> {
-        Client::new(url, request_headers).map(Self)
+    pub fn new(url: &str) -> Result<BlockingClient> {
+        Client::new(url).map(Self)
     }
 
     /// Searches an API, returning an iterable of items.
@@ -421,6 +442,8 @@ fn not_found_to_none<T>(result: Result<T>) -> Result<Option<T>> {
 
 #[cfg(test)]
 mod tests {
+    use crate::api::ApiClientBuilder;
+
     use super::Client;
     use futures::StreamExt;
     use mockito::{Matcher, Server};
@@ -440,8 +463,7 @@ mod tests {
             .create_async()
             .await;
 
-        let headers = None;
-        let client = Client::new(&server.url(), &headers).unwrap();
+        let client = Client::new(&server.url()).unwrap();
         assert!(
             client
                 .collection("not-a-collection")
@@ -482,8 +504,7 @@ mod tests {
             .create_async()
             .await;
 
-        let headers = None;
-        let client = Client::new(&server.url(), &headers).unwrap();
+        let client = Client::new(&server.url()).unwrap();
         let mut search = Search {
             collections: vec!["sentinel-2-l2a".to_string()],
             ..Default::default()
@@ -530,8 +551,7 @@ mod tests {
             .create_async()
             .await;
 
-        let headers = None;
-        let client = Client::new(&server.url(), &headers).unwrap();
+        let client = Client::new(&server.url()).unwrap();
         let items = Items {
             limit: Some(1),
             ..Default::default()
@@ -572,8 +592,7 @@ mod tests {
             .create_async()
             .await;
 
-        let headers = None;
-        let client = Client::new(&server.url(), &headers).unwrap();
+        let client = Client::new(&server.url()).unwrap();
         let items = Items {
             limit: Some(1),
             ..Default::default()
@@ -601,8 +620,24 @@ mod tests {
             )
             .create_async()
             .await;
-        let headers = None;
-        let client = Client::new(&server.url(), &headers).unwrap();
+        let client = Client::new(&server.url()).unwrap();
+        let _ = client.search(Default::default()).await.unwrap();
+    }
+    #[tokio::test]
+    async fn custom_header() {
+        let mut server = Server::new_async().await;
+        let _ = server
+            .mock("POST", "/search")
+            .with_body_from_file("mocks/items-page-1.json")
+            .match_header("x-my-header", "value")
+            .match_header("x-my-other-header", "othervalue")
+            .create_async()
+            .await;
+        let builder = ApiClientBuilder::new(&server.url())
+            .unwrap()
+            .with_headers("x-my-header: value,x-my-other-header: othervalue")
+            .unwrap();
+        let client = builder.build().unwrap();
         let _ = client.search(Default::default()).await.unwrap();
     }
 }
