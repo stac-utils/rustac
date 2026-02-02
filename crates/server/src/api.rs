@@ -318,10 +318,10 @@ impl<B: Backend> Api<B> {
     /// ```
     pub async fn search(&self, mut search: Search, method: Method) -> Result<ItemCollection> {
         let mut item_collection = self.backend.search(search.clone()).await?;
-        if method == Method::GET {
-            if let Some(filter) = search.filter.take() {
-                search.filter = Some(filter.into_cql2_text()?);
-            }
+        if method == Method::GET
+            && let Some(filter) = search.filter.take()
+        {
+            search.filter = Some(filter.into_cql2_text()?);
         }
         item_collection.set_link(Link::root(self.root.clone()).json());
         let search_url = self.url("/search")?;
@@ -388,16 +388,14 @@ impl<B: Backend> Api<B> {
     fn set_item_links(&self, item: &mut stac::api::Item) -> Result<()> {
         let mut collection_url = None;
         let mut item_link = None;
-        if let Some(item_id) = item.get("id").and_then(|id| id.as_str()) {
-            if let Some(collection_id) = item.get("collection").and_then(|id| id.as_str()) {
-                collection_url = Some(self.url(&format!("/collections/{collection_id}"))?);
-                item_link = Some(serde_json::to_value(
-                    Link::self_(
-                        self.url(&format!("/collections/{collection_id}/items/{item_id}"))?,
-                    )
+        if let Some(item_id) = item.get("id").and_then(|id| id.as_str())
+            && let Some(collection_id) = item.get("collection").and_then(|id| id.as_str())
+        {
+            collection_url = Some(self.url(&format!("/collections/{collection_id}"))?);
+            item_link = Some(serde_json::to_value(
+                Link::self_(self.url(&format!("/collections/{collection_id}/items/{item_id}"))?)
                     .geojson(),
-                )?);
-            }
+            )?);
         }
         if item
             .get("links")

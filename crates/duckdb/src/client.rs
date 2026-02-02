@@ -285,12 +285,11 @@ impl Client {
                 has_end_datetime = true;
             }
 
-            if let Some(fields) = search.fields.as_ref() {
-                if fields.exclude.contains(&column)
-                    || !(fields.include.is_empty() || fields.include.contains(&column))
-                {
-                    continue;
-                }
+            if let Some(fields) = search.fields.as_ref()
+                && (fields.exclude.contains(&column)
+                    || !(fields.include.is_empty() || fields.include.contains(&column)))
+            {
+                continue;
             }
 
             if column == "geometry" {

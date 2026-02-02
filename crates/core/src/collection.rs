@@ -360,15 +360,15 @@ impl TemporalExtent {
         if self.interval.is_empty() {
             self.interval.push([start, end]);
         } else {
-            if let Some(start) = start {
-                if self.interval[0][0].map(|dt| dt > start).unwrap_or(true) {
-                    self.interval[0][0] = Some(start);
-                }
+            if let Some(start) = start
+                && self.interval[0][0].map(|dt| dt > start).unwrap_or(true)
+            {
+                self.interval[0][0] = Some(start);
             }
-            if let Some(end) = end {
-                if self.interval[0][1].map(|dt| dt < end).unwrap_or(true) {
-                    self.interval[0][1] = Some(end);
-                }
+            if let Some(end) = end
+                && self.interval[0][1].map(|dt| dt < end).unwrap_or(true)
+            {
+                self.interval[0][1] = Some(end);
             }
         }
     }
