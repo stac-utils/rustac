@@ -234,6 +234,7 @@ impl Client {
             log::debug!("duckdb sql: {sql}");
             let mut statement = self.prepare(&sql)?;
             statement.execute(duckdb::params_from_iter(params))?;
+            log::debug!("query complete");
             Ok(SearchArrowBatchIter::new(
                 statement,
                 self.convert_wkb,
