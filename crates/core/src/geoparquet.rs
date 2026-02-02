@@ -456,12 +456,13 @@ impl WriterState {
     /// assert_eq!(metadata[1].key, "stac-geoparquet");
     /// ```
     pub fn into_metadata(self) -> Result<Vec<KeyValue>> {
-        let mut metadata = Vec::with_capacity(2);
-        metadata.push(self.encoder.into_keyvalue()?);
-        metadata.push(KeyValue::new(
-            METADATA_KEY.to_string(),
-            serde_json::to_string(&self.metadata)?,
-        ));
+        let metadata = vec![
+            self.encoder.into_keyvalue()?,
+            KeyValue::new(
+                METADATA_KEY.to_string(),
+                serde_json::to_string(&self.metadata)?,
+            ),
+        ];
         Ok(metadata)
     }
 }

@@ -30,7 +30,7 @@ homepage = "https://stac-utils.github.io/rustac"
 repository = "https://github.com/stac-utils/rustac"
 license = "MIT OR Apache-2.0"
 categories = ["science", "data-structures"]
-rust-version = "1.85"
+rust-version = "1.88"
 
 [workspace.dependencies]
 anyhow = "1.0"

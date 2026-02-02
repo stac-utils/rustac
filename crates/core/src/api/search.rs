@@ -239,7 +239,7 @@ impl Search {
                 #[cfg(feature = "geo")]
                 {
                     let intersects: geo::Geometry = intersects.try_into().map_err(Box::new)?;
-                    item.intersects(&intersects).map_err(Error::from)
+                    item.intersects(&intersects)
                 }
                 #[cfg(not(feature = "geo"))]
                 {
@@ -363,26 +363,25 @@ fn expand_datetime_to_start(s: &str) -> Result<DateTime<FixedOffset>> {
     let midnight = NaiveTime::from_hms_opt(0, 0, 0).expect("midnight (0, 0, 0) is always valid");
 
     // Case 1: Year only (e.g., "2023") -> 2023-01-01T00:00:00Z
-    if trimmed.len() == 4 && trimmed.chars().all(|c| c.is_numeric()) {
-        if let Ok(year) = trimmed.parse::<i32>() {
-            let date = NaiveDate::from_ymd_opt(year, 1, 1).ok_or(Error::InvalidYear(year))?;
-            let datetime = date.and_time(midnight);
-            return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
-        }
+    if trimmed.len() == 4
+        && trimmed.chars().all(|c| c.is_numeric())
+        && let Ok(year) = trimmed.parse::<i32>()
+    {
+        let date = NaiveDate::from_ymd_opt(year, 1, 1).ok_or(Error::InvalidYear(year))?;
+        let datetime = date.and_time(midnight);
+        return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
     }
 
     // Case 2: Year-Month (e.g., "2023-01") -> 2023-01-01T00:00:00Z
-    if trimmed.len() == 7 && trimmed.chars().nth(4) == Some('-') {
-        if let Some((year_str, month_str)) = trimmed.split_once('-') {
-            if let (Ok(year), Ok(month)) = (year_str.parse::<i32>(), month_str.parse::<u32>()) {
-                if (1..=12).contains(&month) {
-                    let date =
-                        NaiveDate::from_ymd_opt(year, month, 1).ok_or(Error::InvalidYear(year))?;
-                    let datetime = date.and_time(midnight);
-                    return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
-                }
-            }
-        }
+    if trimmed.len() == 7
+        && trimmed.chars().nth(4) == Some('-')
+        && let Some((year_str, month_str)) = trimmed.split_once('-')
+        && let (Ok(year), Ok(month)) = (year_str.parse::<i32>(), month_str.parse::<u32>())
+        && (1..=12).contains(&month)
+    {
+        let date = NaiveDate::from_ymd_opt(year, month, 1).ok_or(Error::InvalidYear(year))?;
+        let datetime = date.and_time(midnight);
+        return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
     }
 
     // Case 3: ISO 8601 date (e.g., "2023-06-15") -> 2023-06-15T00:00:00Z
@@ -400,34 +399,34 @@ fn expand_datetime_to_end(s: &str) -> Result<DateTime<FixedOffset>> {
     let end_of_day = NaiveTime::from_hms_opt(23, 59, 59).expect("23:59:59 is always valid");
 
     // Case 1: Year only (e.g., "2023") -> 2023-12-31T23:59:59Z
-    if trimmed.len() == 4 && trimmed.chars().all(|c| c.is_numeric()) {
-        if let Ok(year) = trimmed.parse::<i32>() {
-            let date = NaiveDate::from_ymd_opt(year, 12, 31).ok_or(Error::InvalidYear(year))?;
-            let datetime = date.and_time(end_of_day);
-            return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
-        }
+    if trimmed.len() == 4
+        && trimmed.chars().all(|c| c.is_numeric())
+        && let Ok(year) = trimmed.parse::<i32>()
+    {
+        let date = NaiveDate::from_ymd_opt(year, 12, 31).ok_or(Error::InvalidYear(year))?;
+        let datetime = date.and_time(end_of_day);
+        return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
     }
 
     // Case 2: Year-Month (e.g., "2023-01") -> 2023-01-31T23:59:59Z (last day of month)
-    if trimmed.len() == 7 && trimmed.chars().nth(4) == Some('-') {
-        if let Some((year_str, month_str)) = trimmed.split_once('-') {
-            if let (Ok(year), Ok(month)) = (year_str.parse::<i32>(), month_str.parse::<u32>()) {
-                if (1..=12).contains(&month) {
-                    // Get the last day of the month by going to first day of next month, then back one day
-                    let last_day = if month == 12 {
-                        NaiveDate::from_ymd_opt(year + 1, 1, 1)
-                    } else {
-                        NaiveDate::from_ymd_opt(year, month + 1, 1)
-                    }
-                    .ok_or(Error::InvalidYear(year))?
-                    .pred_opt()
-                    .ok_or(Error::InvalidYear(year))?;
-
-                    let datetime = last_day.and_time(end_of_day);
-                    return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
-                }
-            }
+    if trimmed.len() == 7
+        && trimmed.chars().nth(4) == Some('-')
+        && let Some((year_str, month_str)) = trimmed.split_once('-')
+        && let (Ok(year), Ok(month)) = (year_str.parse::<i32>(), month_str.parse::<u32>())
+        && (1..=12).contains(&month)
+    {
+        // Get the last day of the month by going to first day of next month, then back one day
+        let last_day = if month == 12 {
+            NaiveDate::from_ymd_opt(year + 1, 1, 1)
+        } else {
+            NaiveDate::from_ymd_opt(year, month + 1, 1)
         }
+        .ok_or(Error::InvalidYear(year))?
+        .pred_opt()
+        .ok_or(Error::InvalidYear(year))?;
+
+        let datetime = last_day.and_time(end_of_day);
+        return Ok(Utc.from_utc_datetime(&datetime).fixed_offset());
     }
 
     // Case 3: ISO 8601 date (e.g., "2023-06-15") -> 2023-06-15T23:59:59Z

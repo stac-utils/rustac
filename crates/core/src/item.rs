@@ -528,19 +528,17 @@ impl Item {
     ) -> Result<bool> {
         let (item_start, item_end) = self.datetimes();
         let mut intersects = true;
-        if let Some(start) = start {
-            if let Some(item_end) = item_end {
-                if item_end < start {
-                    intersects = false;
-                }
-            }
+        if let Some(start) = start
+            && let Some(item_end) = item_end
+            && item_end < start
+        {
+            intersects = false;
         }
-        if let Some(end) = end {
-            if let Some(item_start) = item_start {
-                if item_start > end {
-                    intersects = false;
-                }
-            }
+        if let Some(end) = end
+            && let Some(item_start) = item_start
+            && item_start > end
+        {
+            intersects = false;
         }
         Ok(intersects)
     }

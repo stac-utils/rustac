@@ -234,6 +234,7 @@ impl Client {
             log::debug!("duckdb sql: {sql}");
             let mut statement = self.prepare(&sql)?;
             statement.execute(duckdb::params_from_iter(params))?;
+            log::debug!("query complete");
             Ok(SearchArrowBatchIter::new(
                 statement,
                 self.convert_wkb,
@@ -284,12 +285,11 @@ impl Client {
                 has_end_datetime = true;
             }
 
-            if let Some(fields) = search.fields.as_ref() {
-                if fields.exclude.contains(&column)
-                    || !(fields.include.is_empty() || fields.include.contains(&column))
-                {
-                    continue;
-                }
+            if let Some(fields) = search.fields.as_ref()
+                && (fields.exclude.contains(&column)
+                    || !(fields.include.is_empty() || fields.include.contains(&column)))
+            {
+                continue;
             }
 
             if column == "geometry" {

@@ -166,17 +166,17 @@ fn migrate_bands(asset: &mut Map<String, Value>) -> Result<()> {
         }
     }
     for (key, count) in counts {
-        if let Some((value_as_string, &count)) = count.iter().max_by_key(|&(_, &count)| count) {
-            if count > 1 {
-                let value = values
-                    .get(value_as_string)
-                    .expect("every value should be in the lookup hash")
-                    .clone();
-                for band in &mut bands {
-                    if band.get(&key).map(|v| v == &value).unwrap_or_default() {
-                        let value = band.remove(&key).unwrap();
-                        let _ = asset.insert(key.clone(), value);
-                    }
+        if let Some((value_as_string, &count)) = count.iter().max_by_key(|&(_, &count)| count)
+            && count > 1
+        {
+            let value = values
+                .get(value_as_string)
+                .expect("every value should be in the lookup hash")
+                .clone();
+            for band in &mut bands {
+                if band.get(&key).map(|v| v == &value).unwrap_or_default() {
+                    let value = band.remove(&key).unwrap();
+                    let _ = asset.insert(key.clone(), value);
                 }
             }
         }
@@ -193,20 +193,16 @@ fn migrate_bands(asset: &mut Map<String, Value>) -> Result<()> {
 fn migrate_links(object: &mut Map<String, Value>) {
     if let Some(links) = object.get_mut("links").and_then(|v| v.as_array_mut()) {
         for link in links {
-            if let Some(link) = link.as_object_mut() {
-                if link
+            if let Some(link) = link.as_object_mut()
+                && link
                     .get("rel")
                     .and_then(|v| v.as_str())
                     .map(|s| s == "self")
                     .unwrap_or_default()
-                {
-                    if let Some(href) = link.get("href").and_then(|v| v.as_str()) {
-                        if href.starts_with('/') {
-                            let _ =
-                                link.insert("href".to_string(), format!("file://{href}").into());
-                        }
-                    }
-                }
+                && let Some(href) = link.get("href").and_then(|v| v.as_str())
+                && href.starts_with('/')
+            {
+                let _ = link.insert("href".to_string(), format!("file://{href}").into());
             }
         }
     }

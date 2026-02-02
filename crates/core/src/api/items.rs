@@ -114,10 +114,10 @@ impl Items {
     /// let items = Items::default().valid().unwrap();
     /// ```
     pub fn valid(self) -> Result<Items> {
-        if let Some(bbox) = self.bbox.as_ref() {
-            if !bbox.is_valid() {
-                return Err(Error::InvalidBbox((*bbox).into(), "invalid bbox"));
-            }
+        if let Some(bbox) = self.bbox.as_ref()
+            && !bbox.is_valid()
+        {
+            return Err(Error::InvalidBbox((*bbox).into(), "invalid bbox"));
         }
         if let Some(datetime) = self.datetime.as_deref() {
             if let Some((start, end)) = datetime.split_once('/') {
@@ -126,10 +126,10 @@ impl Items {
                     maybe_parse_from_rfc3339(end)?,
                 );
                 if let Some(start) = start {
-                    if let Some(end) = end {
-                        if end < start {
-                            return Err(Error::StartIsAfterEnd(start, end));
-                        }
+                    if let Some(end) = end
+                        && end < start
+                    {
+                        return Err(Error::StartIsAfterEnd(start, end));
                     }
                 } else if end.is_none() {
                     return Err(Error::EmptyDatetimeInterval);
@@ -186,7 +186,7 @@ impl Items {
             #[cfg(feature = "geo")]
             {
                 let bbox: geo::Rect = (*bbox).into();
-                item.intersects(&bbox).map_err(Error::from)
+                item.intersects(&bbox)
             }
             #[cfg(not(feature = "geo"))]
             {
@@ -215,7 +215,7 @@ impl Items {
     /// ```
     pub fn datetime_matches(&self, item: &Item) -> Result<bool> {
         if let Some(datetime) = self.datetime.as_ref() {
-            item.intersects_datetime_str(datetime).map_err(Error::from)
+            item.intersects_datetime_str(datetime)
         } else {
             Ok(true)
         }
