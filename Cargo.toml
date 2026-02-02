@@ -33,6 +33,8 @@ categories = ["science", "data-structures"]
 rust-version = "1.85"
 
 [workspace.dependencies]
+# Pinned to <0.5 because 0.5+ requires Rust 1.88+ (uses let chains from edition 2024)
+ar_archive_writer = ">=0.1.0, <0.5"
 anyhow = "1.0"
 arrow-array = "56.0.0"
 arrow-cast = "56.0.0"
