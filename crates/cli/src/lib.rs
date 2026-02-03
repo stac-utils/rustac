@@ -471,7 +471,7 @@ impl Rustac {
                 load_collection_items,
                 create_collections,
             } => {
-                let bind = bind.as_deref().unwrap_or(&addr);
+                let bind = bind.as_deref().unwrap_or(addr);
                 if matches!(use_duckdb, Some(true))
                     || (use_duckdb.is_none() && hrefs.len() == 1 && hrefs[0].ends_with("parquet"))
                 {

@@ -30,10 +30,10 @@ pub async fn search(
         builder = builder.with_headers(headers)?;
     }
     let client = builder.build()?;
-    if search.limit.is_none() {
-        if let Some(max_items) = max_items {
-            search.limit = Some(max_items.try_into()?);
-        }
+    if search.limit.is_none()
+        && let Some(max_items) = max_items 
+    {
+        search.limit = Some(max_items.try_into()?);
     }
     let stream = client.search(search).await?;
     let mut items = if let Some(max_items) = max_items {
@@ -48,10 +48,10 @@ pub async fn search(
     while let Some(item) = stream.next().await {
         let item = item?;
         items.push(item);
-        if let Some(max_items) = max_items {
-            if items.len() >= max_items {
-                break;
-            }
+        if let Some(max_items) = max_items
+            && items.len() >= max_items
+        {
+            break;
         }
     }
     let item_collection = ItemCollection::new(items)?;
@@ -466,14 +466,13 @@ fn stream_pages(
 
 fn not_found_to_none<T>(result: Result<T>) -> Result<Option<T>> {
     let mut result = result.map(Some);
-    if let Err(Error::Reqwest(ref err)) = result {
-        if err
+    if let Err(Error::Reqwest(ref err)) = result
+        && err
             .status()
             .map(|s| s == StatusCode::NOT_FOUND)
             .unwrap_or_default()
-        {
-            result = Ok(None);
-        }
+    {
+        result = Ok(None);
     }
     result
 }

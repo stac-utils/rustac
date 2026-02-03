@@ -30,7 +30,7 @@ homepage = "https://stac-utils.github.io/rustac"
 repository = "https://github.com/stac-utils/rustac"
 license = "MIT OR Apache-2.0"
 categories = ["science", "data-structures"]
-rust-version = "1.85"
+rust-version = "1.88"
 
 [workspace.dependencies]
 anyhow = "1.0"
@@ -63,7 +63,7 @@ geoarrow-array = "0.6.0"
 geoparquet = "0.6.0"
 geoarrow-schema = "0.6.0"
 geojson = "0.24.1"
-getrandom = { version = "0.3.3", features = ["wasm_js"] }
+getrandom = { version = "0.4.0", features = ["wasm_js"] }
 http = "1.1"
 indexmap = { version = "2.10.0", features = ["serde"] }
 jsonschema = { version = "0.40.0", default-features = false, features = [
