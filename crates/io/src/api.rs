@@ -21,6 +21,15 @@ const DEFAULT_CHANNEL_BUFFER: usize = 4;
 /// Searches a STAC API.
 pub async fn search(
     href: &str,
+    search: Search,
+    max_items: Option<usize>,
+) -> Result<ItemCollection> {
+    search_with_headers(href, search, max_items, &[]).await
+}
+
+/// Searches a STAC API with the provided headers.
+pub async fn search_with_headers(
+    href: &str,
     mut search: Search,
     max_items: Option<usize>,
     headers: &[(String, String)],
