@@ -453,7 +453,8 @@ impl Rustac {
                     }
                     SearchImplementation::Duckdb => stac_duckdb::search(href, search, *max_items)?,
                     SearchImplementation::Api => {
-                        stac_io::api::search(href, search, *max_items, &headers).await?
+                        stac_io::api::search_with_headers(href, search, *max_items, &headers)
+                            .await?
                     }
                 };
                 self.put(
