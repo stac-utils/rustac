@@ -31,7 +31,7 @@ pub async fn search(
     }
     let client = builder.build()?;
     if search.limit.is_none()
-        && let Some(max_items) = max_items 
+        && let Some(max_items) = max_items
     {
         search.limit = Some(max_items.try_into()?);
     }
