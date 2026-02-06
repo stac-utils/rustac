@@ -75,8 +75,10 @@
 )]
 #![warn(missing_docs)]
 
+mod client;
 mod page;
 
+pub use client::Client;
 pub use page::Page;
 use serde::{Serialize, de::DeserializeOwned};
 use stac::api::{ItemCollection, Search};

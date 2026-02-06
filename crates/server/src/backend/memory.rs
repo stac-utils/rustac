@@ -1,6 +1,6 @@
 use crate::{Backend, DEFAULT_LIMIT, Error, Result};
 use serde_json::Map;
-use stac::api::{ItemCollection, Items, Search};
+use stac::api::{CollectionSearchClient, ItemCollection, Search, SearchClient, TransactionClient};
 use stac::{Collection, Item};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -33,67 +33,8 @@ impl MemoryBackend {
     }
 }
 
-impl Backend for MemoryBackend {
-    fn has_item_search(&self) -> bool {
-        true
-    }
-
-    fn has_filter(&self) -> bool {
-        false
-    }
-
-    async fn collections(&self) -> Result<Vec<Collection>> {
-        let collections = self.collections.read().unwrap();
-        Ok(collections.values().cloned().collect())
-    }
-
-    async fn collection(&self, id: &str) -> Result<Option<Collection>> {
-        let collections = self.collections.read().unwrap();
-        Ok(collections.get(id).cloned())
-    }
-
-    async fn add_collection(&mut self, collection: Collection) -> Result<()> {
-        let mut collections = self.collections.write().unwrap();
-        let _ = collections.insert(collection.id.clone(), collection);
-        Ok(())
-    }
-
-    async fn add_item(&mut self, item: Item) -> Result<()> {
-        if let Some(collection_id) = item.collection.clone() {
-            if self.collection(&collection_id).await?.is_none() {
-                Err(Error::MemoryBackend(format!(
-                    "no collection with id='{collection_id}'",
-                )))
-            } else {
-                let mut items = self.items.write().unwrap();
-                items.entry(collection_id).or_default().push(item);
-                Ok(())
-            }
-        } else {
-            Err(Error::MemoryBackend(format!(
-                "collection not set on item: {}",
-                item.id
-            )))
-        }
-    }
-
-    async fn items(&self, collection_id: &str, items: Items) -> Result<Option<ItemCollection>> {
-        {
-            let collections = self.collections.read().unwrap();
-            if !collections.contains_key(collection_id) {
-                return Ok(None);
-            }
-        };
-        let search = items.search_collection(collection_id);
-        self.search(search).await.map(Some)
-    }
-
-    async fn item(&self, collection_id: &str, item_id: &str) -> Result<Option<Item>> {
-        let items = self.items.read().unwrap();
-        Ok(items
-            .get(collection_id)
-            .and_then(|items| items.iter().find(|item| item.id == item_id).cloned()))
-    }
+impl SearchClient for MemoryBackend {
+    type Error = Error;
 
     async fn search(&self, mut search: Search) -> Result<ItemCollection> {
         let items = self.items.read().unwrap();
@@ -138,6 +79,69 @@ impl Backend for MemoryBackend {
             item_collection.prev = Some(prev);
         }
         Ok(item_collection)
+    }
+
+    async fn item(&self, collection_id: &str, item_id: &str) -> Result<Option<Item>> {
+        let items = self.items.read().unwrap();
+        Ok(items
+            .get(collection_id)
+            .and_then(|items| items.iter().find(|item| item.id == item_id).cloned()))
+    }
+}
+
+impl CollectionSearchClient for MemoryBackend {
+    type Error = Error;
+
+    async fn collections(&self) -> Result<Vec<Collection>> {
+        let collections = self.collections.read().unwrap();
+        Ok(collections.values().cloned().collect())
+    }
+
+    async fn collection(&self, id: &str) -> Result<Option<Collection>> {
+        let collections = self.collections.read().unwrap();
+        Ok(collections.get(id).cloned())
+    }
+}
+
+impl TransactionClient for MemoryBackend {
+    type Error = Error;
+
+    async fn add_collection(&mut self, collection: Collection) -> Result<()> {
+        let mut collections = self.collections.write().unwrap();
+        let _ = collections.insert(collection.id.clone(), collection);
+        Ok(())
+    }
+
+    async fn add_item(&mut self, item: Item) -> Result<()> {
+        if let Some(collection_id) = item.collection.clone() {
+            if CollectionSearchClient::collection(self, &collection_id)
+                .await?
+                .is_none()
+            {
+                Err(Error::MemoryBackend(format!(
+                    "no collection with id='{collection_id}'",
+                )))
+            } else {
+                let mut items = self.items.write().unwrap();
+                items.entry(collection_id).or_default().push(item);
+                Ok(())
+            }
+        } else {
+            Err(Error::MemoryBackend(format!(
+                "collection not set on item: {}",
+                item.id
+            )))
+        }
+    }
+}
+
+impl Backend for MemoryBackend {
+    fn has_item_search(&self) -> bool {
+        true
+    }
+
+    fn has_filter(&self) -> bool {
+        false
     }
 }
 

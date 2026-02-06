@@ -4,7 +4,7 @@ use bb8_postgres::PostgresConnectionManager;
 use pgstac::Pgstac;
 use rustls::{ClientConfig, RootCertStore};
 use serde_json::Map;
-use stac::api::{ItemCollection, Items, Search};
+use stac::api::{CollectionSearchClient, ItemCollection, Search, SearchClient, TransactionClient};
 use stac::{Collection, Item};
 use tokio_postgres::{
     Socket,
@@ -71,69 +71,14 @@ where
     }
 }
 
-impl<Tls> Backend for PgstacBackend<Tls>
+impl<Tls> SearchClient for PgstacBackend<Tls>
 where
     Tls: MakeTlsConnect<Socket> + Clone + Send + Sync + 'static,
     <Tls as MakeTlsConnect<Socket>>::Stream: Send + Sync,
     <Tls as MakeTlsConnect<Socket>>::TlsConnect: Send,
     <<Tls as MakeTlsConnect<Socket>>::TlsConnect as TlsConnect<Socket>>::Future: Send,
 {
-    fn has_item_search(&self) -> bool {
-        true
-    }
-
-    fn has_filter(&self) -> bool {
-        true
-    }
-
-    async fn add_collection(&mut self, collection: Collection) -> Result<()> {
-        let client = self.pool.get().await?;
-        client.add_collection(collection).await.map_err(Error::from)
-    }
-
-    async fn collection(&self, id: &str) -> Result<Option<Collection>> {
-        let client = self.pool.get().await?;
-        let value = client.collection(id).await?;
-        value
-            .map(serde_json::from_value)
-            .transpose()
-            .map_err(Error::from)
-    }
-
-    async fn collections(&self) -> Result<Vec<Collection>> {
-        let client = self.pool.get().await?;
-        let values = client.collections().await?;
-        values
-            .into_iter()
-            .map(|v| serde_json::from_value(v).map_err(Error::from))
-            .collect()
-    }
-
-    async fn add_item(&mut self, item: Item) -> Result<()> {
-        let client = self.pool.get().await?;
-        client.add_item(item).await.map_err(Error::from)
-    }
-
-    async fn add_items(&mut self, items: Vec<Item>) -> Result<()> {
-        tracing::debug!("adding {} items using pgstac loading", items.len());
-        let client = self.pool.get().await?;
-        client.add_items(&items).await.map_err(Error::from)
-    }
-
-    async fn items(&self, collection_id: &str, items: Items) -> Result<Option<ItemCollection>> {
-        // TODO should we check for collection existence?
-        let search = items.search_collection(collection_id);
-        self.search(search).await.map(Some)
-    }
-
-    async fn item(&self, collection_id: &str, item_id: &str) -> Result<Option<Item>> {
-        let client = self.pool.get().await?;
-        let value = client.item(item_id, Some(collection_id)).await?;
-        value
-            .map(serde_json::from_value)
-            .transpose()
-            .map_err(Error::from)
-    }
+    type Error = Error;
 
     async fn search(&self, search: Search) -> Result<ItemCollection> {
         let client = self.pool.get().await?;
@@ -153,5 +98,84 @@ where
         }
         item_collection.context = page.context;
         Ok(item_collection)
+    }
+
+    async fn item(&self, collection_id: &str, item_id: &str) -> Result<Option<Item>> {
+        let client = self.pool.get().await?;
+        let value = client.item(item_id, Some(collection_id)).await?;
+        value
+            .map(serde_json::from_value)
+            .transpose()
+            .map_err(Error::from)
+    }
+}
+
+impl<Tls> CollectionSearchClient for PgstacBackend<Tls>
+where
+    Tls: MakeTlsConnect<Socket> + Clone + Send + Sync + 'static,
+    <Tls as MakeTlsConnect<Socket>>::Stream: Send + Sync,
+    <Tls as MakeTlsConnect<Socket>>::TlsConnect: Send,
+    <<Tls as MakeTlsConnect<Socket>>::TlsConnect as TlsConnect<Socket>>::Future: Send,
+{
+    type Error = Error;
+
+    async fn collections(&self) -> Result<Vec<Collection>> {
+        let client = self.pool.get().await?;
+        let values = client.collections().await?;
+        values
+            .into_iter()
+            .map(|v| serde_json::from_value(v).map_err(Error::from))
+            .collect()
+    }
+
+    async fn collection(&self, id: &str) -> Result<Option<Collection>> {
+        let client = self.pool.get().await?;
+        let value = client.collection(id).await?;
+        value
+            .map(serde_json::from_value)
+            .transpose()
+            .map_err(Error::from)
+    }
+}
+
+impl<Tls> TransactionClient for PgstacBackend<Tls>
+where
+    Tls: MakeTlsConnect<Socket> + Clone + Send + Sync + 'static,
+    <Tls as MakeTlsConnect<Socket>>::Stream: Send + Sync,
+    <Tls as MakeTlsConnect<Socket>>::TlsConnect: Send,
+    <<Tls as MakeTlsConnect<Socket>>::TlsConnect as TlsConnect<Socket>>::Future: Send,
+{
+    type Error = Error;
+
+    async fn add_collection(&mut self, collection: Collection) -> Result<()> {
+        let client = self.pool.get().await?;
+        client.add_collection(collection).await.map_err(Error::from)
+    }
+
+    async fn add_item(&mut self, item: Item) -> Result<()> {
+        let client = self.pool.get().await?;
+        client.add_item(item).await.map_err(Error::from)
+    }
+
+    async fn add_items(&mut self, items: Vec<Item>) -> Result<()> {
+        tracing::debug!("adding {} items using pgstac loading", items.len());
+        let client = self.pool.get().await?;
+        client.add_items(&items).await.map_err(Error::from)
+    }
+}
+
+impl<Tls> Backend for PgstacBackend<Tls>
+where
+    Tls: MakeTlsConnect<Socket> + Clone + Send + Sync + 'static,
+    <Tls as MakeTlsConnect<Socket>>::Stream: Send + Sync,
+    <Tls as MakeTlsConnect<Socket>>::TlsConnect: Send,
+    <<Tls as MakeTlsConnect<Socket>>::TlsConnect as TlsConnect<Socket>>::Future: Send,
+{
+    fn has_item_search(&self) -> bool {
+        true
+    }
+
+    fn has_filter(&self) -> bool {
+        true
     }
 }

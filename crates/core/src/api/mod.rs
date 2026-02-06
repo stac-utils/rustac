@@ -34,6 +34,7 @@
 
 #![warn(missing_docs, unused_qualifications)]
 
+mod client;
 mod collections;
 mod conformance;
 mod fields;
@@ -45,6 +46,9 @@ mod search;
 mod sort;
 mod url_builder;
 
+#[cfg(feature = "geoarrow")]
+pub use client::ArrowSearchClient;
+pub use client::{CollectionSearchClient, SearchClient, TransactionClient};
 pub use collections::Collections;
 pub use conformance::{
     COLLECTIONS_URI, CORE_URI, Conformance, FEATURES_URI, FILTER_URIS, GEOJSON_URI,
