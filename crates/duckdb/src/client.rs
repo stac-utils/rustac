@@ -6,9 +6,10 @@ use cql2::{Expr, ToDuckSQL};
 use duckdb::{Connection, Statement, types::Value};
 use geo::BoundingRect;
 use geojson::Geometry;
-use stac::api::{Direction, Search};
+use stac::api::{ArrowSearchClient, CollectionSearchClient, Direction, Search, SearchClient};
 use stac::{Collection, SpatialExtent, TemporalExtent, geoarrow::DATETIME_COLUMNS};
 use std::ops::{Deref, DerefMut};
+use std::sync::Mutex;
 
 /// Default hive partitioning value
 pub const DEFAULT_USE_HIVE_PARTITIONING: bool = false;
@@ -473,6 +474,163 @@ impl From<Connection> for Client {
             union_by_name: DEFAULT_UNION_BY_NAME,
             remove_filename_column: DEFAULT_REMOVE_FILENAME_COLUMN,
         }
+    }
+}
+
+/// A DuckDB client bound to a specific stac-geoparquet href.
+///
+/// This wraps a [`Client`] with a specific href, implementing the
+/// [`ArrowSearchClient`] trait. Because [`duckdb::Connection`] is not
+/// [`Sync`], use [`Mutex<HrefClient>`](std::sync::Mutex) for the async client
+/// traits ([`SearchClient`] and [`CollectionSearchClient`]).
+///
+/// # Examples
+///
+/// ```
+/// use stac::api::ArrowSearchClient;
+/// use stac_duckdb::HrefClient;
+///
+/// let client = HrefClient::new("data/100-sentinel-2-items.parquet").unwrap();
+/// let record_batch_reader = client.search_to_arrow(Default::default()).unwrap();
+/// ```
+#[derive(Debug)]
+pub struct HrefClient {
+    client: Client,
+    href: String,
+}
+
+impl HrefClient {
+    /// Creates a new `HrefClient` for the given href.
+    pub fn new(href: impl ToString) -> Result<HrefClient> {
+        let client = Client::new()?;
+        Ok(HrefClient {
+            client,
+            href: href.to_string(),
+        })
+    }
+
+    /// Creates a new `HrefClient` from an existing [`Client`] and href.
+    pub fn from_client(client: Client, href: impl ToString) -> HrefClient {
+        HrefClient {
+            client,
+            href: href.to_string(),
+        }
+    }
+
+    /// Returns a reference to the underlying [`Client`].
+    pub fn client(&self) -> &Client {
+        &self.client
+    }
+
+    /// Returns a mutable reference to the underlying [`Client`].
+    pub fn client_mut(&mut self) -> &mut Client {
+        &mut self.client
+    }
+
+    /// Returns the href.
+    pub fn href(&self) -> &str {
+        &self.href
+    }
+}
+
+impl ArrowSearchClient for HrefClient {
+    type Error = Error;
+    type RecordBatchStream<'a> = ArrowBatchReader<'a>;
+
+    fn search_to_arrow(&self, search: Search) -> std::result::Result<ArrowBatchReader<'_>, Error> {
+        let iter = self.client.search_to_arrow(&self.href, search)?;
+        Ok(ArrowBatchReader::new(iter))
+    }
+}
+
+/// A thread-safe wrapper around [`HrefClient`] that implements
+/// [`SearchClient`] and [`CollectionSearchClient`].
+///
+/// Use this when you need the async client traits. For [`ArrowSearchClient`],
+/// use [`HrefClient`] directly.
+///
+/// # Examples
+///
+/// ```
+/// use stac::api::SearchClient;
+/// use stac_duckdb::SyncHrefClient;
+///
+/// let client = SyncHrefClient::new("data/100-sentinel-2-items.parquet").unwrap();
+/// # tokio_test::block_on(async {
+/// let item_collection = client.search(Default::default()).await.unwrap();
+/// # })
+/// ```
+#[derive(Debug)]
+pub struct SyncHrefClient {
+    inner: Mutex<HrefClient>,
+}
+
+impl SyncHrefClient {
+    /// Creates a new `SyncHrefClient` for the given href.
+    pub fn new(href: impl ToString) -> Result<SyncHrefClient> {
+        Ok(SyncHrefClient {
+            inner: Mutex::new(HrefClient::new(href)?),
+        })
+    }
+
+    /// Creates a new `SyncHrefClient` from an existing [`Client`] and href.
+    pub fn from_client(client: Client, href: impl ToString) -> SyncHrefClient {
+        SyncHrefClient {
+            inner: Mutex::new(HrefClient::from_client(client, href)),
+        }
+    }
+}
+
+impl SearchClient for SyncHrefClient {
+    type Error = Error;
+
+    async fn search(
+        &self,
+        search: Search,
+    ) -> std::result::Result<stac::api::ItemCollection, Error> {
+        let guard = self.inner.lock().expect("SyncHrefClient mutex is poisoned");
+        guard.client.search(&guard.href, search)
+    }
+}
+
+impl CollectionSearchClient for SyncHrefClient {
+    type Error = Error;
+
+    async fn collections(&self) -> std::result::Result<Vec<Collection>, Error> {
+        let guard = self.inner.lock().expect("SyncHrefClient mutex is poisoned");
+        guard.client.collections(&guard.href)
+    }
+}
+
+/// A wrapper around [`SearchArrowBatchIter`] that implements
+/// [`arrow_array::RecordBatchReader`].
+pub struct ArrowBatchReader<'a> {
+    inner: SearchArrowBatchIter<'a>,
+    schema: SchemaRef,
+}
+
+impl<'a> ArrowBatchReader<'a> {
+    fn new(inner: SearchArrowBatchIter<'a>) -> Self {
+        let schema = inner
+            .schema()
+            .unwrap_or_else(|| arrow_schema::Schema::empty().into());
+        Self { inner, schema }
+    }
+}
+
+impl Iterator for ArrowBatchReader<'_> {
+    type Item = std::result::Result<RecordBatch, ArrowError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner
+            .next()
+            .map(|r| r.map_err(|e| ArrowError::ExternalError(Box::new(e))))
+    }
+}
+
+impl arrow_array::RecordBatchReader for ArrowBatchReader<'_> {
+    fn schema(&self) -> SchemaRef {
+        self.schema.clone()
     }
 }
 

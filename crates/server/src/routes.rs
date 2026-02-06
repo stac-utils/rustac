@@ -248,11 +248,12 @@ pub async fn post_search<B: Backend>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{Api, Backend, MemoryBackend};
+    use crate::{Api, MemoryBackend};
     use axum::{
         body::Body,
         http::{Request, Response, StatusCode, header::CONTENT_TYPE},
     };
+    use stac::api::TransactionClient;
     use stac::{Collection, Item};
     use tower::util::ServiceExt;
 

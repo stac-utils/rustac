@@ -2,7 +2,7 @@ use super::Backend;
 use crate::{Error, Result};
 use bb8::{ManageConnection, Pool};
 use stac::Collection;
-use stac::api::Search;
+use stac::api::{CollectionSearchClient, Search, SearchClient, TransactionClient};
 use stac_duckdb::Client;
 
 /// A backend that uses [DuckDB](https://duckdb.org/) to query
@@ -42,14 +42,17 @@ impl DuckdbBackend {
     }
 }
 
-impl Backend for DuckdbBackend {
-    fn has_item_search(&self) -> bool {
-        true
-    }
+impl SearchClient for DuckdbBackend {
+    type Error = Error;
 
-    fn has_filter(&self) -> bool {
-        false
+    async fn search(&self, search: Search) -> Result<stac::api::ItemCollection> {
+        let client = self.pool.get().await.map_err(Box::new)?;
+        client.search(search)
     }
+}
+
+impl CollectionSearchClient for DuckdbBackend {
+    type Error = Error;
 
     async fn collections(&self) -> Result<Vec<Collection>> {
         let client = self.pool.get().await.map_err(Box::new)?;
@@ -60,6 +63,10 @@ impl Backend for DuckdbBackend {
         let client = self.pool.get().await.map_err(Box::new)?;
         client.collection(id)
     }
+}
+
+impl TransactionClient for DuckdbBackend {
+    type Error = Error;
 
     async fn add_collection(&mut self, _collection: Collection) -> Result<()> {
         Err(Error::ReadOnly)
@@ -68,47 +75,15 @@ impl Backend for DuckdbBackend {
     async fn add_item(&mut self, _item: stac::Item) -> Result<()> {
         Err(Error::ReadOnly)
     }
+}
 
-    async fn add_items(&mut self, _items: Vec<stac::Item>) -> Result<()> {
-        Err(Error::ReadOnly)
+impl Backend for DuckdbBackend {
+    fn has_item_search(&self) -> bool {
+        true
     }
 
-    async fn item(&self, collection_id: &str, item_id: &str) -> Result<Option<stac::Item>> {
-        let mut item_collection = self
-            .search(Search {
-                ids: vec![item_id.to_string()],
-                collections: vec![collection_id.to_string()],
-                ..Default::default()
-            })
-            .await?;
-        if item_collection.items.len() == 1 {
-            Ok(Some(serde_json::from_value(serde_json::Value::Object(
-                item_collection.items.pop().unwrap(),
-            ))?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    async fn items(
-        &self,
-        collection_id: &str,
-        items: stac::api::Items,
-    ) -> Result<Option<stac::api::ItemCollection>> {
-        let item_collection = self
-            .search(Search {
-                items,
-                collections: vec![collection_id.to_string()],
-                ..Default::default()
-            })
-            .await?;
-        // TODO maybe return None if there's no collection?
-        Ok(Some(item_collection))
-    }
-
-    async fn search(&self, search: Search) -> Result<stac::api::ItemCollection> {
-        let client = self.pool.get().await.map_err(Box::new)?;
-        client.search(search)
+    fn has_filter(&self) -> bool {
+        false
     }
 }
 
@@ -158,7 +133,7 @@ impl DuckdbConnection {
 
 #[cfg(test)]
 mod tests {
-    use crate::Backend;
+    use stac::api::CollectionSearchClient;
 
     #[tokio::test]
     async fn backend() {
