@@ -124,6 +124,8 @@ pub mod link;
 mod migrate;
 pub mod mime;
 mod ndjson;
+/// Sort STAC items.
+pub mod sort;
 mod statistics;
 mod value;
 mod version;
