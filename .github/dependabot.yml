@@ -13,6 +13,7 @@ updates:
     groups:
       geoarrow:
         patterns:
+          - "duckdb"
           - "geoarrow-*"
           - "geoparquet"
           - "arrow-*"
