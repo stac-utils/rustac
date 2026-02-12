@@ -145,7 +145,9 @@ impl StacStore {
     }
 
     fn path(&self, href: &str) -> Result<Path> {
-        let result = if let Ok(url) = Url::parse(href) {
+        let result = if stac::href::is_windows_absolute_path(href) {
+            Path::parse(href)
+        } else if let Ok(url) = Url::parse(href) {
             // TODO check to see if the host and such match? or not?
             Path::from_url_path(url.path())
         } else {
