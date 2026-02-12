@@ -194,17 +194,32 @@ fn migrate_bands(asset: &mut Map<String, Value>) -> Result<()> {
 fn migrate_links(object: &mut Map<String, Value>) {
     if let Some(links) = object.get_mut("links").and_then(|v| v.as_array_mut()) {
         for link in links {
-            if let Some(link) = link.as_object_mut()
-                && link
-                    .get("rel")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s == "self")
-                    .unwrap_or_default()
-                && let Some(href) = link.get("href").and_then(|v| v.as_str())
-                && (href.starts_with('/') || crate::href::is_windows_absolute_path(href))
-            {
-                if let Ok(url) = Url::from_file_path(href) {
-                    let _ = link.insert("href".to_string(), url.to_string().into());
+            let is_self_link = link
+                .as_object()
+                .and_then(|l| l.get("rel"))
+                .and_then(|v| v.as_str())
+                .map(|s| s == "self")
+                .unwrap_or_default();
+            if !is_self_link {
+                continue;
+            }
+            let href = link
+                .as_object()
+                .and_then(|l| l.get("href"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            if let Some(href) = href {
+                let new_href = if href.starts_with('/') {
+                    Some(format!("file://{href}"))
+                } else if crate::href::is_windows_absolute_path(&href) {
+                    Url::from_file_path(&href).ok().map(|u| u.to_string())
+                } else {
+                    None
+                };
+                if let Some(new_href) = new_href {
+                    if let Some(link) = link.as_object_mut() {
+                        let _ = link.insert("href".to_string(), new_href.into());
+                    }
                 }
             }
         }
