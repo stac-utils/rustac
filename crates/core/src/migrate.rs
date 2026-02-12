@@ -2,6 +2,7 @@ use crate::{Error, Result, Version};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+use url::Url;
 
 /// Migrates a STAC object from one version to another.
 pub trait Migrate: Sized + Serialize + DeserializeOwned + std::fmt::Debug {
@@ -200,9 +201,11 @@ fn migrate_links(object: &mut Map<String, Value>) {
                     .map(|s| s == "self")
                     .unwrap_or_default()
                 && let Some(href) = link.get("href").and_then(|v| v.as_str())
-                && href.starts_with('/')
+                && (href.starts_with('/') || crate::href::is_windows_absolute_path(href))
             {
-                let _ = link.insert("href".to_string(), format!("file://{href}").into());
+                if let Ok(url) = Url::from_file_path(href) {
+                    let _ = link.insert("href".to_string(), url.to_string().into());
+                }
             }
         }
     }
