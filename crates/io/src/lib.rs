@@ -19,7 +19,7 @@ pub use {
     error::Error,
     format::Format,
     json::{FromJsonPath, ToJsonPath},
-    ndjson::{FromNdjsonPath, ToNdjsonPath},
+    ndjson::{FromNdjsonPath, ToNdjsonPath, ndjson_item_reader},
     read::read,
     realized_href::RealizedHref,
     write::write,

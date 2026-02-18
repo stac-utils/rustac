@@ -129,6 +129,43 @@ where
     crate::geoarrow::from_record_batch_reader(reader)
 }
 
+/// Returns an iterator that yields batches of [Item]s from a [ChunkReader].
+///
+/// Unlike [from_reader], this does not collect all items into memory at once.
+/// Each iteration yields one record batch worth of items.
+///
+/// # Examples
+///
+/// ```
+/// use std::fs::File;
+///
+/// let file = File::open("data/extended-item.parquet").unwrap();
+/// let mut count = 0;
+/// for result in stac::geoparquet::from_reader_iter(file).unwrap() {
+///     let items = result.unwrap();
+///     count += items.len();
+/// }
+/// assert!(count > 0);
+/// ```
+pub fn from_reader_iter<R>(reader: R) -> Result<impl Iterator<Item = Result<Vec<Item>>>>
+where
+    R: ChunkReader + 'static,
+{
+    let builder = ParquetRecordBatchReaderBuilder::try_new(reader)?;
+    let geoparquet_metadata = builder
+        .geoparquet_metadata()
+        .transpose()?
+        .ok_or(Error::MissingGeoparquetMetadata)?;
+    let geoarrow_schema =
+        builder.geoarrow_schema(&geoparquet_metadata, true, Default::default())?;
+    let reader = builder.build()?;
+    let reader = GeoParquetRecordBatchReader::try_new(reader, geoarrow_schema)?;
+    Ok(reader.map(|result| {
+        let record_batch = result?;
+        crate::geoarrow::items_from_record_batch(record_batch)
+    }))
+}
+
 /// Writes a [ItemCollection] to a [std::io::Write] as
 /// [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet).
 ///

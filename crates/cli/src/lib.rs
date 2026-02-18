@@ -382,19 +382,30 @@ impl Rustac {
                 migrate,
                 ref to,
             } => {
-                let mut value = self.get(infile.as_deref()).await?;
                 if migrate {
+                    let mut value = self.get(infile.as_deref()).await?;
                     value = value.migrate(
                         &to.as_deref()
                             .map(|s| s.parse().unwrap())
                             .unwrap_or_default(),
                     )?;
-                } else if let Some(to) = to {
-                    eprintln!(
-                        "WARNING: --to was passed ({to}) without --migrate, value will not be migrated"
-                    );
+                    self.put(outfile.as_deref(), value.into()).await
+                } else {
+                    if let Some(to) = to {
+                        eprintln!(
+                            "WARNING: --to was passed ({to}) without --migrate, value will not be migrated"
+                        );
+                    }
+                    let input_format = self.input_format(infile.as_deref());
+                    let can_stream = matches!(input_format, Format::NdJson | Format::Geoparquet(_));
+                    if can_stream {
+                        let items = self.get_item_stream(infile.as_deref()).await?;
+                        self.put_item_stream(outfile.as_deref(), items).await
+                    } else {
+                        let value = self.get(infile.as_deref()).await?;
+                        self.put(outfile.as_deref(), value.into()).await
+                    }
                 }
-                self.put(outfile.as_deref(), value.into()).await
             }
             Command::Search {
                 ref href,
@@ -681,6 +692,41 @@ impl Rustac {
         }
     }
 
+    async fn get_item_stream(
+        &self,
+        href: Option<&str>,
+    ) -> Result<Box<dyn Iterator<Item = Result<Item>> + Send>> {
+        let href = href.and_then(|s| if s == "-" { None } else { Some(s) });
+        let format = self.input_format(href);
+        if let Some(href) = href {
+            let (store, path) = stac_io::parse_href_opts(href, self.opts())?;
+            let iter = store.get_item_stream(path, format).await?;
+            Ok(Box::new(iter.map(|r| r.map_err(Error::from))))
+        } else {
+            let mut buf = Vec::new();
+            let _ = tokio::io::stdin().read_to_end(&mut buf).await?;
+            match format {
+                Format::NdJson => {
+                    let cursor = std::io::BufReader::new(std::io::Cursor::new(buf));
+                    Ok(Box::new(
+                        stac_io::ndjson_item_reader(cursor).map(|r| r.map_err(Error::from)),
+                    ))
+                }
+                _ => {
+                    let value: stac::Value = format.from_bytes(buf)?;
+                    let items = match value {
+                        stac::Value::Item(item) => vec![item],
+                        stac::Value::ItemCollection(ic) => ic.items,
+                        other => {
+                            return Err(anyhow!("cannot stream items from {}", other.type_name()));
+                        }
+                    };
+                    Ok(Box::new(items.into_iter().map(Ok)))
+                }
+            }
+        }
+    }
+
     async fn put(&self, href: Option<&str>, value: Value) -> Result<()> {
         let href = href.and_then(|s| if s == "-" { None } else { Some(s) });
         let format = self.output_format(href);
@@ -702,6 +748,46 @@ impl Rustac {
             }
             std::io::stdout().write_all(&bytes)?;
             Ok(())
+        }
+    }
+
+    async fn put_item_stream(
+        &self,
+        href: Option<&str>,
+        items: impl Iterator<Item = Result<Item>>,
+    ) -> Result<()> {
+        let href = href.and_then(|s| if s == "-" { None } else { Some(s) });
+        let format = self.output_format(href);
+        if let Some(href) = href {
+            let (store, path) = stac_io::parse_href_opts(href, self.opts())?;
+            let items: Vec<Item> = items.collect::<Result<Vec<_>>>()?;
+            store
+                .put_item_stream(path, items.into_iter(), format)
+                .await?;
+            Ok(())
+        } else {
+            match format {
+                Format::NdJson => {
+                    let stdout = std::io::stdout();
+                    let mut writer = std::io::BufWriter::new(stdout.lock());
+                    for item in items {
+                        let item = item?;
+                        serde_json::to_writer(&mut writer, &item)?;
+                        writeln!(&mut writer)?;
+                    }
+                    Ok(())
+                }
+                _ => {
+                    let items: Vec<Item> = items.collect::<Result<Vec<_>>>()?;
+                    let item_collection = stac::ItemCollection::from(items);
+                    let mut bytes = format.into_vec(item_collection)?;
+                    if !matches!(format, Format::NdJson) {
+                        bytes.push(b'\n');
+                    }
+                    std::io::stdout().write_all(&bytes)?;
+                    Ok(())
+                }
+            }
         }
     }
 
