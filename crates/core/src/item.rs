@@ -617,6 +617,48 @@ impl Item {
         let result = self.into_flat_item(true)?.matches_cql2(expr)?;
         Ok(result)
     }
+
+    /// Computes a sortable spatio-temporal hash for this item.
+    ///
+    /// The hash is computed from the item's datetime (or the midpoint of
+    /// `start_datetime` and `end_datetime`) and the center of its bounding box.
+    ///
+    /// Returns `None` if the item has no bbox, or if neither `datetime` nor
+    /// both `start_datetime` and `end_datetime` are set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{TimeDelta, TimeZone, Utc};
+    /// use stac::{Item, Bbox};
+    /// use stac::hash::Hasher;
+    ///
+    /// let mut item = Item::new("an-id");
+    /// item.properties.datetime = Some(Utc.with_ymd_and_hms(2023, 6, 15, 12, 0, 0).unwrap());
+    /// item.bbox = Some(Bbox::new(-106.0, 39.0, -104.0, 41.0));
+    ///
+    /// let hasher = Hasher::new(
+    ///     1.0,
+    ///     TimeDelta::days(1),
+    ///     Utc.with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap()
+    ///         ..Utc.with_ymd_and_hms(2025, 1, 1, 0, 0, 0).unwrap(),
+    /// )
+    /// .unwrap();
+    ///
+    /// assert!(item.hash(&hasher).is_some());
+    /// ```
+    pub fn hash(&self, hasher: &crate::hash::Hasher) -> Option<u64> {
+        let bbox = self.bbox.as_ref()?;
+        let lat = (bbox.ymin() + bbox.ymax()) / 2.0;
+        let lon = (bbox.xmin() + bbox.xmax()) / 2.0;
+        let datetime = self.properties.datetime.or_else(|| {
+            let start = self.properties.start_datetime?;
+            let end = self.properties.end_datetime?;
+            let midpoint = start + (end - start) / 2;
+            Some(midpoint)
+        })?;
+        Some(hasher.hash(datetime, lat, lon))
+    }
 }
 
 impl Assets for Item {
