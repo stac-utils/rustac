@@ -517,7 +517,7 @@ pub fn from_record_batch_reader<R: RecordBatchReader>(
     Ok(rows)
 }
 
-fn record_batch_to_json_rows(
+pub(crate) fn record_batch_to_json_rows(
     record_batch: RecordBatch,
 ) -> Result<Vec<JsonMap<String, Value>>, Error> {
     let mut rows: Vec<Option<JsonMap<String, Value>>> =

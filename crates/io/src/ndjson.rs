@@ -108,6 +108,26 @@ impl ToNdjsonPath for Value {
     }
 }
 
+/// Returns an iterator that yields one [Item] per line from a reader.
+///
+/// # Examples
+///
+/// ```
+/// use std::io::BufReader;
+/// use std::fs::File;
+///
+/// let reader = BufReader::new(File::open("data/items.ndjson").unwrap());
+/// let items: Vec<_> = stac_io::ndjson_item_reader(reader).collect::<Result<_, _>>().unwrap();
+/// assert_eq!(items.len(), 2);
+/// ```
+pub fn ndjson_item_reader(reader: impl BufRead) -> impl Iterator<Item = Result<Item>> {
+    reader.lines().filter_map(|line| match line {
+        Ok(line) if line.is_empty() => None,
+        Ok(line) => Some(serde_json::from_str(&line).map_err(Error::from)),
+        Err(err) => Some(Err(Error::from(err))),
+    })
+}
+
 impl ToNdjsonPath for serde_json::Value {
     fn to_ndjson_path(&self, path: impl AsRef<Path>) -> Result<()> {
         let file = File::create(path)?;
