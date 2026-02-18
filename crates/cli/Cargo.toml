@@ -18,6 +18,7 @@ duckdb-bundled = ["stac-duckdb/bundled"]
 
 [dependencies]
 anyhow.workspace = true
+chrono.workspace = true
 async-stream.workspace = true
 axum.workspace = true
 clap = { workspace = true, features = ["derive"] }

@@ -313,6 +313,47 @@ pub enum Command {
         shell: clap_complete::Shell,
     },
 
+    /// Sort items by spatio-temporal hash and prefix their ids.
+    ///
+    /// Creates a sortable Z-order curve hash from each item's datetime and
+    /// bounding box center, then prefixes item ids with the base64-encoded
+    /// hash and sorts items by hash value.
+    Hash {
+        /// The input file.
+        ///
+        /// To read from standard input, pass `-` or don't provide an argument at all.
+        infile: Option<String>,
+
+        /// The output file.
+        ///
+        /// To write to standard output, pass `-` or don't provide an argument at all.
+        outfile: Option<String>,
+
+        /// Minimum spatial cell size in degrees.
+        #[arg(long)]
+        spatial_extent: f64,
+
+        /// Minimum temporal cell size, as an ISO 8601 duration.
+        ///
+        /// Examples: P1D (1 day), PT1H (1 hour), P30D (30 days)
+        #[arg(long)]
+        temporal_extent: String,
+
+        /// Sort items by hash value.
+        #[arg(long, default_value_t = false)]
+        sort: bool,
+
+        /// Time range for the hasher, as a '/'-separated RFC 3339 interval.
+        ///
+        /// Examples: 2020-01-01T00:00:00Z/2025-01-01T00:00:00Z
+        ///
+        /// If provided, the hasher is created directly from this range and
+        /// items are streamed instead of loaded into memory (unless --sort
+        /// is also provided).
+        #[arg(long)]
+        time_range: Option<String>,
+    },
+
     /// Generate a STAC collection from one or more items
     Collection {
         /// The input file.
@@ -635,6 +676,92 @@ impl Rustac {
                 let mut command = Rustac::command();
                 clap_complete::generate(shell, &mut command, "rustac", &mut std::io::stdout());
                 Ok(())
+            }
+            Command::Hash {
+                ref infile,
+                ref outfile,
+                spatial_extent,
+                ref temporal_extent,
+                sort,
+                ref time_range,
+            } => {
+                let temporal_extent = parse_iso8601_duration(temporal_extent)?;
+                if let Some(time_range) = time_range {
+                    let (start, end) = stac::datetime::parse(time_range)?;
+                    let start = start
+                        .ok_or_else(|| anyhow!("time range start must not be open"))?
+                        .to_utc();
+                    let end = end
+                        .ok_or_else(|| anyhow!("time range end must not be open"))?
+                        .to_utc();
+                    let hasher =
+                        stac::hash::Hasher::new(spatial_extent, temporal_extent, start..end)?;
+                    if sort {
+                        let items = self.get_item_stream(infile.as_deref()).await?;
+                        let mut hashed: Vec<(u64, Item)> = items
+                            .map(|item| {
+                                let mut item = item?;
+                                let hash = item.hash(&hasher).unwrap_or(0);
+                                item.id = format!("{hash:016x}-{}", item.id);
+                                Ok((hash, item))
+                            })
+                            .collect::<Result<Vec<_>>>()?;
+                        hashed.sort_by_key(|(hash, _)| *hash);
+                        let items: Vec<Item> = hashed.into_iter().map(|(_, item)| item).collect();
+                        self.put_item_stream(outfile.as_deref(), items.into_iter().map(Ok))
+                            .await
+                    } else {
+                        let items = self.get_item_stream(infile.as_deref()).await?;
+                        let items = items.map(move |item| {
+                            let mut item = item?;
+                            let hash = item.hash(&hasher).unwrap_or(0);
+                            item.id = format!("{hash:016x}-{}", item.id);
+                            Ok(item)
+                        });
+                        self.put_item_stream(outfile.as_deref(), items).await
+                    }
+                } else {
+                    let value = self.get(infile.as_deref()).await?;
+                    let mut items = match value {
+                        stac::Value::ItemCollection(ic) => ic.items,
+                        stac::Value::Item(item) => vec![item],
+                        other => {
+                            return Err(anyhow!(
+                                "expected an item collection or item, got {}",
+                                other.type_name()
+                            ));
+                        }
+                    };
+                    let mut collection = Collection::from_id_and_items("hash", &items);
+                    if let Some([Some(start), Some(end)]) =
+                        collection.extent.temporal.interval.first_mut()
+                    {
+                        if *start == *end {
+                            *end = *end + temporal_extent;
+                        }
+                    }
+                    let hasher = collection
+                        .hasher(spatial_extent, temporal_extent)?
+                        .ok_or_else(|| {
+                            anyhow!(
+                                "collection temporal extent does not have both start and end dates"
+                            )
+                        })?;
+                    let mut hashed: Vec<(u64, Item)> = items
+                        .drain(..)
+                        .map(|mut item| {
+                            let hash = item.hash(&hasher).unwrap_or(0);
+                            item.id = format!("{hash:016x}-{}", item.id);
+                            (hash, item)
+                        })
+                        .collect();
+                    if sort {
+                        hashed.sort_by_key(|(hash, _)| *hash);
+                    }
+                    let items: Vec<Item> = hashed.into_iter().map(|(_, item)| item).collect();
+                    self.put_item_stream(outfile.as_deref(), items.into_iter().map(Ok))
+                        .await
+                }
             }
             Command::Collection {
                 ref infile,
@@ -1016,6 +1143,58 @@ async fn crawl(value: stac::Value, store: StacStore) -> impl TryStream<Item = Re
             }
         }
     }
+}
+
+fn parse_iso8601_duration(s: &str) -> Result<chrono::TimeDelta> {
+    let s = s
+        .strip_prefix('P')
+        .ok_or_else(|| anyhow!("ISO 8601 duration must start with 'P': {s}"))?;
+    let (date_part, time_part) = if let Some(idx) = s.find('T') {
+        (&s[..idx], Some(&s[idx + 1..]))
+    } else {
+        (s, None)
+    };
+    let mut total_seconds: i64 = 0;
+    let mut num_buf = String::new();
+    for ch in date_part.chars() {
+        if ch.is_ascii_digit() {
+            num_buf.push(ch);
+        } else {
+            let n: i64 = num_buf
+                .parse()
+                .map_err(|_| anyhow!("invalid number in duration: {s}"))?;
+            num_buf.clear();
+            match ch {
+                'Y' => total_seconds += n * 365 * 86400,
+                'W' => total_seconds += n * 7 * 86400,
+                'D' => total_seconds += n * 86400,
+                _ => return Err(anyhow!("unknown date duration unit '{ch}' in: P{s}")),
+            }
+        }
+    }
+    if let Some(time_part) = time_part {
+        for ch in time_part.chars() {
+            if ch.is_ascii_digit() {
+                num_buf.push(ch);
+            } else {
+                let n: i64 = num_buf
+                    .parse()
+                    .map_err(|_| anyhow!("invalid number in duration: {s}"))?;
+                num_buf.clear();
+                match ch {
+                    'H' => total_seconds += n * 3600,
+                    'M' => total_seconds += n * 60,
+                    'S' => total_seconds += n,
+                    _ => return Err(anyhow!("unknown time duration unit '{ch}' in: P{s}")),
+                }
+            }
+        }
+    }
+    if total_seconds == 0 {
+        return Err(anyhow!("duration must be positive: P{s}"));
+    }
+    chrono::TimeDelta::try_seconds(total_seconds)
+        .ok_or_else(|| anyhow!("duration out of range: P{s}"))
 }
 
 #[cfg(test)]
