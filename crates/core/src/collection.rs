@@ -314,6 +314,44 @@ impl Collection {
         self.update_extents(item);
         self.maybe_add_item_link(item)
     }
+
+    /// Creates a [Hasher](crate::hash::Hasher) from this collection's temporal extent.
+    ///
+    /// The `spatial_extent` and `temporal_extent` parameters control the
+    /// resolution (minimum cell size) of the hasher. The time range is derived
+    /// from the first interval in this collection's temporal extent.
+    ///
+    /// Returns `None` if the collection's first temporal interval does not have
+    /// both a start and end datetime.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{TimeDelta, TimeZone, Utc};
+    /// use stac::Collection;
+    ///
+    /// let mut collection = Collection::new("an-id", "a description");
+    /// collection.extent.temporal.interval =
+    ///     vec![[
+    ///         Some(Utc.with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap()),
+    ///         Some(Utc.with_ymd_and_hms(2025, 1, 1, 0, 0, 0).unwrap()),
+    ///     ]];
+    ///
+    /// let hasher = collection.hasher(1.0, TimeDelta::days(1)).unwrap();
+    /// assert!(hasher.is_some());
+    /// ```
+    pub fn hasher(
+        &self,
+        spatial_extent: f64,
+        temporal_extent: chrono::TimeDelta,
+    ) -> std::result::Result<Option<crate::hash::Hasher>, crate::hash::Error> {
+        let interval = self.extent.temporal.interval.first();
+        let (start, end) = match interval {
+            Some([Some(start), Some(end)]) => (*start, *end),
+            _ => return Ok(None),
+        };
+        crate::hash::Hasher::new(spatial_extent, temporal_extent, start..end).map(Some)
+    }
 }
 
 impl Provider {
