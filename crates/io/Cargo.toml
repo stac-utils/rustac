@@ -1,6 +1,6 @@
 [package]
 name = "stac-io"
-version = "0.2.4"
+version = "0.2.5"
 description = "Input and output (I/O) for the SpatioTemporal Asset Catalog (STAC)"
 authors.workspace = true
 edition.workspace = true
@@ -31,7 +31,7 @@ parquet = { workspace = true, optional = true, features = ["arrow", "async", "ob
 reqwest = { workspace = true, features = ["json", "blocking"] }
 serde.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
-stac = { version = "0.16.2", path = "../core" }
+stac = { version = "0.16.3", path = "../core" }
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true

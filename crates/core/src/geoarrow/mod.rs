@@ -257,6 +257,27 @@ fn iter_items(
     })
 }
 
+/// Converts a single [RecordBatch] to a vector of [Item]s.
+///
+/// # Examples
+///
+/// ```
+/// use stac::{Item, geoarrow};
+/// use geojson::{Geometry, Value};
+///
+/// let mut item = Item::new("an-id");
+/// item.geometry = Some(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+/// let (record_batch, _) = geoarrow::encode(vec![item]).unwrap();
+/// let items = geoarrow::items_from_record_batch(record_batch).unwrap();
+/// assert_eq!(items.len(), 1);
+/// ```
+pub fn items_from_record_batch(record_batch: RecordBatch) -> Result<Vec<Item>> {
+    json::record_batch_to_json_rows(record_batch)?
+        .into_iter()
+        .map(|item| serde_json::from_value(Value::Object(item)).map_err(Error::from))
+        .collect()
+}
+
 /// Converts a [RecordBatchReader] to an [ItemCollection].
 ///
 /// # Examples

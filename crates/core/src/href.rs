@@ -1,6 +1,6 @@
 //! Utilities and structures for working with hrefs.
 
-use crate::Result;
+use crate::{Error, Result};
 use std::borrow::Cow;
 use url::Url;
 
@@ -57,11 +57,21 @@ pub trait SelfHref {
     }
 }
 
+/// Returns `true` if the href looks like a Windows absolute path (e.g. `C:\foo` or `D:/bar`).
+pub fn is_windows_absolute_path(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    bytes.len() >= 3
+        && bytes[0].is_ascii_alphabetic()
+        && bytes[1] == b':'
+        && (bytes[2] == b'\\' || bytes[2] == b'/')
+}
+
 /// Returns `true` if the href is absolute.
 ///
-/// An href is absolute if it can be parsed to a url or starts with a `/`.
+/// An href is absolute if it can be parsed to a url, starts with a `/`, or is
+/// a Windows absolute path.
 pub fn is_absolute(href: &str) -> bool {
-    Url::parse(href).is_ok() || href.starts_with('/')
+    is_windows_absolute_path(href) || Url::parse(href).is_ok() || href.starts_with('/')
 }
 
 /// Makes an href absolute relative to a base.
@@ -157,17 +167,15 @@ pub fn make_relative(href: &str, base: &str) -> String {
 ///
 /// Handles adding a `file://` prefix and making it absolute, if needed.
 pub fn make_url(href: &str) -> Result<Url> {
-    if let Ok(url) = Url::parse(href) {
+    if is_windows_absolute_path(href) || href.starts_with('/') {
+        Url::from_file_path(href).map_err(|_| Error::InvalidFilePath(href.to_string()))
+    } else if let Ok(url) = Url::parse(href) {
         Ok(url)
     } else {
-        let url = if href.starts_with("/") {
-            Url::parse(&format!("file://{href}"))
-        } else {
-            let current_dir = std::env::current_dir()?;
-            let url = make_url(&format!("{}/", current_dir.to_string_lossy()))?;
-            url.join(href)
-        }?;
-        Ok(url)
+        let current_dir = std::env::current_dir()?;
+        let url = Url::from_directory_path(&current_dir)
+            .map_err(|_| Error::InvalidFilePath(current_dir.to_string_lossy().into_owned()))?;
+        Ok(url.join(href)?)
     }
 }
 

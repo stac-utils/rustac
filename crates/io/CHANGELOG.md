@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5](https://github.com/stac-utils/rustac/compare/stac-io-v0.2.4...stac-io-v0.2.5) - 2026-02-12
+
+### Fixed
+
+- windows paths ([#955](https://github.com/stac-utils/rustac/pull/955))
+
 ## [0.2.4](https://github.com/stac-utils/rustac/compare/stac-io-v0.2.3...stac-io-v0.2.4) - 2026-02-03
 
 ### Added

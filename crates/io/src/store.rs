@@ -144,8 +144,125 @@ impl StacStore {
         Ok(put_result)
     }
 
+    /// Gets items from the store as a stream.
+    ///
+    /// For ndjson and geoparquet, items are yielded one at a time without
+    /// materializing the entire collection in memory. For JSON, the full
+    /// value is read and items are yielded from it.
+    #[instrument(skip(self))]
+    pub async fn get_item_stream(
+        &self,
+        href: impl ToString + Debug,
+        format: Format,
+    ) -> Result<Box<dyn Iterator<Item = Result<stac::Item>> + Send>> {
+        let href = href.to_string();
+        let path = self.path(&href)?;
+        let get_result = self.store.get(&path).await?;
+        let bytes = get_result.bytes().await?;
+        match format {
+            Format::NdJson => {
+                let cursor = std::io::BufReader::new(std::io::Cursor::new(bytes));
+                Ok(Box::new(crate::ndjson::ndjson_item_reader(cursor)))
+            }
+            #[cfg(feature = "geoparquet")]
+            Format::Geoparquet(_) => {
+                let iter = stac::geoparquet::from_reader_iter(bytes)?;
+                Ok(Box::new(iter.flat_map(|result| match result {
+                    Ok(items) => Box::new(items.into_iter().map(Ok))
+                        as Box<dyn Iterator<Item = Result<stac::Item>> + Send>,
+                    Err(e) => Box::new(std::iter::once(Err(e.into()))),
+                })))
+            }
+            Format::Json(_) => {
+                let item_collection: stac::ItemCollection = format.from_bytes(bytes)?;
+                Ok(Box::new(item_collection.items.into_iter().map(Ok)))
+            }
+        }
+    }
+
+    /// Puts items from an iterator to the store.
+    ///
+    /// For ndjson, items are serialized one per line. For geoparquet, items
+    /// are batched using the writer options' max row group size and written
+    /// incrementally via [StacGeoparquetObjectWriter](geoparquet::StacGeoparquetObjectWriter).
+    /// For JSON, items are collected into an ItemCollection.
+    #[instrument(skip(self, items))]
+    pub async fn put_item_stream(
+        &self,
+        href: impl AsRef<str> + Debug,
+        items: impl Iterator<Item = stac::Item>,
+        format: Format,
+    ) -> Result<PutResult> {
+        let path = self.path(href.as_ref())?;
+        match format {
+            Format::NdJson => {
+                let mut buf = Vec::new();
+                for item in items {
+                    serde_json::to_writer(&mut buf, &item)?;
+                    buf.push(b'\n');
+                }
+                let put_result = self.store.put(&path, buf.into()).await?;
+                Ok(put_result)
+            }
+            #[cfg(feature = "geoparquet")]
+            Format::Geoparquet(writer_options) => {
+                let batch_size = writer_options.max_row_group_size;
+                let mut batch = Vec::with_capacity(batch_size);
+                let mut writer: Option<geoparquet::StacGeoparquetObjectWriter> = None;
+                for item in items {
+                    batch.push(item);
+                    if batch.len() >= batch_size {
+                        let items = std::mem::replace(&mut batch, Vec::with_capacity(batch_size));
+                        if let Some(ref mut writer) = writer {
+                            writer.write(items).await?;
+                        } else {
+                            writer = Some(
+                                geoparquet::StacGeoparquetObjectWriter::new(
+                                    self.store.clone(),
+                                    path.clone(),
+                                    items,
+                                    Default::default(),
+                                    writer_options,
+                                )
+                                .await?,
+                            );
+                        }
+                    }
+                }
+                if let Some(mut writer) = writer {
+                    if !batch.is_empty() {
+                        writer.write(batch).await?;
+                    }
+                    writer.close().await?;
+                } else if !batch.is_empty() {
+                    let writer = geoparquet::StacGeoparquetObjectWriter::new(
+                        self.store.clone(),
+                        path,
+                        batch,
+                        Default::default(),
+                        writer_options,
+                    )
+                    .await?;
+                    writer.close().await?;
+                }
+                Ok(PutResult {
+                    e_tag: None,
+                    version: None,
+                })
+            }
+            _ => {
+                let item_collection = stac::ItemCollection::from(items.collect::<Vec<_>>());
+                let bytes = format.into_vec(item_collection)?;
+                let put_result = self.store.put(&path, bytes.into()).await?;
+                Ok(put_result)
+            }
+        }
+    }
+
     fn path(&self, href: &str) -> Result<Path> {
-        let result = if let Ok(url) = Url::parse(href) {
+        let result = if stac::href::is_windows_absolute_path(href) {
+            Path::parse(href)
+        } else if let Ok(url) = Url::parse(href) {
             // TODO check to see if the host and such match? or not?
             Path::from_url_path(url.path())
         } else {
