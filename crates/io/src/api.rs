@@ -7,7 +7,7 @@ use http::header::{HeaderName, USER_AGENT};
 use reqwest::{ClientBuilder, IntoUrl, Method, StatusCode, header::HeaderMap, header::HeaderValue};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
-use stac::api::{GetItems, Item, ItemCollection, Items, Search, UrlBuilder};
+use stac::api::{GetItems, Item, ItemCollection, Items, Search, SearchClient, UrlBuilder};
 use stac::{Collection, Link, Links, SelfHref};
 use std::pin::Pin;
 use tokio::{
@@ -44,7 +44,7 @@ pub async fn search_with_headers(
     {
         search.limit = Some(max_items.try_into()?);
     }
-    let stream = client.search(search).await?;
+    let stream = client.search_stream(search).await?;
     let mut items = if let Some(max_items) = max_items {
         if max_items == 0 {
             return Ok(ItemCollection::default());
@@ -257,6 +257,9 @@ impl Client {
 
     /// Searches an API, returning a stream of items.
     ///
+    /// This method paginates through all pages of results. For a single page,
+    /// use [`SearchClient::search`].
+    ///
     /// # Examples
     ///
     /// ```no_run
@@ -268,7 +271,7 @@ impl Client {
     /// let mut search = Search { collections: vec!["sentinel-2-l2a".to_string()], ..Default::default() };
     /// # tokio_test::block_on(async {
     /// let items: Vec<_> = client
-    ///     .search(search)
+    ///     .search_stream(search)
     ///     .await
     ///     .unwrap()
     ///     .take(1)
@@ -278,11 +281,11 @@ impl Client {
     /// assert_eq!(items.len(), 1);
     /// # })
     /// ```
-    pub async fn search(&self, search: Search) -> Result<impl Stream<Item = Result<Item>> + use<>> {
-        let url = self.url_builder.search().clone();
-        tracing::debug!("searching {url}");
-        // TODO support GET
-        let page = self.post(url.clone(), &search).await?;
+    pub async fn search_stream(
+        &self,
+        search: Search,
+    ) -> Result<impl Stream<Item = Result<Item>> + use<>> {
+        let page = SearchClient::search(self, search).await?;
         Ok(stream_items(self.clone(), page, self.channel_buffer))
     }
 
@@ -366,6 +369,16 @@ impl Client {
     }
 }
 
+impl SearchClient for Client {
+    type Error = Error;
+
+    async fn search(&self, search: Search) -> std::result::Result<ItemCollection, Error> {
+        let url = self.url_builder.search().clone();
+        tracing::debug!("searching {url}");
+        self.post(url, &search).await
+    }
+}
+
 impl BlockingClient {
     /// Creates a new blocking client.
     ///
@@ -402,7 +415,7 @@ impl BlockingClient {
     /// ```
     pub fn search(&self, search: Search) -> Result<BlockingIterator> {
         let runtime = Builder::new_current_thread().enable_all().build()?;
-        let stream = runtime.block_on(async move { self.0.search(search).await })?;
+        let stream = runtime.block_on(async move { self.0.search_stream(search).await })?;
         Ok(BlockingIterator {
             runtime,
             stream: Box::pin(stream),
@@ -495,7 +508,7 @@ mod tests {
     use mockito::{Matcher, Server};
     use serde_json::json;
     use stac::Links;
-    use stac::api::{ItemCollection, Items, Search};
+    use stac::api::{ItemCollection, Items, Search, SearchClient};
     use url::Url;
 
     #[tokio::test]
@@ -557,7 +570,7 @@ mod tests {
         };
         search.items.limit = Some(1);
         let items: Vec<_> = client
-            .search(search)
+            .search_stream(search)
             .await
             .unwrap()
             .map(|result| result.unwrap())

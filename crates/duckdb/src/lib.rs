@@ -6,9 +6,14 @@ mod client;
 mod error;
 mod extension;
 
-pub use {client::Client, error::Error, extension::Extension};
+pub use {
+    client::ArrowBatchReader, client::Client, client::HrefClient, client::SearchArrowBatchIter,
+    client::SyncHrefClient, error::Error, extension::Extension,
+};
 
 use getrandom as _;
+#[cfg(test)]
+use tokio_test as _;
 
 /// Searches a stac-geoparquet file.
 ///

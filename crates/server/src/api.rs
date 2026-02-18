@@ -2,7 +2,10 @@ use crate::{Backend, DEFAULT_DESCRIPTION, DEFAULT_ID, Error, Result};
 use http::Method;
 use serde::Serialize;
 use serde_json::{Map, Value, json};
-use stac::api::{Collections, Conformance, ItemCollection, Items, Root, Search};
+use stac::api::{
+    CollectionSearchClient, Collections, Conformance, ItemCollection, Items, Root, Search,
+    SearchClient,
+};
 use stac::{Catalog, Collection, Fields, Item, Link, Links, mime::APPLICATION_OPENAPI_3_0};
 use url::Url;
 
@@ -193,8 +196,9 @@ impl<B: Backend> Api<B> {
     /// # Examples
     ///
     /// ```
-    /// use stac_server::{Api, MemoryBackend, Backend};
+    /// use stac_server::{Api, MemoryBackend};
     /// use stac::Collection;
+    /// use stac::api::TransactionClient;
     ///
     /// let mut backend = MemoryBackend::new();
     /// # tokio_test::block_on(async {
@@ -218,9 +222,9 @@ impl<B: Backend> Api<B> {
     /// # Examples
     ///
     /// ```
-    /// use stac_server::{Api, MemoryBackend, Backend};
+    /// use stac_server::{Api, MemoryBackend};
     /// use stac::{Collection, Item};
-    /// use stac::api::Items;
+    /// use stac::api::{Items, TransactionClient};
     ///
     /// let mut backend = MemoryBackend::new();
     /// # tokio_test::block_on(async {
@@ -232,38 +236,41 @@ impl<B: Backend> Api<B> {
     /// # })
     /// ```
     pub async fn items(&self, collection_id: &str, items: Items) -> Result<Option<ItemCollection>> {
-        match self.backend.items(collection_id, items.clone()).await? {
-            Some(mut item_collection) => {
-                let collection_url = self.url(&format!("/collections/{collection_id}"))?;
-                let items_url = self.url(&format!("/collections/{collection_id}/items"))?;
-                item_collection.set_link(Link::root(self.root.clone()).json());
-                item_collection.set_link(Link::self_(items_url.clone()).geojson());
-                item_collection.set_link(Link::collection(collection_url).json());
-                if let Some(next) = item_collection.next.take() {
-                    item_collection.set_link(self.pagination_link(
-                        items_url.clone(),
-                        items.clone(),
-                        next,
-                        "next",
-                        &Method::GET,
-                    )?);
-                }
-                if let Some(prev) = item_collection.prev.take() {
-                    item_collection.set_link(self.pagination_link(
-                        items_url,
-                        items,
-                        prev,
-                        "prev",
-                        &Method::GET,
-                    )?);
-                }
-                for item in item_collection.items.iter_mut() {
-                    self.set_item_links(item)?;
-                }
-                Ok(Some(item_collection))
-            }
-            _ => Ok(None),
+        if CollectionSearchClient::collection(&self.backend, collection_id)
+            .await?
+            .is_none()
+        {
+            return Ok(None);
         }
+        let mut item_collection =
+            SearchClient::items(&self.backend, collection_id, items.clone()).await?;
+        let collection_url = self.url(&format!("/collections/{collection_id}"))?;
+        let items_url = self.url(&format!("/collections/{collection_id}/items"))?;
+        item_collection.set_link(Link::root(self.root.clone()).json());
+        item_collection.set_link(Link::self_(items_url.clone()).geojson());
+        item_collection.set_link(Link::collection(collection_url).json());
+        if let Some(next) = item_collection.next.take() {
+            item_collection.set_link(self.pagination_link(
+                items_url.clone(),
+                items.clone(),
+                next,
+                "next",
+                &Method::GET,
+            )?);
+        }
+        if let Some(prev) = item_collection.prev.take() {
+            item_collection.set_link(self.pagination_link(
+                items_url,
+                items,
+                prev,
+                "prev",
+                &Method::GET,
+            )?);
+        }
+        for item in item_collection.items.iter_mut() {
+            self.set_item_links(item)?;
+        }
+        Ok(Some(item_collection))
     }
 
     /// Returns an item.
@@ -271,9 +278,9 @@ impl<B: Backend> Api<B> {
     /// # Examples
     ///
     /// ```
-    /// use stac_server::{Api, MemoryBackend, Backend};
+    /// use stac_server::{Api, MemoryBackend};
     /// use stac::{Collection, Item};
-    /// use stac::api::Items;
+    /// use stac::api::{Items, TransactionClient};
     ///
     /// let mut backend = MemoryBackend::new();
     /// # tokio_test::block_on(async {
@@ -308,7 +315,7 @@ impl<B: Backend> Api<B> {
     ///
     /// ```
     /// use stac::api::Search;
-    /// use stac_server::{Api, MemoryBackend, Backend};
+    /// use stac_server::{Api, MemoryBackend};
     /// use http::Method;
     ///
     /// let api = Api::new(MemoryBackend::new(), "http://stac.test").unwrap();
@@ -422,8 +429,9 @@ impl<B: Backend> Api<B> {
 #[cfg(test)]
 mod tests {
     use super::Api;
-    use crate::{Backend, MemoryBackend};
+    use crate::MemoryBackend;
     use http::Method;
+    use stac::api::TransactionClient;
     use stac::api::{ITEM_SEARCH_URI, Items, Search};
     use stac::{Catalog, Collection, Item, Links};
     use std::collections::HashSet;

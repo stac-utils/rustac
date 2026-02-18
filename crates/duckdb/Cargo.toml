@@ -35,3 +35,4 @@ geo.workspace = true
 rstest.workspace = true
 stac-validate = { path = "../validate" }
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tokio-test.workspace = true
