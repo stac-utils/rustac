@@ -313,7 +313,7 @@ pub enum Command {
         shell: clap_complete::Shell,
     },
 
-    /// Sort items by spatio-temporal hash and prefix their ids.
+    /// Compute each item's spatio-temporal hash and prefix it's id.
     ///
     /// Creates a sortable Z-order curve hash from each item's datetime and
     /// bounding box center, then prefixes item ids with the hex-encoded
