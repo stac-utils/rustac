@@ -316,8 +316,11 @@ pub enum Command {
     /// Sort items by spatio-temporal hash and prefix their ids.
     ///
     /// Creates a sortable Z-order curve hash from each item's datetime and
-    /// bounding box center, then prefixes item ids with the base64-encoded
-    /// hash and sorts items by hash value.
+    /// bounding box center, then prefixes item ids with the hex-encoded
+    /// hash and optionally sorts items by hash value.
+    ///
+    /// If --spatial-extent and --temporal-extent are not provided, the hasher
+    /// automatically uses maximum precision (21 bits per dimension).
     Hash {
         /// The input file.
         ///
@@ -330,14 +333,20 @@ pub enum Command {
         outfile: Option<String>,
 
         /// Minimum spatial cell size in degrees.
-        #[arg(long)]
-        spatial_extent: f64,
+        ///
+        /// Must be provided together with --temporal-extent. If neither is
+        /// provided, maximum precision is used automatically.
+        #[arg(long, requires = "temporal_extent")]
+        spatial_extent: Option<f64>,
 
         /// Minimum temporal cell size, as an ISO 8601 duration.
         ///
+        /// Must be provided together with --spatial-extent. If neither is
+        /// provided, maximum precision is used automatically.
+        ///
         /// Examples: P1D (1 day), PT1H (1 hour), P30D (30 days)
-        #[arg(long)]
-        temporal_extent: String,
+        #[arg(long, requires = "spatial_extent")]
+        temporal_extent: Option<String>,
 
         /// Sort items by hash value.
         #[arg(long, default_value_t = false)]
@@ -685,7 +694,10 @@ impl Rustac {
                 sort,
                 ref time_range,
             } => {
-                let temporal_extent = parse_iso8601_duration(temporal_extent)?;
+                let extents = match (spatial_extent, temporal_extent) {
+                    (Some(s), Some(t)) => Some((s, parse_iso8601_duration(t)?)),
+                    _ => None,
+                };
                 if let Some(time_range) = time_range {
                     let (start, end) = stac::datetime::parse(time_range)?;
                     let start = start
@@ -694,8 +706,11 @@ impl Rustac {
                     let end = end
                         .ok_or_else(|| anyhow!("time range end must not be open"))?
                         .to_utc();
-                    let hasher =
-                        stac::hash::Hasher::new(spatial_extent, temporal_extent, start..end)?;
+                    let hasher = if let Some((spatial_extent, temporal_extent)) = extents {
+                        stac::hash::Hasher::new(spatial_extent, temporal_extent, start..end)?
+                    } else {
+                        stac::hash::Hasher::from_time_range(start..end)?
+                    };
                     if sort {
                         let items = self.get_item_stream(infile.as_deref()).await?;
                         let mut hashed: Vec<(u64, Item)> = items
@@ -722,7 +737,7 @@ impl Rustac {
                     }
                 } else {
                     let value = self.get(infile.as_deref()).await?;
-                    let mut items = match value {
+                    let items = match value {
                         stac::Value::ItemCollection(ic) => ic.items,
                         stac::Value::Item(item) => vec![item],
                         other => {
@@ -732,23 +747,15 @@ impl Rustac {
                             ));
                         }
                     };
-                    let mut collection = Collection::from_id_and_items("hash", &items);
-                    if let Some([Some(start), Some(end)]) =
-                        collection.extent.temporal.interval.first_mut()
-                    {
-                        if *start == *end {
-                            *end = *end + temporal_extent;
-                        }
-                    }
-                    let hasher = collection
-                        .hasher(spatial_extent, temporal_extent)?
-                        .ok_or_else(|| {
-                            anyhow!(
-                                "collection temporal extent does not have both start and end dates"
-                            )
-                        })?;
+                    let hasher = if let Some((spatial_extent, temporal_extent)) = extents {
+                        stac::hash::Hasher::from_items(&items, spatial_extent, temporal_extent)?
+                            .ok_or_else(|| anyhow!("no items have datetimes"))?
+                    } else {
+                        stac::hash::Hasher::from_items_auto(&items)?
+                            .ok_or_else(|| anyhow!("no items have datetimes"))?
+                    };
                     let mut hashed: Vec<(u64, Item)> = items
-                        .drain(..)
+                        .into_iter()
                         .map(|mut item| {
                             let hash = item.hash(&hasher).unwrap_or(0);
                             item.id = format!("{hash:016x}-{}", item.id);

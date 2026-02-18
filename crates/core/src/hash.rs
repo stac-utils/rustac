@@ -99,6 +99,132 @@ impl Hasher {
         })
     }
 
+    /// Creates a hasher by deriving the time range from a slice of items.
+    ///
+    /// Scans all items to find the earliest and latest datetimes, then uses
+    /// that as the time range. Each item's datetime is determined by its
+    /// `datetime` property, or by its `start_datetime` and `end_datetime`
+    /// properties.
+    ///
+    /// Returns `None` if no items have datetimes. If all items share the same
+    /// datetime, the time range is extended by `temporal_extent` to ensure a
+    /// non-empty range.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::TimeDelta;
+    /// use stac::Item;
+    /// use stac::hash::Hasher;
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let hasher = Hasher::from_items(&[item], 1.0, TimeDelta::days(1)).unwrap();
+    /// assert!(hasher.is_some());
+    /// ```
+    pub fn from_items(
+        items: &[crate::Item],
+        spatial_extent: f64,
+        temporal_extent: TimeDelta,
+    ) -> Result<Option<Self>, Error> {
+        let mut min: Option<DateTime<Utc>> = None;
+        let mut max: Option<DateTime<Utc>> = None;
+        for item in items {
+            let dt = item.properties.datetime;
+            let start = item.properties.start_datetime.or(dt);
+            let end = item.properties.end_datetime.or(dt);
+            if let Some(start) = start {
+                min = Some(min.map_or(start, |m: DateTime<Utc>| m.min(start)));
+            }
+            if let Some(end) = end {
+                max = Some(max.map_or(end, |m: DateTime<Utc>| m.max(end)));
+            }
+        }
+        match (min, max) {
+            (Some(start), Some(mut end)) => {
+                if start == end {
+                    end = end + temporal_extent;
+                }
+                Self::new(spatial_extent, temporal_extent, start..end).map(Some)
+            }
+            _ => Ok(None),
+        }
+    }
+
+    /// Creates a hasher that uses the maximum precision for the given time range.
+    ///
+    /// The spatial and temporal extents are chosen so that each dimension uses
+    /// the full 21 bits available, yielding 63-bit hashes with the finest
+    /// possible resolution.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{TimeZone, Utc};
+    /// use stac::hash::Hasher;
+    ///
+    /// let hasher = Hasher::from_time_range(
+    ///     Utc.with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap()
+    ///         ..Utc.with_ymd_and_hms(2025, 1, 1, 0, 0, 0).unwrap(),
+    /// )
+    /// .unwrap();
+    /// assert_eq!(hasher.bits_per_dimension(), 21);
+    /// ```
+    pub fn from_time_range(time_range: Range<DateTime<Utc>>) -> Result<Self, Error> {
+        if time_range.start >= time_range.end {
+            return Err(Error::InvalidTimeRange);
+        }
+        let bins = (1u64 << MAX_BITS_PER_DIMENSION) as f64;
+        let spatial_extent = 360.0 / bins;
+        let total_ms = (time_range.end - time_range.start).num_milliseconds() as f64;
+        let extent_ms = (total_ms / bins).ceil().max(1.0);
+        let temporal_extent =
+            TimeDelta::try_milliseconds(extent_ms as i64).unwrap_or(TimeDelta::milliseconds(1));
+        Self::new(spatial_extent, temporal_extent, time_range)
+    }
+
+    /// Creates a maximum-precision hasher by deriving the time range from items.
+    ///
+    /// Combines the behavior of [`Hasher::from_items`] and
+    /// [`Hasher::from_time_range`]: scans items to find the time range, then
+    /// creates a hasher that uses the full 21 bits per dimension.
+    ///
+    /// Returns `None` if no items have datetimes.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::Item;
+    /// use stac::hash::Hasher;
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let hasher = Hasher::from_items_auto(&[item]).unwrap();
+    /// assert!(hasher.is_some());
+    /// ```
+    pub fn from_items_auto(items: &[crate::Item]) -> Result<Option<Self>, Error> {
+        let mut min: Option<DateTime<Utc>> = None;
+        let mut max: Option<DateTime<Utc>> = None;
+        for item in items {
+            let dt = item.properties.datetime;
+            let start = item.properties.start_datetime.or(dt);
+            let end = item.properties.end_datetime.or(dt);
+            if let Some(start) = start {
+                min = Some(min.map_or(start, |m: DateTime<Utc>| m.min(start)));
+            }
+            if let Some(end) = end {
+                max = Some(max.map_or(end, |m: DateTime<Utc>| m.max(end)));
+            }
+        }
+        match (min, max) {
+            (Some(start), Some(mut end)) => {
+                if start == end {
+                    end = end + TimeDelta::milliseconds(1);
+                }
+                Self::from_time_range(start..end).map(Some)
+            }
+            _ => Ok(None),
+        }
+    }
+
     /// Returns the number of bits used per dimension.
     pub fn bits_per_dimension(&self) -> u8 {
         self.bits
