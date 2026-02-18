@@ -1,6 +1,6 @@
 [package]
 name = "stac-validate"
-version = "0.6.5"
+version = "0.6.6"
 readme = "README.md"
 description = "json-schema validation for the Rust implementation of the STAC specification"
 authors.workspace = true
@@ -17,7 +17,7 @@ jsonschema.workspace = true
 reqwest = { workspace = true, features = ["blocking", "json"] }
 serde.workspace = true
 serde_json.workspace = true
-stac = { version = "0.16.3", path = "../core" }
+stac = { version = "0.16.4", path = "../core" }
 thiserror.workspace = true
 async-trait.workspace = true
 referencing.workspace = true

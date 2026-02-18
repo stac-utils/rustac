@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.4](https://github.com/stac-utils/rustac/compare/stac-v0.16.3...stac-v0.16.4) - 2026-02-18
+
+### Added
+
+- get and put streams ([#958](https://github.com/stac-utils/rustac/pull/958))
+
+### Other
+
+- create traits for clients ([#949](https://github.com/stac-utils/rustac/pull/949))
+
 ## [0.16.3](https://github.com/stac-utils/rustac/compare/stac-v0.16.2...stac-v0.16.3) - 2026-02-12
 
 ### Fixed
