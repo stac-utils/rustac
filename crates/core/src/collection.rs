@@ -317,9 +317,9 @@ impl Collection {
 
     /// Creates a [Hasher](crate::hash::Hasher) from this collection's temporal extent.
     ///
-    /// The `spatial_extent` and `temporal_extent` parameters control the
-    /// resolution (minimum cell size) of the hasher. The time range is derived
-    /// from the first interval in this collection's temporal extent.
+    /// The `spatial_precision` and `temporal_precision` parameters control the
+    /// resolution (minimum cell size) of the hasher. The temporal extent is
+    /// derived from the first interval in this collection's temporal extent.
     ///
     /// Returns `None` if the collection's first temporal interval does not have
     /// both a start and end datetime.
@@ -342,15 +342,15 @@ impl Collection {
     /// ```
     pub fn hasher(
         &self,
-        spatial_extent: f64,
-        temporal_extent: chrono::TimeDelta,
+        spatial_precision: f64,
+        temporal_precision: chrono::TimeDelta,
     ) -> std::result::Result<Option<crate::hash::Hasher>, crate::hash::Error> {
         let interval = self.extent.temporal.interval.first();
         let (start, end) = match interval {
             Some([Some(start), Some(end)]) => (*start, *end),
             _ => return Ok(None),
         };
-        crate::hash::Hasher::new(spatial_extent, temporal_extent, start..end).map(Some)
+        crate::hash::Hasher::new(spatial_precision, temporal_precision, start..end).map(Some)
     }
 }
 

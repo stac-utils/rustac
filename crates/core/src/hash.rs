@@ -6,9 +6,9 @@
 //! that are nearby in space and time tend to have numerically close hash values,
 //! making the hashes useful for range queries and spatial indexing.
 //!
-//! Precision is controlled by providing spatial and temporal extents that define
+//! Precision is controlled by providing spatial and temporal precisions that define
 //! the minimum cell size in each dimension. The number of bits per dimension is
-//! derived from these extents automatically.
+//! derived from these precisions automatically.
 //!
 //! # Example
 //!
@@ -40,7 +40,7 @@ const MAX_BITS_PER_DIMENSION: u8 = 21;
 ///
 /// The hasher quantizes latitude, longitude, and time into discrete bins, then
 /// interleaves their bits to form a Z-order curve index. The number of bits per
-/// dimension is determined by the spatial and temporal extents provided at
+/// dimension is determined by the spatial and temporal precisions provided at
 /// construction time.
 #[derive(Debug, Clone)]
 pub struct Hasher {
@@ -54,38 +54,38 @@ impl Hasher {
     ///
     /// # Arguments
     ///
-    /// * `spatial_extent` — Minimum spatial cell size in degrees. Both latitude
+    /// * `spatial_precision` — Minimum spatial cell size in degrees. Both latitude
     ///   and longitude are quantized at this resolution.
-    /// * `temporal_extent` — Minimum temporal cell size.
-    /// * `time_range` — The full time range that hashes must cover. Datetimes
-    ///   outside this range are clamped to the boundaries.
+    /// * `temporal_precision` — Minimum temporal cell size.
+    /// * `temporal_extent` — The full temporal extent that hashes must cover. Datetimes
+    ///   outside this extent are clamped to the boundaries.
     ///
     /// # Errors
     ///
-    /// Returns an error if the spatial extent is not positive and finite, the
-    /// temporal extent is not positive, the time range is empty, or the
+    /// Returns an error if the spatial precision is not positive and finite, the
+    /// temporal precision is not positive, the temporal extent is empty, or the
     /// required bits per dimension exceeds the maximum (21).
     pub fn new(
-        spatial_extent: f64,
-        temporal_extent: TimeDelta,
-        time_range: Range<DateTime<Utc>>,
+        spatial_precision: f64,
+        temporal_precision: TimeDelta,
+        temporal_extent: Range<DateTime<Utc>>,
     ) -> Result<Self, Error> {
-        if spatial_extent <= 0.0 || !spatial_extent.is_finite() {
-            return Err(Error::InvalidSpatialExtent);
+        if spatial_precision <= 0.0 || !spatial_precision.is_finite() {
+            return Err(Error::InvalidSpatialPrecision);
         }
-        if temporal_extent <= TimeDelta::zero() {
+        if temporal_precision <= TimeDelta::zero() {
+            return Err(Error::InvalidTemporalPrecision);
+        }
+        if temporal_extent.start >= temporal_extent.end {
             return Err(Error::InvalidTemporalExtent);
         }
-        if time_range.start >= time_range.end {
-            return Err(Error::InvalidTimeRange);
-        }
 
-        let lat_bits = bits_needed(180.0 / spatial_extent);
-        let lon_bits = bits_needed(360.0 / spatial_extent);
+        let lat_bits = bits_needed(180.0 / spatial_precision);
+        let lon_bits = bits_needed(360.0 / spatial_precision);
 
-        let total_ms = (time_range.end - time_range.start).num_milliseconds() as f64;
-        let extent_ms = temporal_extent.num_milliseconds() as f64;
-        let time_bits = bits_needed(total_ms / extent_ms);
+        let total_ms = (temporal_extent.end - temporal_extent.start).num_milliseconds() as f64;
+        let precision_ms = temporal_precision.num_milliseconds() as f64;
+        let time_bits = bits_needed(total_ms / precision_ms);
 
         let bits = lat_bits.max(lon_bits).max(time_bits);
         if bits > MAX_BITS_PER_DIMENSION {
@@ -93,22 +93,22 @@ impl Hasher {
         }
 
         Ok(Self {
-            time_start_ms: time_range.start.timestamp_millis(),
+            time_start_ms: temporal_extent.start.timestamp_millis(),
             time_total_ms: total_ms,
             bits,
         })
     }
 
-    /// Creates a hasher by deriving the time range from a slice of items.
+    /// Creates a hasher by deriving the temporal extent from a slice of items.
     ///
     /// Scans all items to find the earliest and latest datetimes, then uses
-    /// that as the time range. Each item's datetime is determined by its
+    /// that as the temporal extent. Each item's datetime is determined by its
     /// `datetime` property, or by its `start_datetime` and `end_datetime`
     /// properties.
     ///
     /// Returns `None` if no items have datetimes. If all items share the same
-    /// datetime, the time range is extended by `temporal_extent` to ensure a
-    /// non-empty range.
+    /// datetime, the temporal extent is extended by `temporal_precision` to
+    /// ensure a non-empty range.
     ///
     /// # Examples
     ///
@@ -123,8 +123,8 @@ impl Hasher {
     /// ```
     pub fn from_items(
         items: &[crate::Item],
-        spatial_extent: f64,
-        temporal_extent: TimeDelta,
+        spatial_precision: f64,
+        temporal_precision: TimeDelta,
     ) -> Result<Option<Self>, Error> {
         let mut min: Option<DateTime<Utc>> = None;
         let mut max: Option<DateTime<Utc>> = None;
@@ -142,17 +142,17 @@ impl Hasher {
         match (min, max) {
             (Some(start), Some(mut end)) => {
                 if start == end {
-                    end = end + temporal_extent;
+                    end = end + temporal_precision;
                 }
-                Self::new(spatial_extent, temporal_extent, start..end).map(Some)
+                Self::new(spatial_precision, temporal_precision, start..end).map(Some)
             }
             _ => Ok(None),
         }
     }
 
-    /// Creates a hasher that uses the maximum precision for the given time range.
+    /// Creates a hasher that uses the maximum precision for the given temporal extent.
     ///
-    /// The spatial and temporal extents are chosen so that each dimension uses
+    /// The spatial and temporal precisions are chosen so that each dimension uses
     /// the full 21 bits available, yielding 63-bit hashes with the finest
     /// possible resolution.
     ///
@@ -162,30 +162,30 @@ impl Hasher {
     /// use chrono::{TimeZone, Utc};
     /// use stac::hash::Hasher;
     ///
-    /// let hasher = Hasher::from_time_range(
+    /// let hasher = Hasher::from_temporal_extent(
     ///     Utc.with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap()
     ///         ..Utc.with_ymd_and_hms(2025, 1, 1, 0, 0, 0).unwrap(),
     /// )
     /// .unwrap();
     /// assert_eq!(hasher.bits_per_dimension(), 21);
     /// ```
-    pub fn from_time_range(time_range: Range<DateTime<Utc>>) -> Result<Self, Error> {
-        if time_range.start >= time_range.end {
-            return Err(Error::InvalidTimeRange);
+    pub fn from_temporal_extent(temporal_extent: Range<DateTime<Utc>>) -> Result<Self, Error> {
+        if temporal_extent.start >= temporal_extent.end {
+            return Err(Error::InvalidTemporalExtent);
         }
         let bins = (1u64 << MAX_BITS_PER_DIMENSION) as f64;
-        let spatial_extent = 360.0 / bins;
-        let total_ms = (time_range.end - time_range.start).num_milliseconds() as f64;
-        let extent_ms = (total_ms / bins).ceil().max(1.0);
-        let temporal_extent =
-            TimeDelta::try_milliseconds(extent_ms as i64).unwrap_or(TimeDelta::milliseconds(1));
-        Self::new(spatial_extent, temporal_extent, time_range)
+        let spatial_precision = 360.0 / bins;
+        let total_ms = (temporal_extent.end - temporal_extent.start).num_milliseconds() as f64;
+        let precision_ms = (total_ms / bins).ceil().max(1.0);
+        let temporal_precision =
+            TimeDelta::try_milliseconds(precision_ms as i64).unwrap_or(TimeDelta::milliseconds(1));
+        Self::new(spatial_precision, temporal_precision, temporal_extent)
     }
 
-    /// Creates a maximum-precision hasher by deriving the time range from items.
+    /// Creates a maximum-precision hasher by deriving the temporal extent from items.
     ///
     /// Combines the behavior of [`Hasher::from_items`] and
-    /// [`Hasher::from_time_range`]: scans items to find the time range, then
+    /// [`Hasher::from_temporal_extent`]: scans items to find the temporal extent, then
     /// creates a hasher that uses the full 21 bits per dimension.
     ///
     /// Returns `None` if no items have datetimes.
@@ -219,7 +219,7 @@ impl Hasher {
                 if start == end {
                     end = end + TimeDelta::milliseconds(1);
                 }
-                Self::from_time_range(start..end).map(Some)
+                Self::from_temporal_extent(start..end).map(Some)
             }
             _ => Ok(None),
         }
@@ -237,7 +237,7 @@ impl Hasher {
 
     /// Computes a sortable hash for the given spatio-temporal point.
     ///
-    /// Datetimes outside the configured time range are clamped. Latitudes are
+    /// Datetimes outside the configured temporal extent are clamped. Latitudes are
     /// clamped to \[-90, 90\] and longitudes to \[-180, 180\].
     pub fn hash(&self, datetime: DateTime<Utc>, lat: f64, lon: f64) -> u64 {
         let lat_norm = ((lat + 90.0) / 180.0).clamp(0.0, 1.0);
@@ -262,24 +262,24 @@ pub enum Error {
     /// The required bits per dimension exceeds the maximum.
     #[error(
         "required bits per dimension ({bits}) exceeds maximum ({MAX_BITS_PER_DIMENSION}), \
-         use coarser extents"
+         use coarser precisions"
     )]
     TooManyBits {
         /// The number of bits that were required.
         bits: u8,
     },
 
-    /// The spatial extent must be positive and finite.
-    #[error("spatial extent must be positive")]
-    InvalidSpatialExtent,
+    /// The spatial precision must be positive and finite.
+    #[error("spatial precision must be positive")]
+    InvalidSpatialPrecision,
 
-    /// The temporal extent must be positive.
-    #[error("temporal extent must be positive")]
+    /// The temporal precision must be positive.
+    #[error("temporal precision must be positive")]
+    InvalidTemporalPrecision,
+
+    /// The temporal extent must be non-empty (start < end).
+    #[error("temporal extent must be non-empty")]
     InvalidTemporalExtent,
-
-    /// The time range must be non-empty (start < end).
-    #[error("time range must be non-empty")]
-    InvalidTimeRange,
 }
 
 fn bits_needed(count: f64) -> u8 {
@@ -307,13 +307,13 @@ mod tests {
     use super::*;
     use chrono::TimeZone;
 
-    fn test_time_range() -> Range<DateTime<Utc>> {
+    fn test_temporal_extent() -> Range<DateTime<Utc>> {
         Utc.with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap()
             ..Utc.with_ymd_and_hms(2025, 1, 1, 0, 0, 0).unwrap()
     }
 
     fn test_hasher() -> Hasher {
-        Hasher::new(1.0, TimeDelta::days(1), test_time_range()).unwrap()
+        Hasher::new(1.0, TimeDelta::days(1), test_temporal_extent()).unwrap()
     }
 
     #[test]
@@ -397,34 +397,34 @@ mod tests {
     }
 
     #[test]
-    fn invalid_spatial_extent() {
-        assert!(Hasher::new(0.0, TimeDelta::days(1), test_time_range()).is_err());
-        assert!(Hasher::new(-1.0, TimeDelta::days(1), test_time_range()).is_err());
-        assert!(Hasher::new(f64::NAN, TimeDelta::days(1), test_time_range()).is_err());
-        assert!(Hasher::new(f64::INFINITY, TimeDelta::days(1), test_time_range()).is_err());
+    fn invalid_spatial_precision() {
+        assert!(Hasher::new(0.0, TimeDelta::days(1), test_temporal_extent()).is_err());
+        assert!(Hasher::new(-1.0, TimeDelta::days(1), test_temporal_extent()).is_err());
+        assert!(Hasher::new(f64::NAN, TimeDelta::days(1), test_temporal_extent()).is_err());
+        assert!(Hasher::new(f64::INFINITY, TimeDelta::days(1), test_temporal_extent()).is_err());
+    }
+
+    #[test]
+    fn invalid_temporal_precision() {
+        assert!(Hasher::new(1.0, TimeDelta::zero(), test_temporal_extent()).is_err());
+        assert!(Hasher::new(1.0, TimeDelta::days(-1), test_temporal_extent()).is_err());
     }
 
     #[test]
     fn invalid_temporal_extent() {
-        assert!(Hasher::new(1.0, TimeDelta::zero(), test_time_range()).is_err());
-        assert!(Hasher::new(1.0, TimeDelta::days(-1), test_time_range()).is_err());
-    }
-
-    #[test]
-    fn invalid_time_range() {
         let dt = Utc.with_ymd_and_hms(2023, 1, 1, 0, 0, 0).unwrap();
         assert!(Hasher::new(1.0, TimeDelta::days(1), dt..dt).is_err());
     }
 
     #[test]
     fn fine_precision() {
-        let hasher = Hasher::new(0.01, TimeDelta::hours(1), test_time_range()).unwrap();
+        let hasher = Hasher::new(0.01, TimeDelta::hours(1), test_temporal_extent()).unwrap();
         assert!(hasher.bits_per_dimension() > 10);
     }
 
     #[test]
     fn coarse_precision() {
-        let hasher = Hasher::new(90.0, TimeDelta::days(365), test_time_range()).unwrap();
+        let hasher = Hasher::new(90.0, TimeDelta::days(365), test_temporal_extent()).unwrap();
         assert!(hasher.bits_per_dimension() <= 5);
     }
 

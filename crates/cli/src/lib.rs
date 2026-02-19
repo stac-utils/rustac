@@ -319,7 +319,7 @@ pub enum Command {
     /// bounding box center, then prefixes item ids with the hex-encoded
     /// hash and optionally sorts items by hash value.
     ///
-    /// If --spatial-extent and --temporal-extent are not provided, the hasher
+    /// If --spatial-precision and --temporal-precision are not provided, the hasher
     /// automatically uses maximum precision (21 bits per dimension).
     Hash {
         /// The input file.
@@ -334,33 +334,33 @@ pub enum Command {
 
         /// Minimum spatial cell size in degrees.
         ///
-        /// Must be provided together with --temporal-extent. If neither is
+        /// Must be provided together with --temporal-precision. If neither is
         /// provided, maximum precision is used automatically.
-        #[arg(long, requires = "temporal_extent")]
-        spatial_extent: Option<f64>,
+        #[arg(long, requires = "temporal_precision")]
+        spatial_precision: Option<f64>,
 
         /// Minimum temporal cell size, as an ISO 8601 duration.
         ///
-        /// Must be provided together with --spatial-extent. If neither is
+        /// Must be provided together with --spatial-precision. If neither is
         /// provided, maximum precision is used automatically.
         ///
         /// Examples: P1D (1 day), PT1H (1 hour), P30D (30 days)
-        #[arg(long, requires = "spatial_extent")]
-        temporal_extent: Option<String>,
+        #[arg(long, requires = "spatial_precision")]
+        temporal_precision: Option<String>,
 
         /// Sort items by hash value.
         #[arg(long, default_value_t = false)]
         sort: bool,
 
-        /// Time range for the hasher, as a '/'-separated RFC 3339 interval.
+        /// Temporal extent for the hasher, as a '/'-separated RFC 3339 interval.
         ///
         /// Examples: 2020-01-01T00:00:00Z/2025-01-01T00:00:00Z
         ///
-        /// If provided, the hasher is created directly from this range and
+        /// If provided, the hasher is created directly from this extent and
         /// items are streamed instead of loaded into memory (unless --sort
         /// is also provided).
         #[arg(long)]
-        time_range: Option<String>,
+        temporal_extent: Option<String>,
     },
 
     /// Generate a STAC collection from one or more items
@@ -689,27 +689,27 @@ impl Rustac {
             Command::Hash {
                 ref infile,
                 ref outfile,
-                spatial_extent,
-                ref temporal_extent,
+                spatial_precision,
+                ref temporal_precision,
                 sort,
-                ref time_range,
+                ref temporal_extent,
             } => {
-                let extents = match (spatial_extent, temporal_extent) {
+                let precisions = match (spatial_precision, temporal_precision) {
                     (Some(s), Some(t)) => Some((s, parse_iso8601_duration(t)?)),
                     _ => None,
                 };
-                if let Some(time_range) = time_range {
-                    let (start, end) = stac::datetime::parse(time_range)?;
+                if let Some(temporal_extent) = temporal_extent {
+                    let (start, end) = stac::datetime::parse(temporal_extent)?;
                     let start = start
-                        .ok_or_else(|| anyhow!("time range start must not be open"))?
+                        .ok_or_else(|| anyhow!("temporal extent start must not be open"))?
                         .to_utc();
                     let end = end
-                        .ok_or_else(|| anyhow!("time range end must not be open"))?
+                        .ok_or_else(|| anyhow!("temporal extent end must not be open"))?
                         .to_utc();
-                    let hasher = if let Some((spatial_extent, temporal_extent)) = extents {
-                        stac::hash::Hasher::new(spatial_extent, temporal_extent, start..end)?
+                    let hasher = if let Some((spatial_precision, temporal_precision)) = precisions {
+                        stac::hash::Hasher::new(spatial_precision, temporal_precision, start..end)?
                     } else {
-                        stac::hash::Hasher::from_time_range(start..end)?
+                        stac::hash::Hasher::from_temporal_extent(start..end)?
                     };
                     if sort {
                         let items = self.get_item_stream(infile.as_deref()).await?;
@@ -747,9 +747,13 @@ impl Rustac {
                             ));
                         }
                     };
-                    let hasher = if let Some((spatial_extent, temporal_extent)) = extents {
-                        stac::hash::Hasher::from_items(&items, spatial_extent, temporal_extent)?
-                            .ok_or_else(|| anyhow!("no items have datetimes"))?
+                    let hasher = if let Some((spatial_precision, temporal_precision)) = precisions {
+                        stac::hash::Hasher::from_items(
+                            &items,
+                            spatial_precision,
+                            temporal_precision,
+                        )?
+                        .ok_or_else(|| anyhow!("no items have datetimes"))?
                     } else {
                         stac::hash::Hasher::from_items_auto(&items)?
                             .ok_or_else(|| anyhow!("no items have datetimes"))?
