@@ -1735,8 +1735,8 @@ __metadata:
 
 "stac-wasm@file:./pkg::locator=stac-wasm-tests%40workspace%3A.":
   version: 0.1.0
-  resolution: "stac-wasm@file:./pkg#./pkg::hash=bdef11&locator=stac-wasm-tests%40workspace%3A."
-  checksum: 10c0/b44eb41a0b28a734ac95fb0f823431836d2cd73d78e1cf3792a4ac0b1c7edb1917bfc929dfc566f442d6d36358017b0f350004906c4628ef337fde7177629b0e
+  resolution: "stac-wasm@file:./pkg#./pkg::hash=6b7400&locator=stac-wasm-tests%40workspace%3A."
+  checksum: 10c0/df4ecf3dec9c1b0abbb7b069572761d29fb12fe7c5a69f145a63ed2fa67fac0ef5bf1edb62ec06bebde2e16a0ae4a756ef04ada91d905e3cb68c79a8bf522a6b
   languageName: node
   linkType: hard
 
