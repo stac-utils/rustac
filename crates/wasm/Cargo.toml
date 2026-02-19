@@ -15,10 +15,14 @@ publish = false
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+debug = ["console_error_panic_hook"]
+
 [dependencies]
+console_error_panic_hook = { version = "0.1.6", optional = true }
 arrow-array.workspace = true
 arrow-schema.workspace = true
-arrow-wasm = { git = "https://github.com/kylebarron/arrow-wasm", rev = "6da94ef0a1522a244984a7d3d58a0339d0851d96" }
+arrow-wasm = { git = "https://github.com/kylebarron/arrow-wasm", rev = "874fc689cf1c871a1613bef175e5a9ac65cc8365" }
 getrandom = { version = "0.3", features = ["wasm_js"] }
 serde.workspace = true
 serde-wasm-bindgen = "0.6.5"

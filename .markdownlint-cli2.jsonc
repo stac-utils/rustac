@@ -10,6 +10,7 @@
     "crates/*/CHANGELOG.md",
     "target/**/*.md",
     "LICENSE-*",
+    "CLAUDE.md",
     ".github/pull_request_template.md",
   ],
 }

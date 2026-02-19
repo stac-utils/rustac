@@ -106,6 +106,31 @@ jobs:
         run: uv run --group stac-api-validator scripts/validate-stac-server --pgstac
       - name: Search
         run: cargo run -F pgstac search postgresql://username:password@localhost:5432/postgis
+  test-wasm:
+    name: Test stac-wasm
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/wasm
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cargo-bins/cargo-binstall@main
+      - name: Install wasm-pack
+        run: cargo binstall wasm-pack --no-confirm
+      - uses: Swatinem/rust-cache@v2
+      - name: Build wasm
+        run: wasm-pack build --dev
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install yarn
+        run: corepack enable && corepack prepare yarn@stable --activate
+      - name: Install dependencies
+        run: YARN_ENABLE_HARDENED_MODE=0 yarn install --no-immutable
+      - name: Install playwright browsers
+        run: yarn playwright install --with-deps chromium
+      - name: Run tests
+        run: yarn test
   check-nightly:
     name: Check (nightly)
     runs-on: ubuntu-latest
