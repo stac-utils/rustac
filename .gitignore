@@ -8,3 +8,4 @@ crates/wasm/www/package-lock.json
 node_modules/
 package-lock.json
 crates/wasm/tests/__screenshots__
+.yarn/
