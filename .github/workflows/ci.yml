@@ -126,7 +126,7 @@ jobs:
       - name: Install yarn
         run: corepack enable && corepack prepare yarn@stable --activate
       - name: Install dependencies
-        run: yarn install
+        run: YARN_ENABLE_HARDENED_MODE=0 yarn install --no-immutable
       - name: Install playwright browsers
         run: yarn playwright install --with-deps chromium
       - name: Run tests
