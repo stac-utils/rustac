@@ -117,6 +117,7 @@ jobs:
       - uses: cargo-bins/cargo-binstall@main
       - name: Install wasm-pack
         run: cargo binstall wasm-pack --no-confirm
+      - uses: Swatinem/rust-cache@v2
       - name: Build wasm
         run: wasm-pack build
       - uses: actions/setup-node@v4
