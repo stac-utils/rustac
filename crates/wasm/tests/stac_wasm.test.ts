@@ -41,7 +41,7 @@ async function createDuckDB(): Promise<duckdb.AsyncDuckDB> {
     }),
   );
   const worker = new Worker(worker_url);
-  const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.INFO);
+  const logger = new duckdb.ConsoleLogger(duckdb.LogLevel.WARNING);
   const db = new duckdb.AsyncDuckDB(logger, worker);
   await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
   URL.revokeObjectURL(worker_url);
@@ -59,7 +59,7 @@ test("arrowToStacJson with empty links from DuckDB (issue #959)", async () => {
   await connection.query("INSTALL spatial");
   await connection.query("LOAD spatial");
   const table = await connection.query(
-    "SELECT links FROM read_parquet('opr-one.parquet')",
+    "SELECT * REPLACE ST_AsGeoJSON(geometry) AS geometry FROM read_parquet('opr-one.parquet')",
   );
   const items = arrowToStacJson(table);
 
