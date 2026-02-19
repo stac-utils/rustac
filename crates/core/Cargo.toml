@@ -12,6 +12,7 @@ repository.workspace = true
 rust-version.workspace = true
 
 [features]
+std = []
 geo = ["dep:geo"]
 geoarrow = [
     "dep:geoarrow-array",

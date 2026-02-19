@@ -2,6 +2,7 @@ use crate::{Error, Result, Version};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+#[cfg(feature = "std")]
 use url::Url;
 
 /// Migrates a STAC object from one version to another.
@@ -212,7 +213,14 @@ fn migrate_links(object: &mut Map<String, Value>) {
                 let new_href = if href.starts_with('/') {
                     Some(format!("file://{href}"))
                 } else if crate::href::is_windows_absolute_path(&href) {
-                    Url::from_file_path(&href).ok().map(|u| u.to_string())
+                    #[cfg(feature = "std")]
+                    {
+                        Url::from_file_path(&href).ok().map(|u| u.to_string())
+                    }
+                    #[cfg(not(feature = "std"))]
+                    {
+                        None
+                    }
                 } else {
                     None
                 };

@@ -1,6 +1,8 @@
 //! Utilities and structures for working with hrefs.
 
-use crate::{Error, Result};
+#[cfg(feature = "std")]
+use crate::Error;
+use crate::Result;
 use std::borrow::Cow;
 use url::Url;
 
@@ -166,6 +168,7 @@ pub fn make_relative(href: &str, base: &str) -> String {
 /// Converts this href to a Url.
 ///
 /// Handles adding a `file://` prefix and making it absolute, if needed.
+#[cfg(feature = "std")]
 pub fn make_url(href: &str) -> Result<Url> {
     if is_windows_absolute_path(href) || href.starts_with('/') {
         Url::from_file_path(href).map_err(|_| Error::InvalidFilePath(href.to_string()))
