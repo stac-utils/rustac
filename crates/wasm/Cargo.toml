@@ -10,7 +10,6 @@ repository.workspace = true
 license.workspace = true
 categories.workspace = true
 rust-version.workspace = true
-publish = false
 
 [lib]
 crate-type = ["cdylib", "rlib"]
