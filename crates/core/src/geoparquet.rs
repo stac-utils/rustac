@@ -956,4 +956,11 @@ mod tests {
         assert_eq!(metadata.version, VERSION);
         assert_eq!(metadata.collections["an-id"].description, "a description");
     }
+
+    #[test]
+    fn links_as_integer_list() {
+        // https://github.com/stac-utils/rustac/issues/959
+        let file = File::open("data/opr-one.parquet").unwrap();
+        let _: ItemCollection = super::from_reader(file).unwrap();
+    }
 }
