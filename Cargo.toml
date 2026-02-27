@@ -23,6 +23,7 @@ default-members = [
     "crates/server",
     "crates/validate",
 ]
+exclude = ["crates/r/rustac.Rcheck/00_pkg_src/rustac/src/rust"]
 
 [workspace.package]
 authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
