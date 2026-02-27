@@ -13,6 +13,9 @@ members = [
     "crates/validate",
     "crates/wasm",
 ]
+exclude = [
+    "crates/r/rustac.Rcheck/00_pkg_src/rustac/src/rust"
+]
 default-members = [
     "crates/core",
     "crates/cli",
