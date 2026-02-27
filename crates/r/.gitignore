@@ -47,3 +47,7 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+src/rust/target/
+src/*.so
+src/*.o
