@@ -6,16 +6,35 @@ Powered by Rust via [extendr](https://extendr.github.io/extendr/extendr_api/).
 ## Prerequisites
 
 - **Rust** toolchain (rustc >= 1.88): <https://rustup.rs/>
-- **R** packages: `arrow`, `sf`, `jsonlite`
-- Optional: `geojsonsf` (for writing sf objects to JSON), `devtools` (for development)
 
-Install R dependencies:
+## Install
+
+Install directly from GitHub using [pak](https://pak.r-lib.org/) (recommended):
 
 ```r
-install.packages(c("arrow", "sf", "jsonlite"), repos = "https://cloud.r-project.org")
+# install.packages("pak")
+pak::pak("stac-utils/rustac/crates/r")
 ```
 
-If `arrow` or `sf` fail to install, try [r-universe](https://r-universe.dev/) binaries:
+Or with `devtools`:
+
+```r
+# install.packages("devtools")
+devtools::install_github("stac-utils/rustac", subdir = "crates/r")
+```
+
+### From source
+
+From the repository root:
+
+```bash
+R CMD build crates/r
+R CMD INSTALL rustac_0.1.0.tar.gz
+```
+
+### Troubleshooting
+
+If `arrow` or `sf` fail to install, try [r-universe](https://r-universe.dev/) binaries first:
 
 ```r
 install.packages(
@@ -24,14 +43,7 @@ install.packages(
 )
 ```
 
-## Install
-
-From the repository root:
-
-```bash
-R CMD build crates/r
-R CMD INSTALL rustac_0.1.0.tar.gz
-```
+Then retry the install.
 
 ## Development
 
