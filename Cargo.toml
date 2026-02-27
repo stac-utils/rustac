@@ -7,6 +7,7 @@ members = [
     "crates/duckdb",
     "crates/extensions",
     "crates/io",
+    "crates/r/src/rust",
     "crates/pgstac",
     "crates/server",
     "crates/validate",
