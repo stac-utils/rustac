@@ -180,7 +180,12 @@ jobs:
       - name: Build and check
         run: |
           R CMD build .
-          R CMD check --no-manual rustac_*.tar.gz
+          R CMD check --no-manual --no-clean rustac_*.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: r-check-results
+          path: crates/r/rustac.Rcheck/
   doc:
     name: Docs
     runs-on: ubuntu-latest
