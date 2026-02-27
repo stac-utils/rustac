@@ -1,0 +1,20 @@
+Package: rustac
+Title: SpatioTemporal Asset Catalog (STAC) Client
+Version: 0.1.0
+Authors@R:
+    person("Pete", "Gadomski", , "pete.gadomski@gmail.com", role = c("aut", "cre"))
+Description: Read and write SpatioTemporal Asset Catalog (STAC) data in JSON,
+    NDJSON, and geoparquet formats. Powered by Rust via the 'extendr' framework.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    arrow,
+    jsonlite,
+    sf
+Suggests:
+    geojsonsf,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+SystemRequirements: Cargo (Rust's package manager), rustc >= 1.88

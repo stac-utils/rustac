@@ -1,0 +1,2 @@
+^src/rust/target$
+^src/rust/.cargo$
