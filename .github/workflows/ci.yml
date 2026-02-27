@@ -148,7 +148,7 @@ jobs:
       - name: Check msrv
         run: cargo hack check --rust-version --workspace --all-targets --ignore-private
   test-r:
-    name: Test R bindings
+    name: Test R
     runs-on: ubuntu-latest
     defaults:
       run:
