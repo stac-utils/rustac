@@ -8,7 +8,6 @@ members = [
     "crates/extensions",
     "crates/io",
     "crates/pgstac",
-    "crates/r/src/rust",
     "crates/server",
     "crates/validate",
     "crates/wasm",
