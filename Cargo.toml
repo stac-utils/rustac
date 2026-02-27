@@ -13,7 +13,7 @@ members = [
     "crates/wasm",
 ]
 exclude = [
-    "crates/r/src/rust",
+    "crates/r/*",
 ]
 default-members = [
     "crates/core",
