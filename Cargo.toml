@@ -7,11 +7,13 @@ members = [
     "crates/duckdb",
     "crates/extensions",
     "crates/io",
-    "crates/r/src/rust",
     "crates/pgstac",
     "crates/server",
     "crates/validate",
     "crates/wasm",
+]
+exclude = [
+    "crates/r/src/rust",
 ]
 default-members = [
     "crates/core",
