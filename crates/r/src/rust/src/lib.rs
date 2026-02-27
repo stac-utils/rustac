@@ -1,5 +1,6 @@
 use arrow_array::RecordBatchReader;
 use arrow_ipc::writer::StreamWriter;
+use bytes::Bytes;
 use extendr_api::prelude::*;
 use geoparquet::reader::{GeoParquetReaderBuilder, GeoParquetRecordBatchReader};
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
@@ -28,18 +29,18 @@ fn stac_write_json(json: &str, path: &str) {
     stac_io::write(path, value).unwrap_or_else(|e| panic!("failed to write '{}': {}", path, e));
 }
 
-/// Reads a stac-geoparquet file and returns Arrow IPC stream bytes.
+/// Reads a stac-geoparquet file or URL and returns Arrow IPC stream bytes.
 /// @export
 #[extendr]
-fn stac_read_geoparquet(path: &str) -> Raw {
-    let file = File::open(path).unwrap_or_else(|e| panic!("failed to open '{}': {}", path, e));
-    let builder = ParquetRecordBatchReaderBuilder::try_new(file)
-        .unwrap_or_else(|e| panic!("failed to read parquet '{}': {}", path, e));
+fn stac_read_geoparquet(href: &str) -> Raw {
+    let bytes = read_bytes(href);
+    let builder = ParquetRecordBatchReaderBuilder::try_new(bytes)
+        .unwrap_or_else(|e| panic!("failed to read parquet '{}': {}", href, e));
     let geoparquet_metadata = builder
         .geoparquet_metadata()
         .transpose()
         .unwrap_or_else(|e| panic!("failed to read geoparquet metadata: {}", e))
-        .unwrap_or_else(|| panic!("missing geoparquet metadata in '{}'", path));
+        .unwrap_or_else(|| panic!("missing geoparquet metadata in '{}'", href));
     let geoarrow_schema = builder
         .geoarrow_schema(&geoparquet_metadata, true, Default::default())
         .unwrap_or_else(|e| panic!("failed to build geoarrow schema: {}", e));
@@ -89,6 +90,20 @@ fn stac_write_geoparquet(ipc_bytes: Raw, path: &str) {
         item_collection,
     )
     .unwrap_or_else(|e| panic!("failed to write geoparquet '{}': {}", path, e));
+}
+
+fn read_bytes(href: &str) -> Bytes {
+    if href.starts_with("http://") || href.starts_with("https://") {
+        let response = reqwest::blocking::get(href)
+            .unwrap_or_else(|e| panic!("failed to fetch '{}': {}", href, e));
+        response
+            .bytes()
+            .unwrap_or_else(|e| panic!("failed to read response bytes from '{}': {}", href, e))
+    } else {
+        let buf =
+            std::fs::read(href).unwrap_or_else(|e| panic!("failed to read '{}': {}", href, e));
+        Bytes::from(buf)
+    }
 }
 
 extendr_module! {

@@ -160,8 +160,6 @@ jobs:
           filters: |
             r:
               - 'crates/r/**'
-              - 'crates/core/**'
-              - 'crates/io/**'
   test-r:
     name: Test R
     needs: changes-r
