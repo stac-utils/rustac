@@ -2,7 +2,7 @@
 #'
 #' Reads STAC data from JSON, NDJSON, or geoparquet formats. The format is
 #' inferred from the file extension. Geoparquet files are returned as sf data
-#' frames; all other types are returned as R lists.
+#' frames via Arrow; all other types are returned as R lists.
 #'
 #' @param path Path to a file or a URL.
 #' @return An sf data frame (for geoparquet/FeatureCollections) or an R list.
@@ -10,8 +10,11 @@
 stac_read <- function(path) {
   if (is_geoparquet(path)) {
     ipc_bytes <- .Call(wrap__stac_read_geoparquet, path)
-    stream <- nanoarrow::read_nanoarrow(ipc_bytes)
-    sf::st_as_sf(stream)
+    table <- arrow::read_ipc_stream(ipc_bytes, as_data_frame = FALSE)
+    df <- as.data.frame(table)
+    geom <- sf::st_as_sfc(structure(df$geometry, class = "WKB"), EWKB = TRUE)
+    df$geometry <- NULL
+    sf::st_sf(df, geometry = geom)
   } else {
     json <- .Call(wrap__stac_read_json, path)
     value <- jsonlite::fromJSON(json, simplifyVector = FALSE)
@@ -26,7 +29,7 @@ stac_read <- function(path) {
 #' Write a STAC value to a file
 #'
 #' Writes STAC data to JSON, NDJSON, or geoparquet formats. The format is
-#' inferred from the file extension. sf data frames are written via geoarrow for
+#' inferred from the file extension. sf data frames are written via Arrow for
 #' geoparquet output; all other values are serialized with jsonlite.
 #'
 #' @param x An sf data frame or an R list representing a STAC value.
@@ -34,8 +37,8 @@ stac_read <- function(path) {
 #' @export
 stac_write <- function(x, path) {
   if (is_geoparquet(path)) {
-    stream <- nanoarrow::as_nanoarrow_array_stream(sf::st_as_sf(x))
-    buf <- nanoarrow::write_nanoarrow(stream, raw())
+    table <- arrow::as_arrow_table(sf::st_as_sf(x))
+    buf <- arrow::write_ipc_stream(table, raw())
     invisible(.Call(wrap__stac_write_geoparquet, buf, path))
   } else {
     if (inherits(x, "sf")) {
