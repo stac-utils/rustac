@@ -9,14 +9,14 @@
 #' @export
 stac_read <- function(path) {
   if (is_geoparquet(path)) {
-    ipc_bytes <- wrap__stac_read_geoparquet(path)
+    ipc_bytes <- .Call(wrap__stac_read_geoparquet, path)
     table <- arrow::read_ipc_stream(ipc_bytes, as_data_frame = FALSE)
     df <- as.data.frame(table)
     geom <- sf::st_as_sfc(structure(df$geometry, class = "WKB"), EWKB = TRUE)
     df$geometry <- NULL
     sf::st_sf(df, geometry = geom)
   } else {
-    json <- wrap__stac_read_json(path)
+    json <- .Call(wrap__stac_read_json, path)
     value <- jsonlite::fromJSON(json, simplifyVector = FALSE)
     if (identical(value$type, "FeatureCollection")) {
       sf::read_sf(json)
@@ -39,7 +39,7 @@ stac_write <- function(x, path) {
   if (is_geoparquet(path)) {
     table <- arrow::as_arrow_table(sf::st_as_sf(x))
     buf <- arrow::write_ipc_stream(table, raw())
-    invisible(wrap__stac_write_geoparquet(buf, path))
+    invisible(.Call(wrap__stac_write_geoparquet, buf, path))
   } else {
     if (inherits(x, "sf")) {
       if (!requireNamespace("geojsonsf", quietly = TRUE)) {
@@ -49,7 +49,7 @@ stac_write <- function(x, path) {
     } else {
       json <- jsonlite::toJSON(x, auto_unbox = TRUE, null = "null")
     }
-    invisible(wrap__stac_write_json(as.character(json), path))
+    invisible(.Call(wrap__stac_write_json, as.character(json), path))
   }
 }
 
