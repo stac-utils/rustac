@@ -147,8 +147,25 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - name: Check msrv
         run: cargo hack check --rust-version --workspace --all-targets --ignore-private
+  changes-r:
+    name: Check R changes
+    runs-on: ubuntu-latest
+    outputs:
+      r: ${{ steps.filter.outputs.r }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            r:
+              - 'crates/r/**'
+              - 'crates/core/**'
+              - 'crates/io/**'
   test-r:
     name: Test R
+    needs: changes-r
+    if: needs.changes-r.outputs.r == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:

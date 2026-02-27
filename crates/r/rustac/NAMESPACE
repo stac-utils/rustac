@@ -1,4 +1,0 @@
-useDynLib(rustac, .registration = TRUE)
-
-export(stac_read)
-export(stac_write)
