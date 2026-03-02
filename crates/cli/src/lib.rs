@@ -33,6 +33,7 @@ const DEFAULT_COLLECTION_ID: &str = "default-collection-id";
 
 /// rustac: A command-line interface for the SpatioTemporal Asset Catalog (STAC)
 #[derive(Debug, Parser)]
+#[command(version)]
 pub struct Rustac {
     #[command(subcommand)]
     command: Command,

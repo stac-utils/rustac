@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use clap::Parser;
+use clap::error::ErrorKind;
 use rstest::{fixture, rstest};
 use rustac::Rustac;
 use stac::geoparquet::{Compression, WriterOptions};
@@ -163,6 +164,12 @@ fn output_format() {
                 .with_max_row_group_size(100000)
         )
     );
+}
+
+#[test]
+fn version_flag_exists() {
+    let err = Rustac::try_parse_from(["rustac", "--version"]).unwrap_err();
+    assert_eq!(err.kind(), ErrorKind::DisplayVersion);
 }
 
 #[rstest]
