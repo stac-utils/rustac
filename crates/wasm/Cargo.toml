@@ -25,7 +25,7 @@ arrow-wasm = { git = "https://github.com/kylebarron/arrow-wasm", rev = "874fc689
 getrandom = { version = "0.3", features = ["wasm_js"] }
 serde.workspace = true
 serde-wasm-bindgen = "0.6.5"
-stac = { version = "0.16.4", path = "../core", features = ["geoparquet"] }
+stac = { version = "0.16.5", path = "../core", features = ["geoparquet"] }
 thiserror.workspace = true
 wasm-bindgen = "0.2.84"
 
