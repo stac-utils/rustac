@@ -27,7 +27,8 @@ futures-util.workspace = true
 pgstac = { version = "0.4.8", path = "../pgstac", optional = true }
 serde_json.workspace = true
 stac = { version = "0.16.5", path = "../core" }
-stac-duckdb = { version = "0.3.7", path = "../duckdb" }
+# Until duckdb releases against the newer arrow
+stac-duckdb = { version = "0.3.6", path = "../duckdb" }
 stac-io = { version = "0.2.7", path = "../io", features = [
     "store-all",
     "geoparquet",
