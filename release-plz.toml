@@ -7,8 +7,8 @@ name = "stac"
 [[package]]
 name = "stac-duckdb"
 semver_check = false
-# Until duckdb releases against the newer arrow
 publish = false
+# Until duckdb releases against the newer arrow
 git_release_enable = false
 
 [[package]]
