@@ -36,7 +36,8 @@ serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded.workspace = true
 stac = { version = "0.16.5", path = "../core" }
-stac-duckdb = { version = "0.3.7", path = "../duckdb", optional = true }
+# Until duckdb releases against the newer arrow
+stac-duckdb = { version = "0.3.6", path = "../duckdb", optional = true }
 thiserror.workspace = true
 tokio-postgres = { workspace = true, optional = true }
 tokio-postgres-rustls = { workspace = true, optional = true }
