@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.10](https://github.com/stac-utils/rustac/compare/rustac-v0.2.9...rustac-v0.2.10) - 2026-03-06
+
+### Other
+
+- updated the following local packages: stac-duckdb, stac-server
+
 ## [0.2.9](https://github.com/stac-utils/rustac/compare/rustac-v0.2.8...rustac-v0.2.9) - 2026-03-02
 
 ### Added
