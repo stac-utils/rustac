@@ -3,12 +3,10 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::cmp::Ordering;
 
-
 #[cfg(feature = "stream")]
 use futures::Stream;
 #[cfg(feature = "stream")]
 use stream_kmerge::kmerge_by;
-
 
 #[derive(Debug, Deserialize)]
 struct SortConfig {
@@ -53,7 +51,6 @@ pub struct ItemComparator {
     sort_fields: Vec<SortField>,
 }
 
-
 /// A trait for sorting iterables of STAC items.
 pub trait Sortable {
     /// Sorts the internal items.
@@ -90,7 +87,6 @@ impl<I: IntoIterator<Item = Item>> Sortable for I {
 }
 
 impl ItemComparator {
-
     /// Creates a new `ItemComparator` from a JSON configuration.
     ///
     /// The configuration should be a JSON object with a `sortby` field, which is
@@ -294,7 +290,6 @@ pub fn item_comparator(config: Value) -> Result<ItemComparator, serde_json::Erro
 /// assert_eq!(sorted.next().await.unwrap().id, "d");
 /// # });
 /// ```
-
 
 #[cfg(feature = "stream")]
 pub fn sort_streams<S, I>(
