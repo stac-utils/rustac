@@ -106,11 +106,11 @@ pub struct Rustac {
     /// When records are ordered spatially or temporally, lower values result in smaller row groups (better for selective queries),
     /// while higher values result in larger row groups (better compression).
     #[arg(
-        long = "parquet-max-row-group-size",
+        long = "parquet-max-row-group-row-count",
         global = true,
         verbatim_doc_comment
     )]
-    parquet_max_row_group_size: Option<usize>,
+    parquet_max_row_group_row_count: Option<usize>,
 
     #[arg(
         long,
@@ -398,6 +398,7 @@ impl Rustac {
                         );
                     }
                     let input_format = self.input_format(infile.as_deref());
+                    tracing::debug!("Reading as {input_format}");
                     let can_stream = matches!(input_format, Format::NdJson | Format::Geoparquet(_));
                     if can_stream {
                         let items = self.get_item_stream(infile.as_deref()).await?;
@@ -826,8 +827,9 @@ impl Rustac {
             let mut writer_options = WriterOptions::new()
                 .with_compression(self.parquet_compression.or(Some(default_compression())));
 
-            if let Some(max_row_group_size) = self.parquet_max_row_group_size {
-                writer_options = writer_options.with_max_row_group_size(max_row_group_size);
+            if let Some(max_row_group_row_count) = self.parquet_max_row_group_row_count {
+                writer_options =
+                    writer_options.with_max_row_group_row_count(max_row_group_row_count);
             }
 
             Format::Geoparquet(writer_options)

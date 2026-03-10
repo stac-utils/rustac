@@ -23,8 +23,8 @@ pub fn default_compression() -> Compression {
     Compression::ZSTD(ZstdLevel::try_new(15).unwrap())
 }
 
-/// Default stac-geoparquet max row group size
-pub const DEFAULT_STAC_MAX_ROW_GROUP_SIZE: usize = 150_000;
+/// Default stac-geoparquet max row group row count
+pub const DEFAULT_STAC_MAX_ROW_GROUP_ROW_COUNT: usize = 150_000;
 
 /// The stac-geoparquet metadata key.
 pub const METADATA_KEY: &str = "stac-geoparquet";
@@ -39,7 +39,7 @@ pub struct WriterOptions {
     pub compression: Option<Compression>,
 
     /// Maximum number of rows in a row group
-    pub max_row_group_size: usize,
+    pub max_row_group_row_count: usize,
 }
 
 /// An encoder for writing stac-geoparquet
@@ -84,10 +84,10 @@ impl WriterOptions {
     /// ```
     /// use stac::geoparquet::WriterOptions;
     ///
-    /// let options = WriterOptions::new().with_max_row_group_size(50000);
+    /// let options = WriterOptions::new().with_max_row_group_row_count(50000);
     /// ```
-    pub fn with_max_row_group_size(mut self, size: usize) -> Self {
-        self.max_row_group_size = size;
+    pub fn with_max_row_group_row_count(mut self, size: usize) -> Self {
+        self.max_row_group_row_count = size;
         self
     }
 }
@@ -96,7 +96,7 @@ impl Default for WriterOptions {
     fn default() -> Self {
         Self {
             compression: Some(default_compression()),
-            max_row_group_size: DEFAULT_STAC_MAX_ROW_GROUP_SIZE,
+            max_row_group_row_count: DEFAULT_STAC_MAX_ROW_GROUP_ROW_COUNT,
         }
     }
 }
@@ -277,7 +277,7 @@ impl<W: Write + Send> WriterBuilder<W> {
     /// let cursor = Cursor::new(Vec::new());
     /// let options = WriterOptions::new()
     ///     .with_compression(Compression::SNAPPY)
-    ///     .with_max_row_group_size(50000);
+    ///     .with_max_row_group_row_count(50000);
     /// let writer = WriterBuilder::new(cursor)
     ///     .writer_options(options)
     ///     .build(vec![item])
@@ -733,7 +733,7 @@ impl From<WriterOptions> for WriterProperties {
         if let Some(compression) = value.compression {
             builder = builder.set_compression(compression);
         }
-        builder = builder.set_max_row_group_size(value.max_row_group_size);
+        builder = builder.set_max_row_group_row_count(Some(value.max_row_group_row_count));
         builder.build()
     }
 }
@@ -877,7 +877,7 @@ mod tests {
         let items: Vec<Item> = (0..100).map(|_| item.clone()).collect();
 
         let mut cursor = Cursor::new(Vec::new());
-        let options = super::WriterOptions::new().with_max_row_group_size(25);
+        let options = super::WriterOptions::new().with_max_row_group_row_count(25);
         WriterBuilder::new(&mut cursor)
             .writer_options(options)
             .build(items)
