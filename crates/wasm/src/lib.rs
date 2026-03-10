@@ -15,6 +15,12 @@ pub enum Error {
     Arrow(#[from] ArrowError),
 }
 
+#[wasm_bindgen(start)]
+pub fn start() {
+    #[cfg(feature = "debug")]
+    console_error_panic_hook::set_once();
+}
+
 #[wasm_bindgen(js_name = arrowToStacJson)]
 pub fn arrow_to_stac_json(table: JSTable) -> WasmResult<JsValue> {
     let table = Table::from_js(&table)?;

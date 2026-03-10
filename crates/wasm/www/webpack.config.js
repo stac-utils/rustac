@@ -8,7 +8,12 @@ module.exports = {
     filename: "bootstrap.js",
   },
   mode: "development",
-  plugins: [new CopyWebpackPlugin(["index.html"])],
+  plugins: [
+    new CopyWebpackPlugin([
+      "index.html",
+      { from: "../../core/data/opr-one.parquet", to: "opr-one.parquet" },
+    ]),
+  ],
   experiments: {
     asyncWebAssembly: true,
   },

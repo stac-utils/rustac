@@ -4,6 +4,52 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7](https://github.com/stac-utils/rustac/compare/stac-io-v0.2.6...stac-io-v0.2.7) - 2026-03-02
+
+### Fixed
+
+- gate Url::from_file_path behind `std` feature, pin getrandom for stac-wasm ([#961](https://github.com/stac-utils/rustac/pull/961))
+
+## [0.2.6](https://github.com/stac-utils/rustac/compare/stac-io-v0.2.5...stac-io-v0.2.6) - 2026-02-18
+
+### Added
+
+- get and put streams ([#958](https://github.com/stac-utils/rustac/pull/958))
+
+### Other
+
+- create traits for clients ([#949](https://github.com/stac-utils/rustac/pull/949))
+
+## [0.2.5](https://github.com/stac-utils/rustac/compare/stac-io-v0.2.4...stac-io-v0.2.5) - 2026-02-12
+
+### Fixed
+
+- windows paths ([#955](https://github.com/stac-utils/rustac/pull/955))
+
+## [0.2.4](https://github.com/stac-utils/rustac/compare/stac-io-v0.2.3...stac-io-v0.2.4) - 2026-02-03
+
+### Added
+
+- add search_with_headers ([#948](https://github.com/stac-utils/rustac/pull/948))
+- add custom headers to search api requests ([#943](https://github.com/stac-utils/rustac/pull/943))
+
+### Other
+
+- bump msrv version ([#944](https://github.com/stac-utils/rustac/pull/944))
+
+## [0.2.3](https://github.com/stac-utils/rustac/compare/stac-io-v0.2.2...stac-io-v0.2.3) - 2026-01-20
+
+### Other
+
+- update Cargo.toml dependencies
+
+## [0.2.2](https://github.com/stac-utils/rustac/compare/stac-io-v0.2.1...stac-io-v0.2.2) - 2026-01-05
+
+### Fixed
+
+- references, not ownership, in geoparquet store writer ([#929](https://github.com/stac-utils/rustac/pull/929))
+- properly write metadata in async geoparquet writer ([#928](https://github.com/stac-utils/rustac/pull/928))
+
 ## [0.2.1](https://github.com/stac-utils/rustac/compare/stac-io-v0.2.0...stac-io-v0.2.1) - 2025-12-15
 
 ### Other

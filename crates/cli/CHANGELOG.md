@@ -4,6 +4,59 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.9](https://github.com/stac-utils/rustac/compare/rustac-v0.2.8...rustac-v0.2.9) - 2026-03-02
+
+### Added
+
+- add a --version flag ([#976](https://github.com/stac-utils/rustac/pull/976))
+
+## [0.2.8](https://github.com/stac-utils/rustac/compare/rustac-v0.2.7...rustac-v0.2.8) - 2026-02-18
+
+### Added
+
+- get and put streams ([#958](https://github.com/stac-utils/rustac/pull/958))
+
+## [0.2.7](https://github.com/stac-utils/rustac/compare/rustac-v0.2.6...rustac-v0.2.7) - 2026-02-12
+
+### Other
+
+- updated the following local packages: stac, stac-io, stac-validate, pgstac, stac-duckdb, stac-server
+
+## [0.2.6](https://github.com/stac-utils/rustac/compare/rustac-v0.2.5...rustac-v0.2.6) - 2026-02-03
+
+### Added
+
+- add search_with_headers ([#948](https://github.com/stac-utils/rustac/pull/948))
+- add custom headers to search api requests ([#943](https://github.com/stac-utils/rustac/pull/943))
+
+### Other
+
+- bump msrv version ([#944](https://github.com/stac-utils/rustac/pull/944))
+
+## [0.2.5](https://github.com/stac-utils/rustac/compare/rustac-v0.2.4...rustac-v0.2.5) - 2026-01-21
+
+### Added
+
+- add a collection command ([#940](https://github.com/stac-utils/rustac/pull/940))
+
+## [0.2.4](https://github.com/stac-utils/rustac/compare/rustac-v0.2.3...rustac-v0.2.4) - 2026-01-20
+
+### Other
+
+- updated the following local packages: stac, stac-io, stac-validate, pgstac, stac-duckdb, stac-server
+
+## [0.2.3](https://github.com/stac-utils/rustac/compare/rustac-v0.2.2...rustac-v0.2.3) - 2026-01-14
+
+### Added
+
+- search directly from pgstac ([#933](https://github.com/stac-utils/rustac/pull/933))
+
+## [0.2.2](https://github.com/stac-utils/rustac/compare/rustac-v0.2.1...rustac-v0.2.2) - 2026-01-05
+
+### Added
+
+- datetime expansion ([#917](https://github.com/stac-utils/rustac/pull/917))
+
 ## [0.2.1](https://github.com/stac-utils/rustac/compare/rustac-v0.2.0...rustac-v0.2.1) - 2025-12-15
 
 ### Other

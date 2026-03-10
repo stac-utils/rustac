@@ -1,7 +1,10 @@
 //! STAC Items.
 
-use crate::{Asset, Assets, Bbox, Error, Fields, Link, Result, STAC_VERSION, Version};
-use chrono::{DateTime, FixedOffset, NaiveDateTime, Utc};
+use crate::{
+    Asset, Assets, Bbox, Error, Fields, Link, Result, STAC_VERSION, Version,
+    datetime::parse_datetime_permissively,
+};
+use chrono::{DateTime, Utc};
 use cql2::Expr;
 use geojson::{Feature, Geometry, feature::Id};
 use indexmap::IndexMap;
@@ -523,24 +526,22 @@ impl Item {
     /// ```
     pub fn intersects_datetimes(
         &self,
-        start: Option<DateTime<FixedOffset>>,
-        end: Option<DateTime<FixedOffset>>,
+        start: Option<DateTime<Utc>>,
+        end: Option<DateTime<Utc>>,
     ) -> Result<bool> {
         let (item_start, item_end) = self.datetimes();
         let mut intersects = true;
-        if let Some(start) = start {
-            if let Some(item_end) = item_end {
-                if item_end < start {
-                    intersects = false;
-                }
-            }
+        if let Some(start) = start
+            && let Some(item_end) = item_end
+            && item_end < start
+        {
+            intersects = false;
         }
-        if let Some(end) = end {
-            if let Some(item_start) = item_start {
-                if item_start > end {
-                    intersects = false;
-                }
-            }
+        if let Some(end) = end
+            && let Some(item_start) = item_start
+            && item_start > end
+        {
+            intersects = false;
         }
         Ok(intersects)
     }
@@ -724,23 +725,9 @@ where
     use serde::de::Error;
 
     if let Some(s) = Option::<String>::deserialize(deserializer)? {
-        match DateTime::parse_from_rfc3339(&s) {
-            Ok(datetime) => Ok(Some(datetime.to_utc())),
-            Err(err) => {
-                log::warn!(
-                    "error when parsing item datetime as rfc3339 ({err}), trying to parse as naive datetime"
-                );
-                let (mut datetime, remainder) =
-                    NaiveDateTime::parse_and_remainder(&s, "%Y-%m-%dT%H:%M:%S")
-                        .map_err(D::Error::custom)?;
-                // This isn't super efficient but we're in a read-invalid-data path, so I think it's fine.
-                if !remainder.is_empty() && remainder.starts_with(".") {
-                    datetime = NaiveDateTime::parse_from_str(&s, "%Y-%m-%dT%H:%M:%S%.f")
-                        .map_err(D::Error::custom)?;
-                }
-                Ok(Some(datetime.and_utc()))
-            }
-        }
+        parse_datetime_permissively(&s)
+            .map(Some)
+            .map_err(D::Error::custom)
     } else {
         Ok(None)
     }

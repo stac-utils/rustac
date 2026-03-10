@@ -58,6 +58,10 @@ pub enum Error {
     #[error("invalid datetime: {0}")]
     InvalidDatetime(String),
 
+    /// A file path could not be converted to a URL.
+    #[error("invalid file path: {0}")]
+    InvalidFilePath(String),
+
     /// [std::io::Error]
     #[error(transparent)]
     Io(#[from] std::io::Error),

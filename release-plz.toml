@@ -7,6 +7,9 @@ name = "stac"
 [[package]]
 name = "stac-duckdb"
 semver_check = false
+# Until duckdb releases against the newer arrow
+publish = false
+git_release_enable = false
 
 [[package]]
 name = "stac-extensions"
@@ -19,6 +22,9 @@ name = "pgstac"
 
 [[package]]
 name = "stac-server"
+# Until duckdb releases against the newer arrow
+publish = false
+git_release_enable = false
 
 [[package]]
 name = "stac-validate"
@@ -26,7 +32,11 @@ name = "stac-validate"
 [[package]]
 name = "stac-wasm"
 publish = false
+git_release_enable = true
 
 [[package]]
 name = "rustac"
 semver_check = false
+# Until duckdb releases against the newer arrow
+publish = false
+git_release_enable = false

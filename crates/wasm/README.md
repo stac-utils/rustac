@@ -23,12 +23,18 @@ const bytes = stac_wasm.stacJsonToParquet(items);
 
 ## Tests
 
-We don't have automated tests.
+We have some simple automated tests:
+
+```sh
+yarn install
+yarn test
+```
+
 If you want to play with the function, modify `www/index.js` and then:
 
 ```shell
 cd www
-npm run start
+yarn start
 ```
 
 This should open a page at <http://localhost:8080/> that you can use to test out the WASM library.

@@ -10,18 +10,22 @@ repository.workspace = true
 license.workspace = true
 categories.workspace = true
 rust-version.workspace = true
-publish = false
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+debug = ["console_error_panic_hook"]
+
 [dependencies]
+console_error_panic_hook = { version = "0.1.6", optional = true }
 arrow-array.workspace = true
 arrow-schema.workspace = true
-arrow-wasm = { git = "https://github.com/kylebarron/arrow-wasm", rev = "6da94ef0a1522a244984a7d3d58a0339d0851d96" }
+arrow-wasm = { git = "https://github.com/gadomski/arrow-wasm", branch = "arrow-v58" }
+getrandom = { version = "0.3", features = ["wasm_js"] }
 serde.workspace = true
 serde-wasm-bindgen = "0.6.5"
-stac = { version = "0.15.1", path = "../core", features = ["geoparquet"] }
+stac = { version = "0.16.5", path = "../core", features = ["geoparquet"] }
 thiserror.workspace = true
 wasm-bindgen = "0.2.84"
 

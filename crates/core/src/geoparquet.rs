@@ -2,7 +2,7 @@
 
 use crate::{
     Catalog, Collection, Error, Item, ItemCollection, Result, Value,
-    geoarrow::{Encoder, Options, VERSION, VERSION_KEY},
+    geoarrow::{Encoder, Options},
 };
 use arrow_array::RecordBatch;
 use bytes::Bytes;
@@ -10,30 +10,36 @@ use geoparquet::{
     reader::{GeoParquetReaderBuilder, GeoParquetRecordBatchReader},
     writer::{GeoParquetRecordBatchEncoder, GeoParquetWriterOptionsBuilder},
 };
+pub use parquet::basic::{BrotliLevel, Compression, GzipLevel, ZstdLevel};
 use parquet::{
     arrow::{ArrowWriter, arrow_reader::ParquetRecordBatchReaderBuilder},
-    file::{properties::WriterProperties, reader::ChunkReader},
-    format::KeyValue,
+    file::{metadata::KeyValue, properties::WriterProperties, reader::ChunkReader},
 };
-use std::io::Write;
-
-pub use parquet::basic::{BrotliLevel, Compression, GzipLevel, ZstdLevel};
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, io::Write};
 
 /// Default stac-geoparquet compression
 pub fn default_compression() -> Compression {
     Compression::ZSTD(ZstdLevel::try_new(15).unwrap())
 }
 
-/// Default stac-geoparquet max row group size
-pub const DEFAULT_STAC_MAX_ROW_GROUP_SIZE: usize = 150_000;
+/// Default stac-geoparquet max row group row count
+pub const DEFAULT_STAC_MAX_ROW_GROUP_ROW_COUNT: usize = 150_000;
+
+/// The stac-geoparquet metadata key.
+pub const METADATA_KEY: &str = "stac-geoparquet";
+
+/// The stac-geoparquet version.
+pub const VERSION: &str = "1.0.0";
 
 /// Options for writing stac-geoparquet files.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct WriterOptions {
     /// Parquet compression codec
     pub compression: Option<Compression>,
+
     /// Maximum number of rows in a row group
-    pub max_row_group_size: usize,
+    pub max_row_group_row_count: usize,
 }
 
 /// An encoder for writing stac-geoparquet
@@ -78,10 +84,10 @@ impl WriterOptions {
     /// ```
     /// use stac::geoparquet::WriterOptions;
     ///
-    /// let options = WriterOptions::new().with_max_row_group_size(50000);
+    /// let options = WriterOptions::new().with_max_row_group_row_count(50000);
     /// ```
-    pub fn with_max_row_group_size(mut self, size: usize) -> Self {
-        self.max_row_group_size = size;
+    pub fn with_max_row_group_row_count(mut self, size: usize) -> Self {
+        self.max_row_group_row_count = size;
         self
     }
 }
@@ -90,7 +96,7 @@ impl Default for WriterOptions {
     fn default() -> Self {
         Self {
             compression: Some(default_compression()),
-            max_row_group_size: DEFAULT_STAC_MAX_ROW_GROUP_SIZE,
+            max_row_group_row_count: DEFAULT_STAC_MAX_ROW_GROUP_ROW_COUNT,
         }
     }
 }
@@ -120,6 +126,43 @@ where
     let reader = builder.build()?;
     let reader = GeoParquetRecordBatchReader::try_new(reader, geoarrow_schema)?;
     crate::geoarrow::from_record_batch_reader(reader)
+}
+
+/// Returns an iterator that yields batches of [Item]s from a [ChunkReader].
+///
+/// Unlike [from_reader], this does not collect all items into memory at once.
+/// Each iteration yields one record batch worth of items.
+///
+/// # Examples
+///
+/// ```
+/// use std::fs::File;
+///
+/// let file = File::open("data/extended-item.parquet").unwrap();
+/// let mut count = 0;
+/// for result in stac::geoparquet::from_reader_iter(file).unwrap() {
+///     let items = result.unwrap();
+///     count += items.len();
+/// }
+/// assert!(count > 0);
+/// ```
+pub fn from_reader_iter<R>(reader: R) -> Result<impl Iterator<Item = Result<Vec<Item>>>>
+where
+    R: ChunkReader + 'static,
+{
+    let builder = ParquetRecordBatchReaderBuilder::try_new(reader)?;
+    let geoparquet_metadata = builder
+        .geoparquet_metadata()
+        .transpose()?
+        .ok_or(Error::MissingGeoparquetMetadata)?;
+    let geoarrow_schema =
+        builder.geoarrow_schema(&geoparquet_metadata, true, Default::default())?;
+    let reader = builder.build()?;
+    let reader = GeoParquetRecordBatchReader::try_new(reader, geoarrow_schema)?;
+    Ok(reader.map(|result| {
+        let record_batch = result?;
+        crate::geoarrow::items_from_record_batch(record_batch)
+    }))
 }
 
 /// Writes a [ItemCollection] to a [std::io::Write] as
@@ -186,8 +229,19 @@ pub struct WriterBuilder<W: Write + Send> {
 /// Write items to stac-geoparquet.
 #[allow(missing_debug_implementations)]
 pub struct Writer<W: Write + Send> {
-    encoder: WriterEncoder,
+    state: WriterState,
     arrow_writer: ArrowWriter<W>,
+}
+
+/// stac-geoparquet metadata
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Metadata {
+    /// The stac-geoparquet version.
+    pub version: String,
+
+    /// Any STAC collections stored alongside the items.
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub collections: HashMap<String, Collection>,
 }
 
 impl<W: Write + Send> WriterBuilder<W> {
@@ -223,7 +277,7 @@ impl<W: Write + Send> WriterBuilder<W> {
     /// let cursor = Cursor::new(Vec::new());
     /// let options = WriterOptions::new()
     ///     .with_compression(Compression::SNAPPY)
-    ///     .with_max_row_group_size(50000);
+    ///     .with_max_row_group_row_count(50000);
     /// let writer = WriterBuilder::new(cursor)
     ///     .writer_options(options)
     ///     .build(vec![item])
@@ -341,6 +395,114 @@ impl WriterEncoder {
     }
 }
 
+/// Shared state for STAC geoparquet writers (both sync and async).
+///
+/// This struct encapsulates the common logic for encoding items and
+/// managing metadata across different writer implementations.
+#[allow(missing_debug_implementations)]
+pub struct WriterState {
+    encoder: WriterEncoder,
+    metadata: Metadata,
+}
+
+impl WriterState {
+    /// Creates a new WriterState and returns the initial record batch.
+    ///
+    /// This should be called during writer construction to initialize
+    /// the encoder and create the first record batch.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, geoarrow::Options, geoparquet::WriterState};
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let (state, record_batch) = WriterState::new(Options::default(), vec![item]).unwrap();
+    /// assert_eq!(record_batch.num_rows(), 1);
+    /// ```
+    pub fn new(options: Options, items: Vec<Item>) -> Result<(WriterState, RecordBatch)> {
+        let (encoder, record_batch) = WriterEncoder::new(options, items)?;
+        Ok((
+            WriterState {
+                encoder,
+                metadata: Metadata::default(),
+            },
+            record_batch,
+        ))
+    }
+
+    /// Encodes items into a record batch.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, geoarrow::Options, geoparquet::WriterState};
+    ///
+    /// let item1: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let item2 = item1.clone();
+    /// let (mut state, _) = WriterState::new(Options::default(), vec![item1]).unwrap();
+    /// let record_batch = state.encode(vec![item2]).unwrap();
+    /// assert_eq!(record_batch.num_rows(), 1);
+    /// ```
+    pub fn encode(&mut self, items: Vec<Item>) -> Result<RecordBatch> {
+        self.encoder.encode(items)
+    }
+
+    /// Adds a collection to the metadata.
+    ///
+    /// Warns and overwrites if there's already a collection with the same id.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, Collection, geoarrow::Options, geoparquet::WriterState};
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let (mut state, _) = WriterState::new(Options::default(), vec![item]).unwrap();
+    /// state.add_collection(Collection::new("test-id", "description"));
+    /// ```
+    pub fn add_collection(&mut self, collection: Collection) {
+        if let Some(previous_collection) = self
+            .metadata
+            .collections
+            .insert(collection.id.clone(), collection)
+        {
+            log::warn!(
+                "Collection with id={} already existed in writer, overwriting",
+                previous_collection.id
+            )
+        }
+    }
+
+    /// Consumes the state and returns the metadata key-value pairs.
+    ///
+    /// This returns both the geo metadata and the stac-geoparquet metadata
+    /// that should be appended to the parquet file.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, geoarrow::Options, geoparquet::WriterState};
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let (state, _) = WriterState::new(Options::default(), vec![item]).unwrap();
+    /// let metadata = state.into_metadata().unwrap();
+    /// assert_eq!(metadata.len(), 2); // geo + stac-geoparquet metadata
+    /// assert_eq!(metadata[0].key, "geo");
+    /// assert_eq!(metadata[1].key, "stac-geoparquet");
+    /// ```
+    pub fn into_metadata(self) -> Result<Vec<KeyValue>> {
+        let metadata = vec![
+            self.encoder.into_keyvalue()?,
+            KeyValue::new(
+                METADATA_KEY.to_string(),
+                serde_json::to_string(&self.metadata)?,
+            ),
+        ];
+        Ok(metadata)
+    }
+}
+
 impl<W: Write + Send> Writer<W> {
     fn new(
         writer: W,
@@ -348,12 +510,12 @@ impl<W: Write + Send> Writer<W> {
         writer_options: WriterOptions,
         items: Vec<Item>,
     ) -> Result<Self> {
-        let (encoder, record_batch) = WriterEncoder::new(options, items)?;
+        let (state, record_batch) = WriterState::new(options, items)?;
         let mut arrow_writer =
             ArrowWriter::try_new(writer, record_batch.schema(), Some(writer_options.into()))?;
         arrow_writer.write(&record_batch)?;
         Ok(Writer {
-            encoder,
+            state,
             arrow_writer,
         })
     }
@@ -376,9 +538,33 @@ impl<W: Write + Send> Writer<W> {
     /// writer.finish().unwrap();
     /// ```
     pub fn write(&mut self, items: Vec<Item>) -> Result<()> {
-        let record_batch = self.encoder.encode(items)?;
+        let record_batch = self.state.encode(items)?;
         self.arrow_writer.write(&record_batch)?;
         Ok(())
+    }
+
+    /// Adds a collection to this writer's metadata.
+    ///
+    /// Warns and overwrites if there's already a collection with the same id.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, Collection, geoparquet::WriterBuilder};
+    /// use std::io::Cursor;
+    ///
+    /// let item: Item = stac::read("examples/simple-item.json").unwrap();
+    /// let cursor = Cursor::new(Vec::new());
+    /// let writer = WriterBuilder::new(cursor)
+    ///     .build(vec![item])
+    ///     .unwrap()
+    ///     .add_collection(Collection::new("an-id", "a description"))
+    ///     .unwrap();
+    /// writer.finish().unwrap();
+    /// ```
+    pub fn add_collection(mut self, collection: Collection) -> Result<Writer<W>> {
+        self.state.add_collection(collection);
+        Ok(self)
     }
 
     /// Finishes writing.
@@ -397,12 +583,10 @@ impl<W: Write + Send> Writer<W> {
     /// writer.finish().unwrap();
     /// ```
     pub fn finish(mut self) -> Result<()> {
-        self.arrow_writer
-            .append_key_value_metadata(self.encoder.into_keyvalue()?);
-        self.arrow_writer.append_key_value_metadata(KeyValue::new(
-            VERSION_KEY.to_string(),
-            Some(VERSION.to_string()),
-        ));
+        let metadata = self.state.into_metadata()?;
+        for kv in metadata {
+            self.arrow_writer.append_key_value_metadata(kv);
+        }
         let _ = self.arrow_writer.finish()?;
         Ok(())
     }
@@ -549,14 +733,26 @@ impl From<WriterOptions> for WriterProperties {
         if let Some(compression) = value.compression {
             builder = builder.set_compression(compression);
         }
-        builder = builder.set_max_row_group_size(value.max_row_group_size);
+        builder = builder.set_max_row_group_row_count(Some(value.max_row_group_row_count));
         builder.build()
+    }
+}
+
+impl Default for Metadata {
+    fn default() -> Self {
+        Metadata {
+            version: VERSION.to_string(),
+            collections: HashMap::new(),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{FromGeoparquet, Item, ItemCollection, SelfHref, Value, geoparquet::WriterBuilder};
+    use crate::{
+        Collection, FromGeoparquet, Item, ItemCollection, SelfHref, Value,
+        geoparquet::{METADATA_KEY, Metadata, VERSION, WriterBuilder},
+    };
     use bytes::Bytes;
     use parquet::file::reader::{FileReader, SerializedFileReader};
     use std::{
@@ -681,7 +877,7 @@ mod tests {
         let items: Vec<Item> = (0..100).map(|_| item.clone()).collect();
 
         let mut cursor = Cursor::new(Vec::new());
-        let options = super::WriterOptions::new().with_max_row_group_size(25);
+        let options = super::WriterOptions::new().with_max_row_group_row_count(25);
         WriterBuilder::new(&mut cursor)
             .writer_options(options)
             .build(items)
@@ -724,5 +920,46 @@ mod tests {
         super::into_writer(&mut writer, vec![item]).unwrap();
         let item_collection = super::from_reader(Bytes::from(writer.into_inner())).unwrap();
         assert!(item_collection.items[0].assets.is_empty());
+    }
+
+    #[test]
+    fn metadata() {
+        let item: Item = crate::read("examples/simple-item.json").unwrap();
+        let mut cursor = Cursor::new(Vec::new());
+        WriterBuilder::new(&mut cursor)
+            .build(vec![item])
+            .unwrap()
+            .add_collection(Collection::new("an-id", "a description"))
+            .unwrap()
+            .finish()
+            .unwrap();
+        let bytes = Bytes::from(cursor.into_inner());
+        let reader = SerializedFileReader::new(bytes).unwrap();
+        let metadata = reader
+            .metadata()
+            .file_metadata()
+            .key_value_metadata()
+            .unwrap()
+            .iter()
+            .find_map(|key_value| {
+                if key_value.key == METADATA_KEY {
+                    Some(
+                        serde_json::from_str::<Metadata>(key_value.value.as_ref().unwrap())
+                            .unwrap(),
+                    )
+                } else {
+                    None
+                }
+            })
+            .unwrap();
+        assert_eq!(metadata.version, VERSION);
+        assert_eq!(metadata.collections["an-id"].description, "a description");
+    }
+
+    #[test]
+    fn links_as_integer_list() {
+        // https://github.com/stac-utils/rustac/issues/959
+        let file = File::open("data/opr-one.parquet").unwrap();
+        let _: ItemCollection = super::from_reader(file).unwrap();
     }
 }

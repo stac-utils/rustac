@@ -1,0 +1,20 @@
+{
+  "name": "stac-wasm-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "wasm-pack build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.28.0",
+    "apache-arrow": "^18.0.0",
+    "stac-wasm": "file:./pkg"
+  },
+  "devDependencies": {
+    "@vitest/browser": "^3.0.0",
+    "playwright": "^1.50.0",
+    "vite-plugin-wasm": "^3.4.0",
+    "vitest": "^3.0.0"
+  }
+}

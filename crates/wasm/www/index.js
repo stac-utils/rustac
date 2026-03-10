@@ -9,7 +9,7 @@ const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
 const worker_url = URL.createObjectURL(
   new Blob([`importScripts("${bundle.mainWorker}");`], {
     type: "text/javascript",
-  })
+  }),
 );
 
 // Instantiate the asynchronous version of DuckDB-wasm
@@ -87,10 +87,28 @@ const bytes = stac_wasm.stacJsonToParquet([
 ]);
 console.log(bytes);
 const url = URL.createObjectURL(
-  new Blob([bytes], { type: "application/vnd.apache.parquet" })
+  new Blob([bytes], { type: "application/vnd.apache.parquet" }),
 );
 const a = document.createElement("a");
 a.href = url;
 a.download = "items.parquet";
 a.textContent = "download";
 document.body.appendChild(a);
+
+const response = await fetch("opr-one.parquet");
+const parquetBuffer = new Uint8Array(await response.arrayBuffer());
+await db.registerFileBuffer("opr-one.parquet", parquetBuffer);
+
+await connection.query("INSTALL spatial");
+await connection.query("LOAD spatial");
+
+const oprTable = await connection.query(
+  "SELECT * REPLACE ST_AsGeoJSON(geometry) as geometry FROM read_parquet('opr-one.parquet')",
+);
+
+try {
+  const items = stac_wasm.arrowToStacJson(oprTable);
+  console.log("opr items:", items);
+} catch (e) {
+  console.error("arrowToStacJson failed:", e);
+}

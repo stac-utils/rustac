@@ -15,6 +15,7 @@ use stac::{
 use stac_io::{Format, StacStore};
 use stac_server::Backend;
 use stac_validate::Validate;
+use std::path::Path;
 use std::{
     collections::{HashMap, VecDeque},
     io::Write,
@@ -32,6 +33,7 @@ const DEFAULT_COLLECTION_ID: &str = "default-collection-id";
 
 /// rustac: A command-line interface for the SpatioTemporal Asset Catalog (STAC)
 #[derive(Debug, Parser)]
+#[command(version)]
 pub struct Rustac {
     #[command(subcommand)]
     command: Command,
@@ -104,11 +106,11 @@ pub struct Rustac {
     /// When records are ordered spatially or temporally, lower values result in smaller row groups (better for selective queries),
     /// while higher values result in larger row groups (better compression).
     #[arg(
-        long = "parquet-max-row-group-size",
+        long = "parquet-max-row-group-row-count",
         global = true,
         verbatim_doc_comment
     )]
-    parquet_max_row_group_size: Option<usize>,
+    parquet_max_row_group_row_count: Option<usize>,
 
     #[arg(
         long,
@@ -165,7 +167,7 @@ pub enum Command {
 
     /// Searches a STAC API or stac-geoparquet file.
     Search {
-        /// The href of the STAC API or stac-geoparquet file to search.
+        /// The href of the STAC API, stac-geoparquet file, or pgstac to search.
         href: String,
 
         /// The output file.
@@ -173,13 +175,19 @@ pub enum Command {
         /// To write to standard output, pass `-` or don't provide an argument at all.
         outfile: Option<String>,
 
-        /// Use DuckDB to query the href.
+        /// The search implementation to use.
         ///
-        /// By default, DuckDB will be used if the href ends in `parquet` or
-        /// `geoparquet`. Set this value to `true` to force DuckDB to be used,
-        /// or to `false` to disable this behavior.
-        #[arg(long = "use-duckdb")]
-        use_duckdb: Option<bool>,
+        /// If not provided, the implementation will be inferred from the href:
+        /// - `postgresql://` URLs will use the `postgresql` implementation
+        /// - `.parquet` or `.geoparquet` files will use the `duckdb` implementation
+        /// - All other hrefs will use the `api` implementation
+        ///
+        /// Possible values:
+        /// - api: Search a STAC API endpoint
+        /// - duckdb: Search a stac-geoparquet file using DuckDB
+        /// - postgresql: Search a pgstac database
+        #[arg(long = "search-with", verbatim_doc_comment)]
+        search_with: Option<SearchImplementation>,
 
         /// The maximum number of items to return from the search.
         #[arg(short = 'n', long = "max-items")]
@@ -225,6 +233,18 @@ pub enum Command {
         /// The page size to be returned from the server.
         #[arg(long = "limit")]
         limit: Option<String>,
+
+        /// Request headers to include in STAC API Search.
+        ///
+        /// Headers should be provided in `KEY=VALUE` format. Can be specified multiple
+        /// times or as a comma-delimited string.
+        /// e.g.: `rustac search --header "x-my-header=value" --header "x-my-other-header=this"`
+        #[arg(
+            long = "header",
+            value_delimiter = ',',
+            value_parser = |s: &str| KeyValue::from_str(s).map(|kv| (kv.0, kv.1))
+        )]
+        headers: Vec<(String, String)>,
     },
 
     /// Serves a STAC API.
@@ -293,6 +313,24 @@ pub enum Command {
         /// The shell to generate completion scripts for.
         shell: clap_complete::Shell,
     },
+
+    /// Generate a STAC collection from one or more items
+    Collection {
+        /// The input file.
+        ///
+        /// To read from standard input, pass `-` or don't provide an argument at all.
+        infile: Option<String>,
+
+        /// The output file.
+        ///
+        /// To write to standard output, pass `-` or don't provide an argument at all.
+        outfile: Option<String>,
+
+        /// The id of the output collection
+        ///
+        /// If not provided, will default to the file name without an extension.
+        id: Option<String>,
+    },
 }
 
 #[derive(Debug)]
@@ -300,6 +338,17 @@ pub enum Command {
 enum Value {
     Stac(stac::Value),
     Json(serde_json::Value),
+}
+
+/// The search implementation to use.
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum SearchImplementation {
+    /// Search a STAC API endpoint
+    Api,
+    /// Search a stac-geoparquet file using DuckDB
+    Duckdb,
+    /// Search a pgstac database
+    Postgresql,
 }
 
 #[derive(Debug, Clone)]
@@ -334,24 +383,36 @@ impl Rustac {
                 migrate,
                 ref to,
             } => {
-                let mut value = self.get(infile.as_deref()).await?;
                 if migrate {
+                    let mut value = self.get(infile.as_deref()).await?;
                     value = value.migrate(
                         &to.as_deref()
                             .map(|s| s.parse().unwrap())
                             .unwrap_or_default(),
                     )?;
-                } else if let Some(to) = to {
-                    eprintln!(
-                        "WARNING: --to was passed ({to}) without --migrate, value will not be migrated"
-                    );
+                    self.put(outfile.as_deref(), value.into()).await
+                } else {
+                    if let Some(to) = to {
+                        eprintln!(
+                            "WARNING: --to was passed ({to}) without --migrate, value will not be migrated"
+                        );
+                    }
+                    let input_format = self.input_format(infile.as_deref());
+                    tracing::debug!("Reading as {input_format}");
+                    let can_stream = matches!(input_format, Format::NdJson | Format::Geoparquet(_));
+                    if can_stream {
+                        let items = self.get_item_stream(infile.as_deref()).await?;
+                        self.put_item_stream(outfile.as_deref(), items).await
+                    } else {
+                        let value = self.get(infile.as_deref()).await?;
+                        self.put(outfile.as_deref(), value.into()).await
+                    }
                 }
-                self.put(outfile.as_deref(), value.into()).await
             }
             Command::Search {
                 ref href,
                 ref outfile,
-                ref use_duckdb,
+                search_with,
                 ref max_items,
                 ref intersects,
                 ref ids,
@@ -362,10 +423,19 @@ impl Rustac {
                 ref sortby,
                 ref filter,
                 ref limit,
+                ref headers,
             } => {
-                let use_duckdb = use_duckdb.unwrap_or_else(|| {
-                    matches!(Format::infer_from_href(href), Some(Format::Geoparquet(_)))
+                // Infer the search implementation from the href if not explicitly provided
+                let search_impl = search_with.unwrap_or_else(|| {
+                    if href.starts_with("postgresql://") {
+                        SearchImplementation::Postgresql
+                    } else if matches!(Format::infer_from_href(href), Some(Format::Geoparquet(_))) {
+                        SearchImplementation::Duckdb
+                    } else {
+                        SearchImplementation::Api
+                    }
                 });
+
                 let get_items = GetItems {
                     bbox: bbox.clone(),
                     datetime: datetime.clone(),
@@ -383,10 +453,22 @@ impl Rustac {
                 };
                 let search: Search = get_search.try_into()?;
                 let search = search.normalize_datetimes()?;
-                let item_collection = if use_duckdb {
-                    stac_duckdb::search(href, search, *max_items)?
-                } else {
-                    stac_io::api::search(href, search, *max_items).await?
+                let item_collection = match search_impl {
+                    SearchImplementation::Postgresql => {
+                        #[cfg(feature = "pgstac")]
+                        {
+                            pgstac::search(href, search, *max_items).await?
+                        }
+                        #[cfg(not(feature = "pgstac"))]
+                        {
+                            return Err(anyhow!("rustac is not compiled with pgstac support"));
+                        }
+                    }
+                    SearchImplementation::Duckdb => stac_duckdb::search(href, search, *max_items)?,
+                    SearchImplementation::Api => {
+                        stac_io::api::search_with_headers(href, search, *max_items, &headers)
+                            .await?
+                    }
                 };
                 self.put(
                     outfile.as_deref(),
@@ -403,7 +485,7 @@ impl Rustac {
                 load_collection_items,
                 create_collections,
             } => {
-                let bind = bind.as_deref().unwrap_or(&addr);
+                let bind = bind.as_deref().unwrap_or(addr);
                 if matches!(use_duckdb, Some(true))
                     || (use_duckdb.is_none() && hrefs.len() == 1 && hrefs[0].ends_with("parquet"))
                 {
@@ -556,6 +638,44 @@ impl Rustac {
                 clap_complete::generate(shell, &mut command, "rustac", &mut std::io::stdout());
                 Ok(())
             }
+            Command::Collection {
+                ref infile,
+                ref outfile,
+                ref id,
+            } => {
+                let value = self.get(infile.as_deref()).await?;
+                let id = id.clone().unwrap_or_else(|| {
+                    infile
+                        .as_deref()
+                        .and_then(|infile| {
+                            Path::new(infile)
+                                .file_stem()
+                                .map(|s| s.to_string_lossy().into_owned())
+                        })
+                        .unwrap_or("default-collection-id".to_string())
+                });
+                let collection = match value {
+                    stac::Value::ItemCollection(item_collection) => {
+                        Collection::from_id_and_items(id, &item_collection.items)
+                    }
+                    stac::Value::Item(item) => Collection::from_id_and_items(id, &[item]),
+                    stac::Value::Collection(collection) => collection,
+                    stac::Value::Catalog(catalog) => {
+                        let mut json = serde_json::to_value(catalog)?;
+                        let _ = json
+                            .as_object_mut()
+                            .unwrap()
+                            .insert("type".to_string(), "Collection".into());
+                        serde_json::from_value(json)?
+                    }
+                };
+                self.put(
+                    outfile.as_deref(),
+                    Value::Stac(stac::Value::Collection(collection)),
+                )
+                .await?;
+                Ok(())
+            }
         }
     }
 
@@ -571,6 +691,41 @@ impl Rustac {
             let _ = tokio::io::stdin().read_to_end(&mut buf).await?;
             let value: stac::Value = format.from_bytes(buf)?;
             Ok(value)
+        }
+    }
+
+    async fn get_item_stream(
+        &self,
+        href: Option<&str>,
+    ) -> Result<Box<dyn Iterator<Item = Result<Item>> + Send>> {
+        let href = href.and_then(|s| if s == "-" { None } else { Some(s) });
+        let format = self.input_format(href);
+        if let Some(href) = href {
+            let (store, path) = stac_io::parse_href_opts(href, self.opts())?;
+            let iter = store.get_item_stream(path, format).await?;
+            Ok(Box::new(iter.map(|r| r.map_err(Error::from))))
+        } else {
+            let mut buf = Vec::new();
+            let _ = tokio::io::stdin().read_to_end(&mut buf).await?;
+            match format {
+                Format::NdJson => {
+                    let cursor = std::io::BufReader::new(std::io::Cursor::new(buf));
+                    Ok(Box::new(
+                        stac_io::ndjson_item_reader(cursor).map(|r| r.map_err(Error::from)),
+                    ))
+                }
+                _ => {
+                    let value: stac::Value = format.from_bytes(buf)?;
+                    let items = match value {
+                        stac::Value::Item(item) => vec![item],
+                        stac::Value::ItemCollection(ic) => ic.items,
+                        other => {
+                            return Err(anyhow!("cannot stream items from {}", other.type_name()));
+                        }
+                    };
+                    Ok(Box::new(items.into_iter().map(Ok)))
+                }
+            }
         }
     }
 
@@ -595,6 +750,46 @@ impl Rustac {
             }
             std::io::stdout().write_all(&bytes)?;
             Ok(())
+        }
+    }
+
+    async fn put_item_stream(
+        &self,
+        href: Option<&str>,
+        items: impl Iterator<Item = Result<Item>>,
+    ) -> Result<()> {
+        let href = href.and_then(|s| if s == "-" { None } else { Some(s) });
+        let format = self.output_format(href);
+        if let Some(href) = href {
+            let (store, path) = stac_io::parse_href_opts(href, self.opts())?;
+            let items: Vec<Item> = items.collect::<Result<Vec<_>>>()?;
+            store
+                .put_item_stream(path, items.into_iter(), format)
+                .await?;
+            Ok(())
+        } else {
+            match format {
+                Format::NdJson => {
+                    let stdout = std::io::stdout();
+                    let mut writer = std::io::BufWriter::new(stdout.lock());
+                    for item in items {
+                        let item = item?;
+                        serde_json::to_writer(&mut writer, &item)?;
+                        writeln!(&mut writer)?;
+                    }
+                    Ok(())
+                }
+                _ => {
+                    let items: Vec<Item> = items.collect::<Result<Vec<_>>>()?;
+                    let item_collection = stac::ItemCollection::from(items);
+                    let mut bytes = format.into_vec(item_collection)?;
+                    if !matches!(format, Format::NdJson) {
+                        bytes.push(b'\n');
+                    }
+                    std::io::stdout().write_all(&bytes)?;
+                    Ok(())
+                }
+            }
         }
     }
 
@@ -632,8 +827,9 @@ impl Rustac {
             let mut writer_options = WriterOptions::new()
                 .with_compression(self.parquet_compression.or(Some(default_compression())));
 
-            if let Some(max_row_group_size) = self.parquet_max_row_group_size {
-                writer_options = writer_options.with_max_row_group_size(max_row_group_size);
+            if let Some(max_row_group_row_count) = self.parquet_max_row_group_row_count {
+                writer_options =
+                    writer_options.with_max_row_group_row_count(max_row_group_row_count);
             }
 
             Format::Geoparquet(writer_options)

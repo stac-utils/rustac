@@ -38,12 +38,11 @@ const TOP_LEVEL_KEYS: [&str; 10] = [
     "collection",
 ];
 
-use crate::Error;
+use crate::{Error, datetime::parse_datetime_permissively};
 use arrow_array::{RecordBatchReader, cast::*, types::*, *};
 use arrow_cast::display::{ArrayFormatter, FormatOptions};
 use arrow_json::JsonSerializable;
 use arrow_schema::*;
-use chrono::DateTime;
 use geo_traits::to_geo::{
     ToGeoGeometry, ToGeoGeometryCollection, ToGeoLineString, ToGeoMultiLineString, ToGeoMultiPoint,
     ToGeoMultiPolygon, ToGeoPoint, ToGeoPolygon, ToGeoRect,
@@ -517,7 +516,7 @@ pub fn from_record_batch_reader<R: RecordBatchReader>(
     Ok(rows)
 }
 
-fn record_batch_to_json_rows(
+pub(crate) fn record_batch_to_json_rows(
     record_batch: RecordBatch,
 ) -> Result<Vec<JsonMap<String, Value>>, Error> {
     let mut rows: Vec<Option<JsonMap<String, Value>>> =
@@ -535,7 +534,33 @@ fn record_batch_to_json_rows(
     }
     rows.into_iter()
         .map(|row| {
-            let row = row.unwrap();
+            let mut row = row.unwrap();
+            // Force it, in case
+            if row.contains_key("type") {
+                row.insert("type".to_string(), "Feature".to_string().into());
+            }
+            if let Some(id) = row.remove("id") {
+                if id.is_string() {
+                    row.insert("id".to_string(), id);
+                } else {
+                    tracing::warn!("id field is not a string, coercing");
+                    row.insert("id".to_string(), id.to_string().into());
+                }
+            }
+            if let Some(stac_extensions) = row.remove("stac_extensions") {
+                if stac_extensions.is_string() {
+                    tracing::warn!(
+                        "stac_extensions field is a string, coercing to list of strings"
+                    );
+                    let _ = row.insert(
+                        "stac_extensions".to_string(),
+                        serde_json::from_str::<Vec<String>>(stac_extensions.as_str().unwrap())?
+                            .into(),
+                    );
+                } else {
+                    row.insert("stac_extensions".to_string(), stac_extensions);
+                }
+            }
             unflatten(row)
         })
         .collect::<Result<_, _>>()
@@ -562,13 +587,8 @@ fn unflatten(
         if let Some(value) = item.remove(&key) {
             if DATETIME_COLUMNS.contains(&key.as_str()) {
                 if let Some(value) = value.as_str() {
-                    let _ = properties.insert(
-                        key,
-                        DateTime::parse_from_rfc3339(value)?
-                            .to_utc()
-                            .to_rfc3339()
-                            .into(),
-                    );
+                    let _ = properties
+                        .insert(key, parse_datetime_permissively(value)?.to_rfc3339().into());
                 }
             } else {
                 let _ = properties.insert(key, value);

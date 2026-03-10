@@ -2,6 +2,8 @@ use crate::{Error, Result, Version};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+#[cfg(feature = "std")]
+use url::Url;
 
 /// Migrates a STAC object from one version to another.
 pub trait Migrate: Sized + Serialize + DeserializeOwned + std::fmt::Debug {
@@ -166,17 +168,17 @@ fn migrate_bands(asset: &mut Map<String, Value>) -> Result<()> {
         }
     }
     for (key, count) in counts {
-        if let Some((value_as_string, &count)) = count.iter().max_by_key(|&(_, &count)| count) {
-            if count > 1 {
-                let value = values
-                    .get(value_as_string)
-                    .expect("every value should be in the lookup hash")
-                    .clone();
-                for band in &mut bands {
-                    if band.get(&key).map(|v| v == &value).unwrap_or_default() {
-                        let value = band.remove(&key).unwrap();
-                        let _ = asset.insert(key.clone(), value);
-                    }
+        if let Some((value_as_string, &count)) = count.iter().max_by_key(|&(_, &count)| count)
+            && count > 1
+        {
+            let value = values
+                .get(value_as_string)
+                .expect("every value should be in the lookup hash")
+                .clone();
+            for band in &mut bands {
+                if band.get(&key).map(|v| v == &value).unwrap_or_default() {
+                    let value = band.remove(&key).unwrap();
+                    let _ = asset.insert(key.clone(), value);
                 }
             }
         }
@@ -193,18 +195,38 @@ fn migrate_bands(asset: &mut Map<String, Value>) -> Result<()> {
 fn migrate_links(object: &mut Map<String, Value>) {
     if let Some(links) = object.get_mut("links").and_then(|v| v.as_array_mut()) {
         for link in links {
-            if let Some(link) = link.as_object_mut() {
-                if link
-                    .get("rel")
-                    .and_then(|v| v.as_str())
-                    .map(|s| s == "self")
-                    .unwrap_or_default()
-                {
-                    if let Some(href) = link.get("href").and_then(|v| v.as_str()) {
-                        if href.starts_with('/') {
-                            let _ =
-                                link.insert("href".to_string(), format!("file://{href}").into());
-                        }
+            let is_self_link = link
+                .as_object()
+                .and_then(|l| l.get("rel"))
+                .and_then(|v| v.as_str())
+                .map(|s| s == "self")
+                .unwrap_or_default();
+            if !is_self_link {
+                continue;
+            }
+            let href = link
+                .as_object()
+                .and_then(|l| l.get("href"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            if let Some(href) = href {
+                let new_href = if href.starts_with('/') {
+                    Some(format!("file://{href}"))
+                } else if crate::href::is_windows_absolute_path(&href) {
+                    #[cfg(feature = "std")]
+                    {
+                        Url::from_file_path(&href).ok().map(|u| u.to_string())
+                    }
+                    #[cfg(not(feature = "std"))]
+                    {
+                        None
+                    }
+                } else {
+                    None
+                };
+                if let Some(new_href) = new_href {
+                    if let Some(link) = link.as_object_mut() {
+                        let _ = link.insert("href".to_string(), new_href.into());
                     }
                 }
             }
