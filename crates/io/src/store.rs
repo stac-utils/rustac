@@ -1,5 +1,5 @@
 use crate::{Format, Readable, Result, Writeable};
-use object_store::{ObjectStore, ObjectStoreScheme, PutResult, path::Path};
+use object_store::{ObjectStore, ObjectStoreExt, ObjectStoreScheme, PutResult, path::Path};
 use std::{fmt::Debug, sync::Arc};
 use tracing::instrument;
 use url::Url;
@@ -206,7 +206,7 @@ impl StacStore {
             }
             #[cfg(feature = "geoparquet")]
             Format::Geoparquet(writer_options) => {
-                let batch_size = writer_options.max_row_group_size;
+                let batch_size = writer_options.max_row_group_row_count;
                 let mut batch = Vec::with_capacity(batch_size);
                 let mut writer: Option<geoparquet::StacGeoparquetObjectWriter> = None;
                 for item in items {
@@ -368,7 +368,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "geoparquet")]
     async fn write_parquet() {
-        use object_store::ObjectStore;
+        use object_store::ObjectStoreExt;
 
         use super::geoparquet::StacGeoparquetObjectWriter;
 
@@ -400,7 +400,7 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "geoparquet")]
     async fn write_parquet_with_collection() {
-        use object_store::ObjectStore;
+        use object_store::ObjectStoreExt;
         use parquet::file::reader::{FileReader, SerializedFileReader};
 
         use super::geoparquet::StacGeoparquetObjectWriter;

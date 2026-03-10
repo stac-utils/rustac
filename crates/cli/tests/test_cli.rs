@@ -137,13 +137,13 @@ fn output_format() {
         "rustac",
         "--output-format",
         "parquet",
-        "--parquet-max-row-group-size",
+        "--parquet-max-row-group-row-count",
         "50000",
         "translate",
     ]);
     assert_eq!(
         rustac.output_format(None),
-        Format::Geoparquet(WriterOptions::new().with_max_row_group_size(50000))
+        Format::Geoparquet(WriterOptions::new().with_max_row_group_row_count(50000))
     );
 
     let rustac = Rustac::parse_from([
@@ -152,7 +152,7 @@ fn output_format() {
         "parquet",
         "--parquet-compression",
         "snappy",
-        "--parquet-max-row-group-size",
+        "--parquet-max-row-group-row-count",
         "100000",
         "translate",
     ]);
@@ -161,7 +161,7 @@ fn output_format() {
         Format::Geoparquet(
             WriterOptions::new()
                 .with_compression(Some(Compression::SNAPPY))
-                .with_max_row_group_size(100000)
+                .with_max_row_group_row_count(100000)
         )
     );
 }

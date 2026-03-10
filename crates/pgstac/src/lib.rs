@@ -131,7 +131,7 @@ pub async fn search(
     max_items: Option<usize>,
 ) -> Result<ItemCollection> {
     let (client, connection) = tokio_postgres::connect(connection_string, NoTls).await?;
-    let _ = tokio::spawn(async move {
+    let task = tokio::spawn(async move {
         if let Err(e) = connection.await {
             tracing::error!("pgstac connection error: {}", e);
         }
@@ -146,10 +146,10 @@ pub async fn search(
         Vec::new()
     };
 
-    if search.items.limit.is_none() {
-        if let Some(max_items) = max_items {
-            search.items.limit = Some(max_items.try_into()?);
-        }
+    if search.items.limit.is_none()
+        && let Some(max_items) = max_items
+    {
+        search.items.limit = Some(max_items.try_into()?);
     }
 
     loop {
@@ -164,10 +164,10 @@ pub async fn search(
         }
         for item in page.features {
             all_items.push(item);
-            if let Some(max_items) = max_items {
-                if all_items.len() >= max_items {
-                    break;
-                }
+            if let Some(max_items) = max_items
+                && all_items.len() >= max_items
+            {
+                break;
             }
         }
         let should_continue = if let Some(max_items) = max_items {
@@ -180,6 +180,8 @@ pub async fn search(
         }
         tracing::debug!("Found {} item(s), continuing...", all_items.len());
     }
+
+    drop(task);
 
     Ok(ItemCollection::new(all_items)?)
 }
