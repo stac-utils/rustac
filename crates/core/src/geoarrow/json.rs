@@ -536,7 +536,9 @@ pub(crate) fn record_batch_to_json_rows(
         .map(|row| {
             let mut row = row.unwrap();
             // Force it, in case
-            row.insert("type".to_string(), "Feature".to_string().into());
+            if row.contains_key("type") {
+                row.insert("type".to_string(), "Feature".to_string().into());
+            }
             if let Some(id) = row.remove("id") {
                 if id.is_string() {
                     row.insert("id".to_string(), id);
