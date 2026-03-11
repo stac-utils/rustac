@@ -12,6 +12,7 @@ repository.workspace = true
 rust-version.workspace = true
 
 [features]
+stream = ["dep:futures", "dep:stream-kmerge"]
 std = []
 geo = ["dep:geo"]
 geoarrow = [
@@ -51,6 +52,8 @@ serde_json = { workspace = true, features = ["preserve_order"] }
 serde_urlencoded.workspace = true
 stac-derive = { version = "0.3.0", path = "../derive" }
 thiserror.workspace = true
+stream-kmerge = { version = "0.2.0", optional = true }
+futures = { workspace = true, optional = true }
 tracing.workspace = true
 url = { workspace = true, features = ["serde"] }
 wkb = { workspace = true, optional = true }
@@ -59,7 +62,7 @@ wkb = { workspace = true, optional = true }
 assert-json-diff.workspace = true
 bytes.workspace = true
 rstest.workspace = true
-tokio = { workspace = true, features = ["macros"] }
+tokio = { workspace = true, features = ["macros", "rt"] }
 tokio-test.workspace = true
 
 [package.metadata.docs.rs]
