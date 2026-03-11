@@ -26,6 +26,80 @@ enum Direction {
     Desc,
 }
 
+/// A trait for items that can be sorted by [`ItemComparator`].
+///
+/// This is implemented for both [`Item`] (the typed STAC struct) and
+/// [`serde_json::Map<String, Value>`] (the API-level item representation),
+/// so that sorting and stream-merging work with either type.
+pub trait SortableItem {
+    /// Resolves the value of a named field for comparison purposes.
+    ///
+    /// Well-known fields like `"id"`, `"datetime"`, `"collection"` etc. should
+    /// be returned as [`Value`] references. Unknown fields should be looked up
+    /// in properties / additional fields.
+    fn resolve_sort_field(&self, field: &str) -> Option<Value>;
+}
+
+impl SortableItem for Item {
+    fn resolve_sort_field(&self, field: &str) -> Option<Value> {
+        match field {
+            "id" => Some(Value::String(self.id.clone())),
+            "datetime" => self
+                .properties
+                .datetime
+                .or(self.properties.start_datetime)
+                .map(|dt| Value::String(dt.to_rfc3339())),
+            "start_datetime" => self
+                .properties
+                .start_datetime
+                .or(self.properties.datetime)
+                .map(|dt| Value::String(dt.to_rfc3339())),
+            "end_datetime" => self
+                .properties
+                .end_datetime
+                .map(|dt| Value::String(dt.to_rfc3339())),
+            "title" => self
+                .properties
+                .title
+                .as_ref()
+                .map(|s| Value::String(s.clone())),
+            "description" => self
+                .properties
+                .description
+                .as_ref()
+                .map(|s| Value::String(s.clone())),
+            "created" => self
+                .properties
+                .created
+                .as_ref()
+                .map(|s| Value::String(s.clone())),
+            "updated" => self
+                .properties
+                .updated
+                .as_ref()
+                .map(|s| Value::String(s.clone())),
+            "collection" => self.collection.as_ref().map(|s| Value::String(s.clone())),
+            _ => self.properties.additional_fields.get(field).cloned(),
+        }
+    }
+}
+
+impl SortableItem for serde_json::Map<String, Value> {
+    fn resolve_sort_field(&self, field: &str) -> Option<Value> {
+        // First check top-level keys.
+        if let Some(v) = self.get(field) {
+            return Some(v.clone());
+        }
+        // Then check inside "properties".
+        if let Some(Value::Object(props)) = self.get("properties") {
+            if let Some(v) = props.get(field) {
+                return Some(v.clone());
+            }
+        }
+        None
+    }
+}
+
 /// A comparator for STAC Items.
 ///
 /// This struct allows it to be used to sort items based on a configuration.
@@ -138,6 +212,26 @@ impl ItemComparator {
     pub fn compare(&self, l: &Item, r: &Item) -> Ordering {
         for sort_field in &self.sort_fields {
             let ord = compare_field(l, r, &sort_field.field);
+            if ord != Ordering::Equal {
+                return match sort_field.direction {
+                    Direction::Asc => ord,
+                    Direction::Desc => ord.reverse(),
+                };
+            }
+        }
+        Ordering::Equal
+    }
+
+    /// Compares two [`SortableItem`]s using the configured sort fields.
+    ///
+    /// This is the generic version of [`compare`](Self::compare) that works
+    /// with any type implementing [`SortableItem`], including both typed
+    /// [`Item`]s and API-level JSON maps.
+    pub fn compare_sortable<T: SortableItem>(&self, l: &T, r: &T) -> Ordering {
+        for sort_field in &self.sort_fields {
+            let l_val = l.resolve_sort_field(&sort_field.field);
+            let r_val = r.resolve_sort_field(&sort_field.field);
+            let ord = compare_values(l_val.as_ref(), r_val.as_ref());
             if ord != Ordering::Equal {
                 return match sort_field.direction {
                     Direction::Asc => ord,
@@ -303,6 +397,50 @@ where
     let comparator = ItemComparator::new(config)?;
     Ok(kmerge_by(streams, move |a, b| {
         comparator.compare(a, b).reverse()
+    }))
+}
+
+/// Sorts multiple streams of [`SortableItem`]s into a single sorted stream.
+///
+/// This is the generic version of [`sort_streams`] that works with any type
+/// implementing [`SortableItem`], including API-level items
+/// (`serde_json::Map<String, Value>`).
+///
+/// # Examples
+///
+/// ```
+/// use stac::sort::sort_sortable_streams;
+/// use serde_json::{json, Map, Value};
+/// use futures::stream::{self, StreamExt};
+///
+/// # tokio_test::block_on(async {
+/// let item_a: Map<String, Value> = serde_json::from_value(json!({"id": "a"})).unwrap();
+/// let item_b: Map<String, Value> = serde_json::from_value(json!({"id": "b"})).unwrap();
+/// let stream1 = stream::iter(vec![item_a]);
+/// let stream2 = stream::iter(vec![item_b]);
+/// let config = json!({
+///    "sortby": [
+///       { "field": "id", "direction": "asc" }
+///   ]
+/// });
+/// let mut sorted = sort_sortable_streams(vec![stream1, stream2], config).unwrap();
+/// let first = sorted.next().await.unwrap();
+/// assert_eq!(first["id"], "a");
+/// # });
+/// ```
+#[cfg(feature = "stream")]
+pub fn sort_sortable_streams<T, S, I>(
+    streams: I,
+    config: Value,
+) -> Result<impl Stream<Item = T>, serde_json::Error>
+where
+    T: SortableItem + Unpin,
+    S: Stream<Item = T> + Unpin,
+    I: IntoIterator<Item = S>,
+{
+    let comparator = ItemComparator::new(config)?;
+    Ok(kmerge_by(streams, move |a, b| {
+        comparator.compare_sortable(a, b).reverse()
     }))
 }
 

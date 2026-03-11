@@ -62,7 +62,7 @@ wkb = { workspace = true, optional = true }
 assert-json-diff.workspace = true
 bytes.workspace = true
 rstest.workspace = true
-tokio = { workspace = true, features = ["macros"] }
+tokio = { workspace = true, features = ["macros", "rt"] }
 tokio-test.workspace = true
 
 [package.metadata.docs.rs]

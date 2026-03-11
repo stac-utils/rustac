@@ -37,6 +37,8 @@
 mod client;
 mod collections;
 mod conformance;
+#[cfg(feature = "stream")]
+mod federated;
 mod fields;
 mod filter;
 mod item_collection;
@@ -49,11 +51,15 @@ mod url_builder;
 #[cfg(feature = "geoarrow")]
 pub use client::ArrowSearchClient;
 pub use client::{CollectionSearchClient, SearchClient, TransactionClient};
+#[cfg(feature = "stream")]
+pub use client::{StreamSearchClient, stream_search_pages};
 pub use collections::Collections;
 pub use conformance::{
     COLLECTIONS_URI, CORE_URI, Conformance, FEATURES_URI, FILTER_URIS, GEOJSON_URI,
     ITEM_SEARCH_URI, OGC_API_FEATURES_URI,
 };
+#[cfg(feature = "stream")]
+pub use federated::FederatedSearchClient;
 pub use fields::Fields;
 pub use filter::Filter;
 pub use item_collection::{Context, ItemCollection};
