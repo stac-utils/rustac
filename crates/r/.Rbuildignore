@@ -1,0 +1,3 @@
+^src/rust/target$
+^src/rust/.cargo$
+^README\.md$
