@@ -176,7 +176,7 @@ impl Items {
     /// assert!(search.bbox_matches(&item).unwrap());
     /// search.bbox = Some(vec![-110.0, 40.0, -100.0, 50.0].try_into().unwrap());
     /// assert!(!search.bbox_matches(&item).unwrap());
-    /// item.set_geometry(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+    /// item.set_geometry(Geometry::new_point(vec![-105.1, 41.1]));
     /// assert!(search.bbox_matches(&item).unwrap());
     /// # }
     /// ```

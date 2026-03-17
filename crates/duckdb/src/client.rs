@@ -5,7 +5,7 @@ use chrono::DateTime;
 use cql2::{Expr, ToDuckSQL};
 use duckdb::{Connection, Statement, types::Value};
 use geo::BoundingRect;
-use geojson::Geometry;
+use geojson::GeometryValue;
 use stac::api::{ArrowSearchClient, CollectionSearchClient, Direction, Search, SearchClient};
 use stac::{Collection, SpatialExtent, TemporalExtent, geoarrow::DATETIME_COLUMNS};
 use std::ops::{Deref, DerefMut};
@@ -157,8 +157,7 @@ impl Client {
                 ))
             })?;
             let mut collection = Collection::new(collection_id, DEFAULT_COLLECTION_DESCRIPTION);
-            let geometry: geo::Geometry = Geometry::from_json_value(serde_json::from_str(&row.0)?)
-                .map_err(Box::new)?
+            let geometry: geo::Geometry = serde_json::from_str::<GeometryValue>(&row.0)?
                 .try_into()
                 .map_err(Box::new)?;
             if let Some(bbox) = geometry.bounding_rect() {
