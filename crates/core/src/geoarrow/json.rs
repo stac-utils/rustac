@@ -51,6 +51,7 @@ use geoarrow_array::{
     GeoArrowArray, GeoArrowArrayAccessor, array::from_arrow_array, cast::AsGeoArrowArray,
 };
 use geoarrow_schema::GeoArrowType;
+use geojson::GeometryValue;
 use serde_json::{Value, json, map::Map as JsonMap};
 use std::{iter, sync::Arc};
 
@@ -430,7 +431,7 @@ fn set_column_for_json_rows(
                             .map(|value| -> Result<_, ArrowError> {
                                 let wkb = wkb::reader::read_wkb(value)
                                     .map_err(|err| ArrowError::ExternalError(Box::new(err)))?;
-                                let value = geojson::Value::from(&wkb.to_geometry());
+                                let value = GeometryValue::from(&wkb.to_geometry());
                                 Ok(value)
                             })
                             .transpose()?;
@@ -464,37 +465,37 @@ fn set_geometry_column_for_json_rows(
     {
         use GeoArrowType::*;
         let value = match array.data_type() {
-            Point(_) => geojson::Value::from(&array.as_point().value(i)?.to_point()),
+            Point(_) => GeometryValue::from(&array.as_point().value(i)?.to_point()),
             LineString(_) => {
-                geojson::Value::from(&array.as_line_string().value(i)?.to_line_string())
+                GeometryValue::from(&array.as_line_string().value(i)?.to_line_string())
             }
-            Polygon(_) => geojson::Value::from(&array.as_polygon().value(i)?.to_polygon()),
+            Polygon(_) => GeometryValue::from(&array.as_polygon().value(i)?.to_polygon()),
             MultiPoint(_) => {
-                geojson::Value::from(&array.as_multi_point().value(i)?.to_multi_point())
+                GeometryValue::from(&array.as_multi_point().value(i)?.to_multi_point())
             }
-            MultiLineString(_) => geojson::Value::from(
+            MultiLineString(_) => GeometryValue::from(
                 &array
                     .as_multi_line_string()
                     .value(i)?
                     .to_multi_line_string(),
             ),
             MultiPolygon(_) => {
-                geojson::Value::from(&array.as_multi_polygon().value(i)?.to_multi_polygon())
+                GeometryValue::from(&array.as_multi_polygon().value(i)?.to_multi_polygon())
             }
-            Geometry(_) => geojson::Value::from(&array.as_geometry().value(i)?.to_geometry()),
-            GeometryCollection(_) => geojson::Value::from(
+            Geometry(_) => GeometryValue::from(&array.as_geometry().value(i)?.to_geometry()),
+            GeometryCollection(_) => GeometryValue::from(
                 &array
                     .as_geometry_collection()
                     .value(i)?
                     .to_geometry_collection(),
             ),
-            Rect(_) => geojson::Value::from(&array.as_rect().value(i)?.to_rect()),
-            Wkb(_) => geojson::Value::from(&array.as_wkb::<i32>().value(i)?.to_geometry()),
-            LargeWkb(_) => geojson::Value::from(&array.as_wkb::<i64>().value(i)?.to_geometry()),
-            Wkt(_) => geojson::Value::from(&array.as_wkt::<i32>().value(i)?.to_geometry()),
-            LargeWkt(_) => geojson::Value::from(&array.as_wkt::<i64>().value(i)?.to_geometry()),
-            WktView(_) => geojson::Value::from(&array.as_wkt_view().value(i)?.to_geometry()),
-            WkbView(_) => geojson::Value::from(&array.as_wkb_view().value(i)?.to_geometry()),
+            Rect(_) => GeometryValue::from(&array.as_rect().value(i)?.to_rect()),
+            Wkb(_) => GeometryValue::from(&array.as_wkb::<i32>().value(i)?.to_geometry()),
+            LargeWkb(_) => GeometryValue::from(&array.as_wkb::<i64>().value(i)?.to_geometry()),
+            Wkt(_) => GeometryValue::from(&array.as_wkt::<i32>().value(i)?.to_geometry()),
+            LargeWkt(_) => GeometryValue::from(&array.as_wkt::<i64>().value(i)?.to_geometry()),
+            WktView(_) => GeometryValue::from(&array.as_wkt_view().value(i)?.to_geometry()),
+            WkbView(_) => GeometryValue::from(&array.as_wkb_view().value(i)?.to_geometry()),
         };
         let _ = row.insert(
             col_name.to_string(),

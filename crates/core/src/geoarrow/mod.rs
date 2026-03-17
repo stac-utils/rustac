@@ -79,7 +79,7 @@ impl Encoder {
     /// use geojson::{Geometry, Value};
     ///
     /// let mut item = Item::new("an-id");
-    /// item.geometry = Some(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+    /// item.geometry = Some(Geometry::new_point(vec![-105.1, 41.1]));
     /// let (encoder, record_batch) = Encoder::new(vec![item], Options::default()).unwrap();
     /// ```
     pub fn new(items: Vec<Item>, options: Options) -> Result<(Encoder, RecordBatch)> {
@@ -108,7 +108,7 @@ impl Encoder {
     /// use geojson::{Geometry, Value};
     ///
     /// let mut item = Item::new("an-id");
-    /// item.geometry = Some(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+    /// item.geometry = Some(Geometry::new_point(vec![-105.1, 41.1]));
     /// let (encoder, _) = Encoder::new(vec![item.clone()], Options::default()).unwrap();
     /// let record_batch = encoder.encode(vec![item]).unwrap();
     /// ```
@@ -134,7 +134,7 @@ impl Encoder {
     /// use geojson::{Geometry, Value};
     ///
     /// let mut item = Item::new("an-id");
-    /// item.geometry = Some(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+    /// item.geometry = Some(Geometry::new_point(vec![-105.1, 41.1]));
     /// let (encoder, _) = Encoder::new(vec![item], Options::default()).unwrap();
     /// let schema = encoder.into_schema();
     /// ```
@@ -157,12 +157,12 @@ impl Writer {
             .as_object_mut()
             .expect("a flat item should serialize to an object");
         if let Some(value) = object.remove("geometry") {
-            let geometry = geojson::Geometry::from_json_value(value).map_err(Box::new)?;
+            let geometry: geojson::Geometry = serde_json::from_value(value)?;
             self.geometry_builder
                 .push_geometry(Some(&(Geometry::try_from(geometry).map_err(Box::new)?)))?;
         }
         if let Some(value) = object.remove("proj:geometry") {
-            let geometry = geojson::Geometry::from_json_value(value).map_err(Box::new)?;
+            let geometry: geojson::Geometry = serde_json::from_value(value)?;
             let mut cursor = Cursor::new(Vec::new());
             wkb::writer::write_geometry(
                 &mut cursor,
@@ -266,7 +266,7 @@ fn iter_items(
 /// use geojson::{Geometry, Value};
 ///
 /// let mut item = Item::new("an-id");
-/// item.geometry = Some(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+/// item.geometry = Some(Geometry::new_point(vec![-105.1, 41.1]));
 /// let (record_batch, _) = geoarrow::encode(vec![item]).unwrap();
 /// let items = geoarrow::items_from_record_batch(record_batch).unwrap();
 /// assert_eq!(items.len(), 1);
@@ -288,7 +288,7 @@ pub fn items_from_record_batch(record_batch: RecordBatch) -> Result<Vec<Item>> {
 /// use geojson::{Geometry, Value};
 ///
 /// let mut item = Item::new("an-id");
-/// item.geometry = Some(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+/// item.geometry = Some(Geometry::new_point(vec![-105.1, 41.1]));
 /// let (record_batch, schema) = geoarrow::encode(vec![item]).unwrap();
 /// let reader = RecordBatchIterator::new(vec![record_batch].into_iter().map(Ok), schema);
 /// let item_collection = geoarrow::from_record_batch_reader(reader).unwrap();
@@ -311,7 +311,7 @@ pub fn from_record_batch_reader<R: RecordBatchReader>(reader: R) -> Result<ItemC
 /// use geojson::{Geometry, Value};
 ///
 /// let mut item = Item::new("an-id");
-/// item.geometry = Some(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+/// item.geometry = Some(Geometry::new_point(vec![-105.1, 41.1]));
 /// let (record_batch, _) = geoarrow::encode(vec![item]).unwrap();
 /// // First convert to WKB, then back to native
 /// let record_batch = geoarrow::with_wkb_geometry(record_batch, "geometry").unwrap();
@@ -350,7 +350,7 @@ pub fn with_native_geometry(
 /// use geojson::{Geometry, Value};
 ///
 /// let mut item = Item::new("an-id");
-/// item.geometry = Some(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+/// item.geometry = Some(Geometry::new_point(vec![-105.1, 41.1]));
 /// let (record_batch, _) = geoarrow::encode(vec![item]).unwrap();
 /// let record_batch = geoarrow::with_wkb_geometry(record_batch, "geometry").unwrap();
 /// ```
@@ -379,7 +379,7 @@ pub fn with_wkb_geometry(mut record_batch: RecordBatch, column_name: &str) -> Re
 /// use geojson::{Geometry, Value};
 ///
 /// let mut item = Item::new("an-id");
-/// item.geometry = Some(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+/// item.geometry = Some(Geometry::new_point(vec![-105.1, 41.1]));
 /// let (record_batch, _) = geoarrow::encode(vec![item]).unwrap();
 /// // First convert to WKB format
 /// let record_batch = geoarrow::with_wkb_geometry(record_batch, "geometry").unwrap();

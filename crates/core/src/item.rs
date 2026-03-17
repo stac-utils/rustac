@@ -416,10 +416,10 @@ impl Item {
     ///
     /// ```
     /// use stac::Item;
-    /// use geojson::{Geometry, Value};
+    /// use geojson::Geometry;
     ///
     /// let mut item = Item::new("an-id");
-    /// item.set_geometry(Some(Geometry::new(Value::Point(vec![-105.1, 41.1]))));
+    /// item.set_geometry(Some(Geometry::new_point(vec![-105.1, 41.1])));
     /// assert_eq!(item.bbox.unwrap(), vec![-105.1, 41.1, -105.1, 41.1].try_into().unwrap());
     /// ```
     #[cfg(feature = "geo")]
@@ -446,7 +446,7 @@ impl Item {
     /// use geo::{Rect, coord};
     ///
     /// let mut item = Item::new("an-id");
-    /// item.set_geometry(Some(Geometry::new(Value::Point(vec![-105.1, 41.1]))));
+    /// item.set_geometry(Some(Geometry::new_point(vec![-105.1, 41.1])));
     /// let intersects = Rect::new(
     ///     coord! { x: -106.0, y: 40.0 },
     ///     coord! { x: -105.0, y: 42.0 },
@@ -478,9 +478,9 @@ impl Item {
     /// use geojson::{Geometry, Value};
     ///
     /// let mut item = Item::new("an-id");
-    /// item.set_geometry(Some(Geometry::new(Value::Point(vec![-105.1, 41.1]))));
+    /// item.set_geometry(Some(Geometry::new_point(vec![-105.1, 41.1])));
     /// let bbox = stac::geo::bbox(&vec![-106.0, 41.0, -105.0, 42.0]).unwrap();
-    /// assert!(item.intersects_bbox(bbox).unwrap());
+    /// assert!(item.intersects(&bbox).unwrap());
     /// ```
     #[cfg(feature = "geo")]
     #[deprecated(since = "0.5.2", note = "Use intersects instead")]
@@ -767,9 +767,9 @@ mod tests {
     fn set_geometry_sets_bbox() {
         use geojson::Geometry;
         let mut item = Item::new("an-id");
-        item.set_geometry(Some(Geometry::new(geojson::Value::Point(vec![
-            -105.1, 41.1,
-        ]))))
+        item.set_geometry(Some(Geometry::new(geojson::GeometryValue::new_point(
+            vec![-105.1, 41.1],
+        ))))
         .unwrap();
         assert_eq!(
             item.bbox,
@@ -782,9 +782,9 @@ mod tests {
     fn set_geometry_clears_bbox() {
         use geojson::Geometry;
         let mut item = Item::new("an-id");
-        item.set_geometry(Some(Geometry::new(geojson::Value::Point(vec![
-            -105.1, 41.1,
-        ]))))
+        item.set_geometry(Some(Geometry::new(geojson::GeometryValue::new_point(
+            vec![-105.1, 41.1],
+        ))))
         .unwrap();
         item.set_geometry(None).unwrap();
         assert_eq!(item.bbox, None);
@@ -795,9 +795,9 @@ mod tests {
     fn insersects() {
         use geojson::Geometry;
         let mut item = Item::new("an-id");
-        item.set_geometry(Some(Geometry::new(geojson::Value::Point(vec![
-            -105.1, 41.1,
-        ]))))
+        item.set_geometry(Some(Geometry::new(geojson::GeometryValue::new_point(
+            vec![-105.1, 41.1],
+        ))))
         .unwrap();
         assert!(
             item.intersects(&crate::geo::bbox(&[-106.0, 41.0, -105.0, 42.0]).unwrap())

@@ -409,7 +409,7 @@ impl<T> Pgstac for T where T: GenericClient {}
 #[cfg(test)]
 pub(crate) mod tests {
     use super::Pgstac;
-    use geojson::{Geometry, Value};
+    use geojson::Geometry;
     use rstest::{fixture, rstest};
     use serde_json::{Map, json};
     use stac::api::{Fields, Filter, Search, Sortby};
@@ -506,7 +506,7 @@ pub(crate) mod tests {
     }
 
     fn longmont() -> Geometry {
-        Geometry::new(Value::Point(vec![-105.1019, 40.1672]))
+        Geometry::new_point(vec![-105.1019, 40.1672])
     }
 
     #[fixture]
@@ -905,13 +905,13 @@ pub(crate) mod tests {
         let search = Search {
             intersects: Some(
                 serde_json::from_value(
-                    serde_json::to_value(Geometry::new(Value::Polygon(vec![vec![
+                    serde_json::to_value(Geometry::new_polygon(vec![vec![
                         vec![-106., 40.],
                         vec![-106., 41.],
                         vec![-105., 41.],
                         vec![-105., 40.],
                         vec![-106., 40.],
-                    ]])))
+                    ]]))
                     .unwrap(),
                 )
                 .unwrap(),
@@ -922,13 +922,13 @@ pub(crate) mod tests {
         let search = Search {
             intersects: Some(
                 serde_json::from_value(
-                    serde_json::to_value(Geometry::new(Value::Polygon(vec![vec![
+                    serde_json::to_value(Geometry::new_polygon(vec![vec![
                         vec![-104., 40.],
                         vec![-104., 41.],
                         vec![-103., 41.],
                         vec![-103., 40.],
                         vec![-104., 40.],
-                    ]])))
+                    ]]))
                     .unwrap(),
                 )
                 .unwrap(),

@@ -1,5 +1,5 @@
 use crate::{Error, Result};
-use geojson::{Geometry, Value};
+use geojson::Geometry;
 use serde::{Deserialize, Serialize};
 
 /// A bounding box.
@@ -181,7 +181,7 @@ impl Bbox {
         };
         Geometry {
             bbox,
-            value: Value::Polygon(vec![coordinates]),
+            value: geojson::GeometryValue::new_polygon(vec![coordinates]),
             foreign_members: None,
         }
     }
@@ -238,7 +238,7 @@ impl From<Bbox> for geo::Rect {
 #[cfg(test)]
 mod tests {
     use super::Bbox;
-    use geojson::Value;
+    use geojson::GeometryValue;
 
     #[test]
     fn to_geometry() {
@@ -246,7 +246,7 @@ mod tests {
         let geometry = bbox.to_geometry();
         assert_eq!(
             geometry.value,
-            Value::Polygon(vec![vec![
+            GeometryValue::new_polygon(vec![vec![
                 vec![1., 2.],
                 vec![3., 2.],
                 vec![3., 4.],

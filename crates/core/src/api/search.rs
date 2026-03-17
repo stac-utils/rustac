@@ -128,12 +128,12 @@ impl Search {
     ///
     /// ```
     /// use stac::api::Search;
-    /// use geojson::{Geometry, Value};
+    /// use geojson::Geometry;
     ///
     /// let mut search = Search::default();
     /// search.items.bbox =  Some(vec![-180.0, -90.0, 180.0, 80.0].try_into().unwrap());
     /// search = search.valid().unwrap();
-    /// search.intersects = Some(Geometry::new(Value::Point(vec![0.0, 0.0])));
+    /// search.intersects = Some(Geometry::new_point(vec![0.0, 0.0]));
     /// search.valid().unwrap_err();
     /// ```
     pub fn valid(mut self) -> Result<Search> {
@@ -226,9 +226,9 @@ impl Search {
     /// let mut search = Search::new();
     /// let mut item = Item::new("item-id");
     /// assert!(search.intersects_matches(&item).unwrap());
-    /// search.intersects = Some(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+    /// search.intersects = Some(Geometry::new_point(vec![-105.1, 41.1]));
     /// assert!(!search.intersects_matches(&item).unwrap());
-    /// item.set_geometry(Geometry::new(Value::Point(vec![-105.1, 41.1])));
+    /// item.set_geometry(Geometry::new_point(vec![-105.1, 41.1]));
     /// assert!(search.intersects_matches(&item).unwrap());
     /// # }
     /// ```
