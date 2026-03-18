@@ -1,12 +1,12 @@
 use crate::{Error, Pgstac};
 use serde_json::Map;
-use stac::api::{CollectionSearchClient, ItemCollection, Search, SearchClient, TransactionClient};
+use stac::api::{CollectionsClient, ItemCollection, ItemsClient, Search, TransactionClient};
 use stac::{Collection, Item};
 use std::ops::{Deref, DerefMut};
 use tokio_postgres::GenericClient;
 
 /// A newtype wrapper around a [`GenericClient`] that implements the STAC
-/// client traits ([`SearchClient`], [`CollectionSearchClient`], and
+/// client traits ([`ItemsClient`], [`CollectionsClient`], and
 /// [`TransactionClient`]).
 ///
 /// This wrapper allows any [`tokio_postgres`] client or transaction to be used
@@ -17,7 +17,7 @@ use tokio_postgres::GenericClient;
 ///
 /// ```no_run
 /// use pgstac::Client;
-/// use stac::api::SearchClient;
+/// use stac::api::ItemsClient;
 /// use tokio_postgres::NoTls;
 ///
 /// # tokio_test::block_on(async {
@@ -51,7 +51,7 @@ impl<C> DerefMut for Client<C> {
     }
 }
 
-impl<C: GenericClient + Send + Sync> SearchClient for Client<C> {
+impl<C: GenericClient + Send + Sync> ItemsClient for Client<C> {
     type Error = Error;
 
     async fn search(&self, search: Search) -> Result<ItemCollection, Error> {
@@ -82,7 +82,7 @@ impl<C: GenericClient + Send + Sync> SearchClient for Client<C> {
     }
 }
 
-impl<C: GenericClient + Send + Sync> CollectionSearchClient for Client<C> {
+impl<C: GenericClient + Send + Sync> CollectionsClient for Client<C> {
     type Error = Error;
 
     async fn collections(&self) -> Result<Vec<Collection>, Error> {

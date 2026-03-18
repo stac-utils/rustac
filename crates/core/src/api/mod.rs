@@ -34,6 +34,7 @@
 
 #![warn(missing_docs, unused_qualifications)]
 
+mod adapters;
 mod client;
 mod collections;
 mod conformance;
@@ -47,8 +48,14 @@ mod sort;
 mod url_builder;
 
 #[cfg(feature = "geoarrow")]
-pub use client::ArrowSearchClient;
-pub use client::{CollectionSearchClient, SearchClient, TransactionClient};
+pub use adapters::{AdapterError, RecordBatchReaderAdapter};
+pub use adapters::{PagedItemsStream, stream_pages_collections_generic, stream_pages_generic};
+#[cfg(feature = "geoarrow")]
+pub use client::ArrowItemsClient;
+pub use client::{
+    CollectionsClient, ItemsClient, PagedCollectionsClient, StreamCollectionsClient,
+    StreamItemsClient, TransactionClient,
+};
 pub use collections::Collections;
 pub use conformance::{
     COLLECTIONS_URI, CORE_URI, Conformance, FEATURES_URI, FILTER_URIS, GEOJSON_URI,

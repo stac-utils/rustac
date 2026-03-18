@@ -1,10 +1,14 @@
 use crate::{Backend, Error, Result};
 use bb8::Pool;
 use bb8_postgres::PostgresConnectionManager;
+use futures_core::Stream;
 use pgstac::Pgstac;
 use rustls::{ClientConfig, RootCertStore};
 use serde_json::Map;
-use stac::api::{CollectionSearchClient, ItemCollection, Search, SearchClient, TransactionClient};
+use stac::api::{
+    CollectionsClient, ItemCollection, ItemsClient, Search, StreamItemsClient, TransactionClient,
+    stream_pages_generic,
+};
 use stac::{Collection, Item};
 use tokio_postgres::{
     Socket,
@@ -71,7 +75,7 @@ where
     }
 }
 
-impl<Tls> SearchClient for PgstacBackend<Tls>
+impl<Tls> ItemsClient for PgstacBackend<Tls>
 where
     Tls: MakeTlsConnect<Socket> + Clone + Send + Sync + 'static,
     <Tls as MakeTlsConnect<Socket>>::Stream: Send + Sync,
@@ -110,7 +114,7 @@ where
     }
 }
 
-impl<Tls> CollectionSearchClient for PgstacBackend<Tls>
+impl<Tls> CollectionsClient for PgstacBackend<Tls>
 where
     Tls: MakeTlsConnect<Socket> + Clone + Send + Sync + 'static,
     <Tls as MakeTlsConnect<Socket>>::Stream: Send + Sync,
@@ -161,6 +165,24 @@ where
         tracing::debug!("adding {} items using pgstac loading", items.len());
         let client = self.pool.get().await?;
         client.add_items(&items).await.map_err(Error::from)
+    }
+}
+
+impl<Tls> StreamItemsClient for PgstacBackend<Tls>
+where
+    Tls: MakeTlsConnect<Socket> + Clone + Send + Sync + 'static,
+    <Tls as MakeTlsConnect<Socket>>::Stream: Send + Sync,
+    <Tls as MakeTlsConnect<Socket>>::TlsConnect: Send,
+    <<Tls as MakeTlsConnect<Socket>>::TlsConnect as TlsConnect<Socket>>::Future: Send,
+{
+    type Error = Error;
+
+    async fn search_stream(
+        &self,
+        search: Search,
+    ) -> Result<impl Stream<Item = std::result::Result<stac::api::Item, Error>> + Send> {
+        let page = ItemsClient::search(self, search.clone()).await?;
+        Ok(stream_pages_generic(self.clone(), search, page))
     }
 }
 

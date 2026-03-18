@@ -1,6 +1,10 @@
 use crate::{Backend, DEFAULT_LIMIT, Error, Result};
+use futures_core::Stream;
 use serde_json::Map;
-use stac::api::{CollectionSearchClient, ItemCollection, Search, SearchClient, TransactionClient};
+use stac::api::{
+    CollectionsClient, ItemCollection, ItemsClient, Search, StreamItemsClient, TransactionClient,
+    stream_pages_generic,
+};
 use stac::{Collection, Item};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -33,7 +37,7 @@ impl MemoryBackend {
     }
 }
 
-impl SearchClient for MemoryBackend {
+impl ItemsClient for MemoryBackend {
     type Error = Error;
 
     async fn search(&self, mut search: Search) -> Result<ItemCollection> {
@@ -89,7 +93,7 @@ impl SearchClient for MemoryBackend {
     }
 }
 
-impl CollectionSearchClient for MemoryBackend {
+impl CollectionsClient for MemoryBackend {
     type Error = Error;
 
     async fn collections(&self) -> Result<Vec<Collection>> {
@@ -114,7 +118,7 @@ impl TransactionClient for MemoryBackend {
 
     async fn add_item(&mut self, item: Item) -> Result<()> {
         if let Some(collection_id) = item.collection.clone() {
-            if CollectionSearchClient::collection(self, &collection_id)
+            if CollectionsClient::collection(self, &collection_id)
                 .await?
                 .is_none()
             {
@@ -132,6 +136,18 @@ impl TransactionClient for MemoryBackend {
                 item.id
             )))
         }
+    }
+}
+
+impl StreamItemsClient for MemoryBackend {
+    type Error = Error;
+
+    async fn search_stream(
+        &self,
+        search: Search,
+    ) -> Result<impl Stream<Item = std::result::Result<stac::api::Item, Error>> + Send> {
+        let page = ItemsClient::search(self, search.clone()).await?;
+        Ok(stream_pages_generic(self.clone(), search, page))
     }
 }
 

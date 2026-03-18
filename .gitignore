@@ -9,3 +9,4 @@ node_modules/
 package-lock.json
 crates/wasm/tests/__screenshots__
 .yarn/
+planfor*.md
