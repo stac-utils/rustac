@@ -18,7 +18,6 @@ theme:
 nav:
   - Home: index.md
   - Formats: formats.md
-  - Search clients: search-clients.md
   - Command-line interface: cli.md
   - History: history.md
   - Pronunciation: pronunciation.md

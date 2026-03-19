@@ -6,9 +6,10 @@ use cql2::{Expr, ToDuckSQL};
 use duckdb::{Connection, Statement, types::Value};
 use geo::BoundingRect;
 use geojson::GeometryValue;
+#[cfg(feature = "async")]
+use stac::api::StreamItemsClient;
 use stac::api::{
     ArrowItemsClient, CollectionsClient, Direction, ItemsClient, RecordBatchReaderAdapter, Search,
-    StreamItemsClient,
 };
 use stac::{Collection, SpatialExtent, TemporalExtent, geoarrow::DATETIME_COLUMNS};
 use std::ops::{Deref, DerefMut};
@@ -604,6 +605,7 @@ impl CollectionsClient for SyncHrefClient {
     }
 }
 
+#[cfg(feature = "async")]
 impl StreamItemsClient for SyncHrefClient {
     type Error = Error;
 

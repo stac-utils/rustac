@@ -36,8 +36,8 @@ rustls = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded.workspace = true
-stac = { version = "0.16.5", path = "../core" }
-stac-duckdb = { version = "0.3.7", path = "../duckdb", optional = true }
+stac = { version = "0.16.5", path = "../core", features = ["async"] }
+stac-duckdb = { version = "0.3.7", path = "../duckdb", features = ["async"], optional = true }
 thiserror.workspace = true
 tokio-postgres = { workspace = true, optional = true }
 tokio-postgres-rustls = { workspace = true, optional = true }

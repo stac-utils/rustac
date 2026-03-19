@@ -1,5 +1,6 @@
 use super::{ItemCollection, Items, Search};
 use crate::{Collection, Error, Item};
+#[cfg(feature = "async")]
 use futures_core::Stream;
 use std::future::Future;
 
@@ -170,6 +171,7 @@ pub trait ArrowItemsClient {
     }
 }
 
+#[cfg(feature = "async")]
 /// A client that can stream STAC items across all pages.
 ///
 /// [`StreamItemsClient::search_stream`] is the only required method. The
@@ -261,14 +263,10 @@ pub trait StreamItemsClient: Send + Sync {
         search: Search,
     ) -> impl Future<Output = Result<Vec<super::Item>, Self::Error>> + Send {
         async move {
-            use futures::StreamExt as _;
+            use futures::TryStreamExt as _;
             let stream = self.search_stream(search).await?;
             futures::pin_mut!(stream);
-            let mut items = Vec::new();
-            while let Some(result) = stream.next().await {
-                items.push(result?);
-            }
-            Ok(items)
+            stream.try_collect().await
         }
     }
 
@@ -297,14 +295,16 @@ pub trait StreamItemsClient: Send + Sync {
         search: Search,
     ) -> impl Future<Output = Result<usize, Self::Error>> + Send {
         async move {
-            use futures::StreamExt as _;
+            use futures::TryStreamExt as _;
             let stream = self.search_stream(search).await?;
             futures::pin_mut!(stream);
             let mut count = 0usize;
-            while let Some(result) = stream.next().await {
-                let _ = result?;
-                count += 1;
-            }
+            stream
+                .try_for_each(|_| {
+                    count += 1;
+                    async { Ok(()) }
+                })
+                .await?;
             Ok(count)
         }
     }
@@ -399,6 +399,7 @@ pub trait PagedCollectionsClient: Send + Sync {
     ) -> impl Future<Output = Result<(Vec<Collection>, Option<String>), Self::Error>> + Send;
 }
 
+#[cfg(feature = "async")]
 /// A client that can stream STAC collections.
 ///
 /// [`StreamCollectionsClient::collections_stream`] is the only required
@@ -413,9 +414,9 @@ pub trait PagedCollectionsClient: Send + Sync {
 /// them as a stream.
 ///
 /// For cursor-paginated backends, implement [`PagedCollectionsClient`] and
-/// call [`stream_pages_collections_generic`](crate::api::stream_pages_collections_generic)
+/// call [`stream_pages_collections`](crate::api::stream_pages_collections)
 /// inside your own `StreamCollectionsClient` impl — the same pattern as
-/// [`stream_pages_generic`](crate::api::stream_pages_generic) for items.
+/// [`stream_pages`](crate::api::stream_pages) for items.
 pub trait StreamCollectionsClient: Send + Sync {
     /// The error type for this client.
     type Error: Send;
@@ -450,14 +451,10 @@ pub trait StreamCollectionsClient: Send + Sync {
         &self,
     ) -> impl Future<Output = Result<Vec<Collection>, Self::Error>> + Send {
         async move {
-            use futures::StreamExt as _;
+            use futures::TryStreamExt as _;
             let stream = self.collections_stream().await?;
             futures::pin_mut!(stream);
-            let mut collections = Vec::new();
-            while let Some(result) = stream.next().await {
-                collections.push(result?);
-            }
-            Ok(collections)
+            stream.try_collect().await
         }
     }
 }

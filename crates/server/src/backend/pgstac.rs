@@ -7,7 +7,7 @@ use rustls::{ClientConfig, RootCertStore};
 use serde_json::Map;
 use stac::api::{
     CollectionsClient, ItemCollection, ItemsClient, Search, StreamItemsClient, TransactionClient,
-    stream_pages_generic,
+    stream_pages,
 };
 use stac::{Collection, Item};
 use tokio_postgres::{
@@ -182,7 +182,7 @@ where
         search: Search,
     ) -> Result<impl Stream<Item = std::result::Result<stac::api::Item, Error>> + Send> {
         let page = ItemsClient::search(self, search.clone()).await?;
-        Ok(stream_pages_generic(self.clone(), search, page))
+        Ok(stream_pages(self.clone(), search, page))
     }
 }
 

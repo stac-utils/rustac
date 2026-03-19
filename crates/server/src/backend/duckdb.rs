@@ -4,8 +4,7 @@ use bb8::{ManageConnection, Pool};
 use futures_core::Stream;
 use stac::Collection;
 use stac::api::{
-    CollectionsClient, ItemsClient, Search, StreamItemsClient, TransactionClient,
-    stream_pages_generic,
+    CollectionsClient, ItemsClient, Search, StreamItemsClient, TransactionClient, stream_pages,
 };
 use stac_duckdb::Client;
 
@@ -89,7 +88,7 @@ impl StreamItemsClient for DuckdbBackend {
         search: Search,
     ) -> Result<impl Stream<Item = std::result::Result<stac::api::Item, Error>> + Send> {
         let page = ItemsClient::search(self, search.clone()).await?;
-        Ok(stream_pages_generic(self.clone(), search, page))
+        Ok(stream_pages(self.clone(), search, page))
     }
 }
 

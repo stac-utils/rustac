@@ -14,11 +14,12 @@ rust-version.workspace = true
 [features]
 default = []
 bundled = ["duckdb/bundled"]
+async = ["dep:futures", "dep:futures-core", "stac/async"]
 
 [dependencies]
 arrow-array.workspace = true
-futures.workspace = true
-futures-core.workspace = true
+futures = { workspace = true, optional = true }
+futures-core = { workspace = true, optional = true }
 arrow-schema.workspace = true
 chrono.workspace = true
 cql2.workspace = true
