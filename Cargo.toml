@@ -104,6 +104,6 @@ webpki-roots = "1.0.0"
 wkb = "0.9.0"
 
 [patch.crates-io]
-geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs", branch = "main" }
-geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs", branch = "main" }
-geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs", branch = "main" }
+geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs", branch = "234c7bd287b3e3caaa9ece9e67e81259347121f8" }
+geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs", branch = "234c7bd287b3e3caaa9ece9e67e81259347121f8" }
+geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs", branch = "234c7bd287b3e3caaa9ece9e67e81259347121f8" }
