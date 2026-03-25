@@ -593,7 +593,7 @@ impl Rustac {
                     );
                     store
                         .put_format(
-                            path.child(file_name),
+                            path.clone().join(file_name),
                             stac::ItemCollection::from(items),
                             format,
                         )
