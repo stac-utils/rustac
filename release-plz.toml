@@ -21,6 +21,9 @@ name = "stac-io"
 name = "pgstac"
 
 [[package]]
+name = "stac-server-asgi"
+
+[[package]]
 name = "stac-server"
 # Until duckdb releases against the newer arrow
 publish = false
