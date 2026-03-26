@@ -20,15 +20,16 @@ jobs:
       name: npm
       url: https://www.npmjs.com/package/stac-wasm
     steps:
-      - uses: actions/checkout@v6
-      - uses: cargo-bins/cargo-binstall@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: cargo-bins/cargo-binstall@113a77a4ce971c41332f2129c3d995df993cf746 # v1.17.8
       - name: Install wasm-pack
         run: cargo binstall wasm-pack --no-confirm
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - name: Build wasm
         run: wasm-pack build
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
