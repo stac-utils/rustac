@@ -166,7 +166,7 @@ jobs:
           persist-credentials: false
       - uses: cargo-bins/cargo-binstall@113a77a4ce971c41332f2129c3d995df993cf746 # v1.17.8
       - name: Install cargo-hack
-        run: cargo bininstall cargo-hack --no-confirm
+        run: cargo binstall cargo-hack --no-confirm
       - name: Check msrv
         run: cargo hack check --rust-version --workspace --all-targets --ignore-private
   doc:
