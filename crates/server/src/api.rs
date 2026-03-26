@@ -324,6 +324,9 @@ impl<B: Backend> Api<B> {
     /// # })
     /// ```
     pub async fn search(&self, mut search: Search, method: Method) -> Result<ItemCollection> {
+        if search.limit.is_none() {
+            search.limit = Some(10);
+        }
         let mut item_collection = self.backend.search(search.clone()).await?;
         if method == Method::GET
             && let Some(filter) = search.filter.take()
@@ -384,7 +387,52 @@ impl<B: Backend> Api<B> {
         }
         match *method {
             Method::GET => {
-                url.set_query(Some(&serde_urlencoded::to_string(data)?));
+                // serde_urlencoded cannot serialize complex types like Vec<String> (collections,
+                // ids) or custom structs (Bbox, Sortby). Convert via JSON first, then flatten
+                // arrays to comma-separated strings.
+                let json_value = serde_json::to_value(&data)?;
+                let params: Vec<(String, String)> = if let Value::Object(map) = json_value {
+                    map.into_iter()
+                        .filter_map(|(k, v)| {
+                            let s = match v {
+                                Value::String(s) if !s.is_empty() => Some(s),
+                                Value::Number(n) => Some(n.to_string()),
+                                Value::Bool(b) => Some(b.to_string()),
+                                Value::Array(arr) => {
+                                    let joined = arr
+                                        .into_iter()
+                                        .filter_map(|v| match v {
+                                            Value::String(s) => Some(s),
+                                            Value::Number(n) => Some(n.to_string()),
+                                            // Sortby objects: {"field": "f", "direction": "asc|desc"}
+                                            Value::Object(obj) => {
+                                                let field =
+                                                    obj.get("field")?.as_str()?.to_string();
+                                                let dir = obj
+                                                    .get("direction")
+                                                    .and_then(|d| d.as_str())
+                                                    .unwrap_or("asc");
+                                                if dir == "desc" {
+                                                    Some(format!("-{field}"))
+                                                } else {
+                                                    Some(field)
+                                                }
+                                            }
+                                            _ => None,
+                                        })
+                                        .collect::<Vec<_>>()
+                                        .join(",");
+                                    if joined.is_empty() { None } else { Some(joined) }
+                                }
+                                _ => None,
+                            };
+                            s.map(|s| (k, s))
+                        })
+                        .collect()
+                } else {
+                    vec![]
+                };
+                url.set_query(Some(&serde_urlencoded::to_string(params)?));
                 Ok(Link::new(url, rel).geojson().method("GET"))
             }
             Method::POST => Ok(Link::new(url, rel).geojson().method("POST").body(data)?),

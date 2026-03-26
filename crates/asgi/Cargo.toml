@@ -1,0 +1,25 @@
+[package]
+name = "stac-server-asgi"
+description = "ASGI adapter utilities for stac-server"
+version = "0.1.0"
+keywords = ["stac", "asgi", "fastapi", "server"]
+categories = ["science", "data-structures"]
+edition.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+axum = { workspace = true }
+bytes = { workspace = true }
+futures-util = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+stac-server = { version = "0.5.1", path = "../server", features = ["axum"] }
+thiserror = { workspace = true }
+tower = { workspace = true, features = ["util"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros"] }

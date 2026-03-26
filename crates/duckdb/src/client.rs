@@ -189,12 +189,12 @@ impl Client {
     pub fn search(&self, href: &str, search: Search) -> Result<stac::api::ItemCollection> {
         let mut arrow_iter = self.search_to_arrow(href, search)?;
         let Some(schema) = arrow_iter.schema() else {
-            return Ok(Default::default());
+            return Ok(stac::api::ItemCollection::from(vec![]));
         };
 
         let first_batch = match arrow_iter.next() {
             Some(batch) => batch?,
-            None => return Ok(Default::default()),
+            None => return Ok(stac::api::ItemCollection::from(vec![])),
         };
 
         let batches = std::iter::once(Ok(first_batch))
