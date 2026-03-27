@@ -56,6 +56,34 @@ pub struct ItemCollection {
     self_href: Option<String>,
 }
 
+impl ItemCollection {
+    /// Sorts the items in this collection.
+    ///
+    /// If a `config` is provided, it must be a valid JSON representation of a SortConfig.
+    /// If `None`, the default [`crate::sort::ItemComparator`] is used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, ItemCollection};
+    /// use serde_json::json;
+    ///
+    /// let mut ic = ItemCollection::from(vec![Item::new("b"), Item::new("a")]);
+    /// ic.sort(Some(json!({
+    ///     "sortby": [
+    ///         { "field": "id", "direction": "asc" }
+    ///     ]
+    /// }))).unwrap();
+    /// assert_eq!(ic.items[0].id, "a");
+    /// ```
+    pub fn sort(&mut self, config: Option<Value>) -> Result<()> {
+        use crate::sort::Sortable;
+        let items = std::mem::take(&mut self.items);
+        self.items = items.sort(config)?;
+        Ok(())
+    }
+}
+
 impl From<Vec<Item>> for ItemCollection {
     fn from(items: Vec<Item>) -> Self {
         ItemCollection {

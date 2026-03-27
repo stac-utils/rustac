@@ -124,6 +124,8 @@ pub mod link;
 mod migrate;
 pub mod mime;
 mod ndjson;
+/// Sort STAC items.
+pub mod sort;
 mod statistics;
 mod value;
 mod version;
@@ -149,6 +151,7 @@ pub use json::{FromJson, ToJson};
 pub use link::{Link, Links};
 pub use migrate::Migrate;
 pub use ndjson::{FromNdjson, ToNdjson};
+pub use sort::Sortable;
 pub use statistics::Statistics;
 pub use value::Value;
 pub use version::Version;
