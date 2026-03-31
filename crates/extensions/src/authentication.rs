@@ -180,8 +180,8 @@ mod tests {
 
     #[test]
     fn item() {
-        let collection: Item = stac::read("data/auth/item.json").unwrap();
-        let authentication: Authentication = collection.extension().unwrap();
+        let item: Item = stac::read("data/auth/item.json").unwrap();
+        let authentication: Authentication = item.extension().unwrap();
         let _ = authentication.schemes.get("none").unwrap();
     }
 
