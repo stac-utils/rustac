@@ -82,6 +82,12 @@ pub struct Link {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub merge: Option<bool>,
 
+    /// A list of extension identifiers the `Link` implements.
+    #[serde(rename = "stac_extensions")]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub extensions: Vec<String>,
+
     /// Additional fields on the link.
     #[serde(flatten)]
     pub additional_fields: Map<String, Value>,
@@ -301,6 +307,7 @@ impl Link {
             headers: None,
             body: None,
             merge: None,
+            extensions: Vec::new(),
             additional_fields: Map::new(),
         }
     }

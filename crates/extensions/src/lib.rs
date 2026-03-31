@@ -12,7 +12,7 @@
 //! | -- | -- | -- |
 //! | [Authentication](https://github.com/stac-extensions/authentication) | Proposal | v1.1.0 |
 //! | [Electro-Optical](https://github.com/stac-extensions/eo) | Stable | v1.1.0 |
-//! | [File Info](https://github.com/stac-extensions/file) | Stable | n/a |
+//! | [File Info](https://github.com/stac-extensions/file) | Stable | v2.1.0 |
 //! | [Landsat](https://github.com/stac-extensions/landsat) | Stable | n/a |
 //! | [Projection](https://github.com/stac-extensions/projection) | Stable | v1.1.0 |
 //! | [Raster](https://github.com/stac-extensions/raster) | Candidate | v1.1.0 |
@@ -45,13 +45,14 @@
 
 pub mod authentication;
 pub mod electro_optical;
+pub mod file;
 pub mod projection;
 pub mod raster;
 
 pub use projection::Projection;
 pub use raster::Raster;
 use serde::{Serialize, de::DeserializeOwned};
-use stac::{Catalog, Collection, Fields, Item, Result};
+use stac::{Asset, Catalog, Collection, Fields, Item, Link, Result};
 
 /// A trait implemented by extensions.
 ///
@@ -218,6 +219,8 @@ macro_rules! impl_extensions {
 impl_extensions!(Item);
 impl_extensions!(Catalog);
 impl_extensions!(Collection);
+impl_extensions!(Asset);
+impl_extensions!(Link);
 
 #[cfg(test)]
 mod tests {

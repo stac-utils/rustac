@@ -78,6 +78,12 @@ pub struct Asset {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unit: Option<String>,
 
+    /// A list of extension identifiers the `Asset` implements.
+    #[serde(rename = "stac_extensions")]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
+    pub extensions: Vec<String>,
+
     /// Additional fields on the asset.
     #[serde(flatten)]
     pub additional_fields: Map<String, Value>,
@@ -146,6 +152,7 @@ impl Asset {
             nodata: None,
             statistics: None,
             unit: None,
+            extensions: Vec::new(),
             additional_fields: Map::new(),
         }
     }
