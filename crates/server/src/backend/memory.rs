@@ -59,8 +59,10 @@ impl ItemsClient for MemoryBackend {
         let skip = search
             .additional_fields
             .get("skip")
-            .and_then(|skip| skip.as_str())
-            .and_then(|skip| skip.parse::<u64>().ok())
+            .and_then(|skip| {
+                skip.as_u64()
+                    .or_else(|| skip.as_str().and_then(|skip| skip.parse::<u64>().ok()))
+            })
             .unwrap_or_default()
             .try_into()?;
         let len = item_references.len();
@@ -207,6 +209,23 @@ mod tests {
         let search = Search::default().limit(1u64);
         let count = backend.item_count(search).await.unwrap();
         assert_eq!(count, 3);
+    }
+
+    #[tokio::test]
+    async fn search_honors_numeric_skip_token() {
+        let backend = populated_backend().await;
+        let mut search = Search::default().limit(1u64);
+        let _ = search
+            .additional_fields
+            .insert("skip".to_string(), 1.into());
+
+        let page = backend.search(search).await.unwrap();
+
+        assert_eq!(page.items.len(), 1);
+        assert_eq!(
+            page.items[0].get("id").and_then(|value| value.as_str()),
+            Some("item-b")
+        );
     }
 
     #[tokio::test]
