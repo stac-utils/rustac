@@ -51,7 +51,7 @@ chrono = "0.4.39"
 clap = "4.5"
 clap_complete = "4.5"
 cql2 = "0.5.0"
-duckdb = { git = "https://github.com/gadomski/duckdb-rs", branch = "arrow-v58" }
+duckdb = "1.10501.0"
 fluent-uri = "0.4.1"
 futures = "0.3.31"
 futures-core = "0.3.31"
@@ -104,6 +104,6 @@ webpki-roots = "1.0.0"
 wkb = "0.9.0"
 
 [patch.crates-io]
-geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs", branch = "arrow-58" }
-geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs", branch = "arrow-58" }
-geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs", branch = "arrow-58" }
+geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs", rev = "234c7bd287b3e3caaa9ece9e67e81259347121f8" }
+geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs", rev = "234c7bd287b3e3caaa9ece9e67e81259347121f8" }
+geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs", rev = "234c7bd287b3e3caaa9ece9e67e81259347121f8" }
