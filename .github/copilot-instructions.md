@@ -22,7 +22,6 @@ DuckDB tests may require `DUCKDB_LIB_DIR`; alternatively use `--features duckdb-
 ## High-level rules
 
 - Keep changes minimal and crate-local.
-- Prefer additive adapters/impls over breaking public API changes.
 - Keep default builds lightweight; gate optional capabilities behind features.
 - Preserve cross-crate consistency in naming, error shape, and docs style.
 
@@ -71,7 +70,6 @@ DuckDB tests may require `DUCKDB_LIB_DIR`; alternatively use `--features duckdb-
 
 ## Code style
 
-- Derive `Debug` only when useful; otherwise omit or implement manually.
 - Remove stray/placeholder comments and dead code.
 - Keep function docs and type docs short, factual, and behavior-focused.
 - Match existing formatting and module organization.
