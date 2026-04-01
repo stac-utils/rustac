@@ -3,8 +3,7 @@ use http::Method;
 use serde::Serialize;
 use serde_json::{Map, Value, json};
 use stac::api::{
-    CollectionSearchClient, Collections, Conformance, ItemCollection, Items, Root, Search,
-    SearchClient,
+    Collections, CollectionsClient, Conformance, ItemCollection, Items, ItemsClient, Root, Search,
 };
 use stac::{Catalog, Collection, Fields, Item, Link, Links, mime::APPLICATION_OPENAPI_3_0};
 use url::Url;
@@ -236,14 +235,14 @@ impl<B: Backend> Api<B> {
     /// # })
     /// ```
     pub async fn items(&self, collection_id: &str, items: Items) -> Result<Option<ItemCollection>> {
-        if CollectionSearchClient::collection(&self.backend, collection_id)
+        if CollectionsClient::collection(&self.backend, collection_id)
             .await?
             .is_none()
         {
             return Ok(None);
         }
         let mut item_collection =
-            SearchClient::items(&self.backend, collection_id, items.clone()).await?;
+            ItemsClient::items(&self.backend, collection_id, items.clone()).await?;
         let collection_url = self.url(&format!("/collections/{collection_id}"))?;
         let items_url = self.url(&format!("/collections/{collection_id}/items"))?;
         item_collection.set_link(Link::root(self.root.clone()).json());

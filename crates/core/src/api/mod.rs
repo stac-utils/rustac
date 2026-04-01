@@ -31,9 +31,45 @@
 //!     },
 //! };
 //! ```
+//!
+//! # Client trait family
+//!
+//! The API client traits are split by access pattern:
+//!
+//! - [`ItemsClient`]: fetch one page of items
+//! - [`StreamItemsClient`] (`async` feature): stream items across all pages
+//! - [`CollectionsClient`]: fetch all collections
+//! - [`PagedCollectionsClient`]: fetch one cursor-paginated collections page
+//! - [`StreamCollectionsClient`] (`async` feature): stream collections
+//! - [`ArrowItemsClient`] (`geoarrow` feature): return Arrow record batches
+//! - [`TransactionClient`]: write items and collections
+//!
+//! For `Stream`-based traits, `Stream` is the async equivalent of `Iterator`.
+//! Prefer streaming paths for large result sets.
+//!
+//! ## Adapters
+//!
+//! When the `async` feature is enabled:
+//!
+//! - [`PagedItemsStream`] adapts any [`ItemsClient`] into [`StreamItemsClient`]
+//! - [`stream_pages`] drives token/skip item pagination
+//! - [`stream_pages_collections`] drives cursor-based collection pagination
+//!
+//! The `geoarrow` feature additionally provides Arrow adapters and blanket impls
+//! for types implementing [`ArrowItemsClient`].
+//!
+//! ```text
+//! ItemsClient ---------- PagedItemsStream ----------> StreamItemsClient
+//!        ^                                                 ^
+//!        |----- (geoarrow blanket, when supported) -------|
+//!
+//! CollectionsClient ---- (blanket) ----------------> StreamCollectionsClient
+//! PagedCollectionsClient -- stream_pages_collections --> StreamCollectionsClient
+//! ```
 
 #![warn(missing_docs, unused_qualifications)]
 
+mod adapters;
 mod client;
 mod collections;
 mod conformance;
@@ -47,8 +83,18 @@ mod sort;
 mod url_builder;
 
 #[cfg(feature = "geoarrow")]
-pub use client::ArrowSearchClient;
-pub use client::{CollectionSearchClient, SearchClient, TransactionClient};
+pub use adapters::RecordBatchReaderAdapter;
+#[cfg(feature = "async")]
+pub use adapters::{PagedItemsStream, stream_pages, stream_pages_collections};
+#[cfg(feature = "geoarrow")]
+pub use client::ArrowItemsClient;
+#[cfg(feature = "async")]
+pub use client::{
+    CollectionsClient, ItemsClient, PagedCollectionsClient, StreamCollectionsClient,
+    StreamItemsClient, TransactionClient,
+};
+#[cfg(not(feature = "async"))]
+pub use client::{CollectionsClient, ItemsClient, PagedCollectionsClient, TransactionClient};
 pub use collections::Collections;
 pub use conformance::{
     COLLECTIONS_URI, CORE_URI, Conformance, FEATURES_URI, FILTER_URIS, GEOJSON_URI,

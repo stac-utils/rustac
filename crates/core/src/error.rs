@@ -153,6 +153,11 @@ pub enum Error {
     #[cfg(feature = "geoarrow")]
     Wkb(#[from] wkb::error::WkbError),
 
+    /// Error from a wrapped client used by Arrow adapters.
+    #[error(transparent)]
+    #[cfg(feature = "geoarrow")]
+    ArrowAdapterClient(#[from] Box<dyn std::error::Error + Send + Sync>),
+
     /// No geoparquet metadata in a stac-geoparquet file.
     #[error("no geoparquet metadata")]
     #[cfg(feature = "geoparquet")]

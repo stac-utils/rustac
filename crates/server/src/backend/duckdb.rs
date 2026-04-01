@@ -1,8 +1,11 @@
 use super::Backend;
 use crate::{Error, Result};
 use bb8::{ManageConnection, Pool};
+use futures_core::Stream;
 use stac::Collection;
-use stac::api::{CollectionSearchClient, Search, SearchClient, TransactionClient};
+use stac::api::{
+    CollectionsClient, ItemsClient, Search, StreamItemsClient, TransactionClient, stream_pages,
+};
 use stac_duckdb::Client;
 
 /// A backend that uses [DuckDB](https://duckdb.org/) to query
@@ -42,7 +45,7 @@ impl DuckdbBackend {
     }
 }
 
-impl SearchClient for DuckdbBackend {
+impl ItemsClient for DuckdbBackend {
     type Error = Error;
 
     async fn search(&self, search: Search) -> Result<stac::api::ItemCollection> {
@@ -51,7 +54,7 @@ impl SearchClient for DuckdbBackend {
     }
 }
 
-impl CollectionSearchClient for DuckdbBackend {
+impl CollectionsClient for DuckdbBackend {
     type Error = Error;
 
     async fn collections(&self) -> Result<Vec<Collection>> {
@@ -74,6 +77,18 @@ impl TransactionClient for DuckdbBackend {
 
     async fn add_item(&mut self, _item: stac::Item) -> Result<()> {
         Err(Error::ReadOnly)
+    }
+}
+
+impl StreamItemsClient for DuckdbBackend {
+    type Error = Error;
+
+    async fn search_stream(
+        &self,
+        search: Search,
+    ) -> Result<impl Stream<Item = std::result::Result<stac::api::Item, Error>> + Send> {
+        let page = ItemsClient::search(self, search.clone()).await?;
+        Ok(stream_pages(self.clone(), search, page))
     }
 }
 
@@ -133,7 +148,7 @@ impl DuckdbConnection {
 
 #[cfg(test)]
 mod tests {
-    use stac::api::CollectionSearchClient;
+    use stac::api::CollectionsClient;
 
     #[tokio::test]
     async fn backend() {

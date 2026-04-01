@@ -6,7 +6,11 @@ use cql2::{Expr, ToDuckSQL};
 use duckdb::{Connection, Statement, types::Value};
 use geo::BoundingRect;
 use geojson::GeometryValue;
-use stac::api::{ArrowSearchClient, CollectionSearchClient, Direction, Search, SearchClient};
+#[cfg(feature = "async")]
+use stac::api::StreamItemsClient;
+use stac::api::{
+    ArrowItemsClient, CollectionsClient, Direction, ItemsClient, RecordBatchReaderAdapter, Search,
+};
 use stac::{Collection, SpatialExtent, TemporalExtent, geoarrow::DATETIME_COLUMNS};
 use std::ops::{Deref, DerefMut};
 use std::sync::Mutex;
@@ -479,14 +483,14 @@ impl From<Connection> for Client {
 /// A DuckDB client bound to a specific stac-geoparquet href.
 ///
 /// This wraps a [`Client`] with a specific href, implementing the
-/// [`ArrowSearchClient`] trait. Because [`duckdb::Connection`] is not
+/// [`ArrowItemsClient`] trait. Because [`duckdb::Connection`] is not
 /// [`Sync`], use [`Mutex<HrefClient>`](std::sync::Mutex) for the async client
-/// traits ([`SearchClient`] and [`CollectionSearchClient`]).
+/// traits ([`ItemsClient`] and [`CollectionsClient`]).
 ///
 /// # Examples
 ///
 /// ```
-/// use stac::api::ArrowSearchClient;
+/// use stac::api::ArrowItemsClient;
 /// use stac_duckdb::HrefClient;
 ///
 /// let client = HrefClient::new("data/100-sentinel-2-items.parquet").unwrap();
@@ -532,26 +536,26 @@ impl HrefClient {
     }
 }
 
-impl ArrowSearchClient for HrefClient {
+impl ArrowItemsClient for HrefClient {
     type Error = Error;
     type RecordBatchStream<'a> = ArrowBatchReader<'a>;
 
     fn search_to_arrow(&self, search: Search) -> std::result::Result<ArrowBatchReader<'_>, Error> {
         let iter = self.client.search_to_arrow(&self.href, search)?;
-        Ok(ArrowBatchReader::new(iter))
+        Ok(make_arrow_batch_reader(iter))
     }
 }
 
 /// A thread-safe wrapper around [`HrefClient`] that implements
-/// [`SearchClient`] and [`CollectionSearchClient`].
+/// [`ItemsClient`] and [`CollectionsClient`].
 ///
-/// Use this when you need the async client traits. For [`ArrowSearchClient`],
+/// Use this when you need the async client traits. For [`ArrowItemsClient`],
 /// use [`HrefClient`] directly.
 ///
 /// # Examples
 ///
 /// ```
-/// use stac::api::SearchClient;
+/// use stac::api::ItemsClient;
 /// use stac_duckdb::SyncHrefClient;
 ///
 /// let client = SyncHrefClient::new("data/100-sentinel-2-items.parquet").unwrap();
@@ -580,7 +584,7 @@ impl SyncHrefClient {
     }
 }
 
-impl SearchClient for SyncHrefClient {
+impl ItemsClient for SyncHrefClient {
     type Error = Error;
 
     async fn search(
@@ -592,7 +596,7 @@ impl SearchClient for SyncHrefClient {
     }
 }
 
-impl CollectionSearchClient for SyncHrefClient {
+impl CollectionsClient for SyncHrefClient {
     type Error = Error;
 
     async fn collections(&self) -> std::result::Result<Vec<Collection>, Error> {
@@ -601,36 +605,41 @@ impl CollectionSearchClient for SyncHrefClient {
     }
 }
 
+#[cfg(feature = "async")]
+impl StreamItemsClient for SyncHrefClient {
+    type Error = Error;
+
+    async fn search_stream(
+        &self,
+        search: Search,
+    ) -> std::result::Result<
+        impl futures_core::Stream<Item = std::result::Result<stac::api::Item, Error>> + Send,
+        Error,
+    > {
+        // DuckDB queries run synchronously and return the full result in one go.
+        // We collect eagerly here (holding the mutex only for the duration of
+        // the underlying synchronous query) and then stream the items.
+        let item_collection = ItemsClient::search(self, search).await?;
+        Ok(futures::stream::iter(
+            item_collection.items.into_iter().map(Ok::<_, Error>),
+        ))
+    }
+}
+
 /// A wrapper around [`SearchArrowBatchIter`] that implements
 /// [`arrow_array::RecordBatchReader`].
-pub struct ArrowBatchReader<'a> {
-    inner: SearchArrowBatchIter<'a>,
-    schema: SchemaRef,
-}
+///
+/// This is a type alias for [`stac::api::RecordBatchReaderAdapter`], which
+/// provides the generic `Iterator<Item = Result<RecordBatch, E>>` →
+/// [`arrow_array::RecordBatchReader`] bridge.
+pub type ArrowBatchReader<'a> = RecordBatchReaderAdapter<SearchArrowBatchIter<'a>>;
 
-impl<'a> ArrowBatchReader<'a> {
-    fn new(inner: SearchArrowBatchIter<'a>) -> Self {
-        let schema = inner
-            .schema()
-            .unwrap_or_else(|| arrow_schema::Schema::empty().into());
-        Self { inner, schema }
-    }
-}
-
-impl Iterator for ArrowBatchReader<'_> {
-    type Item = std::result::Result<RecordBatch, ArrowError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner
-            .next()
-            .map(|r| r.map_err(|e| ArrowError::ExternalError(Box::new(e))))
-    }
-}
-
-impl arrow_array::RecordBatchReader for ArrowBatchReader<'_> {
-    fn schema(&self) -> SchemaRef {
-        self.schema.clone()
-    }
+/// Constructs an [`ArrowBatchReader`] from a [`SearchArrowBatchIter`].
+fn make_arrow_batch_reader(inner: SearchArrowBatchIter<'_>) -> ArrowBatchReader<'_> {
+    let schema = inner
+        .schema()
+        .unwrap_or_else(|| arrow_schema::Schema::empty().into());
+    RecordBatchReaderAdapter::new(inner, schema)
 }
 
 /// Iterator returned by [`Client::search_to_arrow`].

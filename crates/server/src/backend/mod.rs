@@ -10,15 +10,17 @@ pub use duckdb::DuckdbBackend;
 pub use memory::MemoryBackend;
 #[cfg(feature = "pgstac")]
 pub use pgstac::PgstacBackend;
-use stac::api::{CollectionSearchClient, SearchClient, TransactionClient};
+use stac::api::{CollectionsClient, ItemsClient, StreamItemsClient, TransactionClient};
 
 /// Storage backend for a STAC API.
 ///
-/// This trait combines [`SearchClient`], [`CollectionSearchClient`], and
-/// [`TransactionClient`] with backend-specific capability flags.
+/// This trait combines [`ItemsClient`], [`CollectionsClient`],
+/// [`StreamItemsClient`], and [`TransactionClient`] with backend-specific
+/// capability flags.
 pub trait Backend:
-    SearchClient<Error = Error>
-    + CollectionSearchClient<Error = Error>
+    ItemsClient<Error = Error>
+    + CollectionsClient<Error = Error>
+    + StreamItemsClient<Error = Error>
     + TransactionClient<Error = Error>
     + Clone
     + Sync

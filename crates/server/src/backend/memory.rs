@@ -1,6 +1,10 @@
 use crate::{Backend, DEFAULT_LIMIT, Error, Result};
+use futures_core::Stream;
 use serde_json::Map;
-use stac::api::{CollectionSearchClient, ItemCollection, Search, SearchClient, TransactionClient};
+use stac::api::{
+    CollectionsClient, ItemCollection, ItemsClient, Search, StreamItemsClient, TransactionClient,
+    stream_pages,
+};
 use stac::{Collection, Item};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -33,7 +37,7 @@ impl MemoryBackend {
     }
 }
 
-impl SearchClient for MemoryBackend {
+impl ItemsClient for MemoryBackend {
     type Error = Error;
 
     async fn search(&self, mut search: Search) -> Result<ItemCollection> {
@@ -55,8 +59,10 @@ impl SearchClient for MemoryBackend {
         let skip = search
             .additional_fields
             .get("skip")
-            .and_then(|skip| skip.as_str())
-            .and_then(|skip| skip.parse::<u64>().ok())
+            .and_then(|skip| {
+                skip.as_u64()
+                    .or_else(|| skip.as_str().and_then(|skip| skip.parse::<u64>().ok()))
+            })
             .unwrap_or_default()
             .try_into()?;
         let len = item_references.len();
@@ -89,7 +95,7 @@ impl SearchClient for MemoryBackend {
     }
 }
 
-impl CollectionSearchClient for MemoryBackend {
+impl CollectionsClient for MemoryBackend {
     type Error = Error;
 
     async fn collections(&self) -> Result<Vec<Collection>> {
@@ -114,7 +120,7 @@ impl TransactionClient for MemoryBackend {
 
     async fn add_item(&mut self, item: Item) -> Result<()> {
         if let Some(collection_id) = item.collection.clone() {
-            if CollectionSearchClient::collection(self, &collection_id)
+            if CollectionsClient::collection(self, &collection_id)
                 .await?
                 .is_none()
             {
@@ -135,6 +141,18 @@ impl TransactionClient for MemoryBackend {
     }
 }
 
+impl StreamItemsClient for MemoryBackend {
+    type Error = Error;
+
+    async fn search_stream(
+        &self,
+        search: Search,
+    ) -> Result<impl Stream<Item = std::result::Result<stac::api::Item, Error>> + Send> {
+        let page = ItemsClient::search(self, search.clone()).await?;
+        Ok(stream_pages(self.clone(), search, page))
+    }
+}
+
 impl Backend for MemoryBackend {
     fn has_item_search(&self) -> bool {
         true
@@ -148,5 +166,78 @@ impl Backend for MemoryBackend {
 impl Default for MemoryBackend {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use stac::api::{Items, StreamCollectionsClient};
+
+    async fn populated_backend() -> MemoryBackend {
+        let mut backend = MemoryBackend::new();
+        backend
+            .add_collection(Collection::new("collection-id", "a description"))
+            .await
+            .unwrap();
+        backend
+            .add_item(Item::new("item-a").collection("collection-id"))
+            .await
+            .unwrap();
+        backend
+            .add_item(Item::new("item-b").collection("collection-id"))
+            .await
+            .unwrap();
+        backend
+            .add_item(Item::new("item-c").collection("collection-id"))
+            .await
+            .unwrap();
+        backend
+    }
+
+    #[tokio::test]
+    async fn stream_items_across_pages_with_real_backend() {
+        let backend = populated_backend().await;
+        let search = Search::default().limit(1u64);
+        let items = backend.collect_items(search).await.unwrap();
+        assert_eq!(items.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn item_count_uses_streaming_path() {
+        let backend = populated_backend().await;
+        let search = Search::default().limit(1u64);
+        let count = backend.item_count(search).await.unwrap();
+        assert_eq!(count, 3);
+    }
+
+    #[tokio::test]
+    async fn search_honors_numeric_skip_token() {
+        let backend = populated_backend().await;
+        let mut search = Search::default().limit(1u64);
+        let _ = search
+            .additional_fields
+            .insert("skip".to_string(), 1.into());
+
+        let page = backend.search(search).await.unwrap();
+
+        assert_eq!(page.items.len(), 1);
+        assert_eq!(
+            page.items[0].get("id").and_then(|value| value.as_str()),
+            Some("item-b")
+        );
+    }
+
+    #[tokio::test]
+    async fn collections_stream_with_real_backend() {
+        let backend = populated_backend().await;
+        let collections = backend.collect_collections().await.unwrap();
+        assert_eq!(collections.len(), 1);
+        assert_eq!(collections[0].id, "collection-id");
+        let items = backend
+            .items("collection-id", Items::default())
+            .await
+            .unwrap();
+        assert_eq!(items.items.len(), 3);
     }
 }
