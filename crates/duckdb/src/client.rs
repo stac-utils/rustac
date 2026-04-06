@@ -1081,4 +1081,46 @@ mod tests {
             );
         }
     }
+
+    #[rstest]
+    fn top_level_extension_fields_survive_duckdb_roundtrip(client: Client) {
+        // Regression test for https://github.com/stac-utils/rustac/issues/999
+        // Top-level STAC extension fields (e.g. `storage:schemes`) must survive
+        // writing to geoparquet and reading back via DuckDB.
+        use serde_json::json;
+        use stac::Item;
+
+        let mut item = Item::new("test-storage-item");
+        item.geometry = Some(geojson::Geometry::new_point(vec![-105.1, 41.1]));
+        let _ = item.additional_fields.insert(
+            "storage:schemes".to_string(),
+            json!({"s3": {"requester_pays": false}}),
+        );
+        let _ = item
+            .additional_fields
+            .insert("storage:platform".to_string(), json!("aws"));
+
+        let tmp = tempfile::NamedTempFile::with_suffix(".parquet").unwrap();
+        stac::geoparquet::into_writer(tmp.as_file(), vec![item]).unwrap();
+
+        let path = tmp.path().to_str().unwrap().to_string();
+        let item_collection = client.search(&path, Default::default()).unwrap();
+        assert_eq!(item_collection.items.len(), 1);
+
+        let decoded = &item_collection.items[0];
+        assert_eq!(
+            decoded.get("storage:platform"),
+            Some(&json!("aws")),
+            "storage:platform should be at item root after DuckDB round-trip"
+        );
+        assert!(
+            decoded.contains_key("storage:schemes"),
+            "storage:schemes should be at item root after DuckDB round-trip"
+        );
+        let properties = decoded.get("properties").and_then(|p| p.as_object());
+        assert!(
+            properties.map_or(true, |p| !p.contains_key("storage:platform")),
+            "storage:platform must not appear in properties"
+        );
+    }
 }

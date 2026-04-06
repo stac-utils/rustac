@@ -30,12 +30,13 @@ geojson.workspace = true
 getrandom.workspace = true
 log.workspace = true
 serde_json.workspace = true
-stac = { version = "0.16.5", path = "../core", features = ["geoarrow", "geo"] }
+stac = { version = "0.16.5", path = "../core", features = ["geoarrow", "geo", "geoparquet"] }
 thiserror.workspace = true
 
 [dev-dependencies]
 geo.workspace = true
 rstest.workspace = true
 stac-validate = { path = "../validate" }
+tempfile.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 tokio-test.workspace = true
