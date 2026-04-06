@@ -523,6 +523,13 @@ pub(crate) fn record_batch_to_json_rows(
     let mut rows: Vec<Option<JsonMap<String, Value>>> =
         iter::repeat_n(Some(JsonMap::new()), record_batch.num_rows()).collect();
     let schema = record_batch.schema();
+
+    let top_level_extension_keys: Vec<String> = schema
+        .metadata()
+        .get(crate::geoarrow::TOP_LEVEL_EXTENSION_KEYS_METADATA)
+        .and_then(|s| serde_json::from_str::<Vec<String>>(s).ok())
+        .unwrap_or_default();
+
     for (j, col) in record_batch.columns().iter().enumerate() {
         let field = schema.field(j);
         let col_name = field.name();
@@ -562,13 +569,14 @@ pub(crate) fn record_batch_to_json_rows(
                     row.insert("stac_extensions".to_string(), stac_extensions);
                 }
             }
-            unflatten(row)
+            unflatten(row, &top_level_extension_keys)
         })
         .collect::<Result<_, _>>()
 }
 
 fn unflatten(
     mut item: serde_json::Map<String, Value>,
+    top_level_extension_keys: &[String],
 ) -> Result<serde_json::Map<String, Value>, Error> {
     let mut properties = serde_json::Map::new();
     let keys: Vec<_> = item
@@ -585,6 +593,10 @@ fn unflatten(
         assets.retain(|_, asset| asset.is_object());
     }
     for key in keys {
+        if top_level_extension_keys.iter().any(|k| k == &key) {
+            // Leave top-level extension fields (e.g. storage:schemes) at the item root
+            continue;
+        }
         if let Some(value) = item.remove(&key) {
             if DATETIME_COLUMNS.contains(&key.as_str()) {
                 if let Some(value) = value.as_str() {

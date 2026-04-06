@@ -355,7 +355,7 @@ impl StreamItemsClient for Client {
     async fn search_stream(
         &self,
         search: Search,
-    ) -> std::result::Result<impl Stream<Item = std::result::Result<Item, Error>> + Send, Error>
+    ) -> std::result::Result<impl Stream<Item = std::result::Result<Item, Error>> + Send + use<>, Error>
     {
         let page = ItemsClient::search(self, search).await?;
         Ok(stream_items(self.clone(), page, self.channel_buffer))

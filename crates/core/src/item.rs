@@ -174,6 +174,11 @@ pub struct FlatItem {
     /// the properties object to be a top-level Parquet field
     #[serde(flatten)]
     pub properties: Map<String, Value>,
+
+    /// Top-level extension fields (e.g. `storage:schemes`) that are not part of
+    /// the core STAC spec but live at the item root rather than inside properties.
+    #[serde(flatten)]
+    pub additional_fields: Map<String, Value>,
 }
 
 /// Additional metadata fields can be added to the GeoJSON Object Properties.
@@ -584,13 +589,6 @@ impl Item {
                 }
             }
         }
-        for (key, _) in self.additional_fields {
-            if drop_invalid_attributes {
-                log::warn!("dropping out-of-spec top-level attribute: {key}");
-            } else {
-                return Err(Error::InvalidAttribute(key));
-            }
-        }
         Ok(FlatItem {
             r#type: self.r#type,
             version: STAC_VERSION,
@@ -602,6 +600,7 @@ impl Item {
             assets: self.assets,
             collection: self.collection,
             properties,
+            additional_fields: self.additional_fields,
         })
     }
 
@@ -924,8 +923,10 @@ mod tests {
         let _ = item
             .additional_fields
             .insert("foo".to_string(), "bar".to_string().into());
-        let _ = item.clone().into_flat_item(true).unwrap();
-        let _ = item.clone().into_flat_item(false).unwrap_err();
+        let flat = item.clone().into_flat_item(true).unwrap();
+        assert_eq!(flat.additional_fields.get("foo").unwrap(), "bar");
+        let flat = item.clone().into_flat_item(false).unwrap();
+        assert_eq!(flat.additional_fields.get("foo").unwrap(), "bar");
     }
 
     #[test]

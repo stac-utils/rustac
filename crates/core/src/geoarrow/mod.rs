@@ -14,7 +14,10 @@ use geoarrow_array::{
 };
 use geoarrow_schema::{GeoArrowType, GeometryType, Metadata};
 use serde_json::{Value, json};
-use std::{io::Cursor, sync::Arc};
+use std::{collections::BTreeSet, io::Cursor, sync::Arc};
+
+/// Schema metadata key used to record top-level extension field names (e.g. `storage:schemes`).
+pub const TOP_LEVEL_EXTENSION_KEYS_METADATA: &str = "stac:top_level_extension_keys";
 
 /// Datetime columns.
 pub const DATETIME_COLUMNS: [&str; 8] = [
@@ -67,6 +70,7 @@ struct Writer {
     values: Vec<Value>,
     geometry_builder: GeometryBuilder,
     proj_geometry_builder: BinaryBuilder,
+    top_level_extension_keys: BTreeSet<String>,
 }
 
 impl Encoder {
@@ -85,7 +89,9 @@ impl Encoder {
     pub fn new(items: Vec<Item>, options: Options) -> Result<(Encoder, RecordBatch)> {
         let mut writer = Writer::new(items.len());
         for result in iter_items(items, options.drop_invalid_attributes) {
-            writer.add(result?)?;
+            let (value, extra_keys) = result?;
+            writer.top_level_extension_keys.extend(extra_keys);
+            writer.add(value)?;
         }
         let base_schema = writer.infer_base_schema()?;
         let record_batch = writer.write(base_schema.clone())?;
@@ -115,7 +121,8 @@ impl Encoder {
     pub fn encode(&self, items: Vec<Item>) -> Result<RecordBatch> {
         let mut writer = Writer::new(items.len());
         for result in iter_items(items, self.options.drop_invalid_attributes) {
-            writer.add(result?)?;
+            let (value, _) = result?;
+            writer.add(value)?;
         }
         let record_batch = writer.write(self.base_schema.clone())?;
         if record_batch.schema() != self.schema {
@@ -123,6 +130,24 @@ impl Encoder {
         } else {
             Ok(record_batch)
         }
+    }
+
+    /// Consumes this encoder and returns its schema.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac::{Item, geoarrow::{Encoder, Options}};
+    /// use geojson::{Geometry, Value};
+    ///
+    /// let mut item = Item::new("an-id");
+    /// item.geometry = Some(Geometry::new_point(vec![-105.1, 41.1]));
+    /// let (encoder, _) = Encoder::new(vec![item], Options::default()).unwrap();
+    /// let schema = encoder.into_schema();
+    /// ```
+    /// Returns a reference to this encoder's Arrow schema.
+    pub fn schema(&self) -> &SchemaRef {
+        &self.schema
     }
 
     /// Consumes this encoder and returns its schema.
@@ -149,6 +174,7 @@ impl Writer {
             values: Vec::with_capacity(capacity),
             geometry_builder: GeometryBuilder::new(GeometryType::new(Default::default())),
             proj_geometry_builder: BinaryBuilder::new(),
+            top_level_extension_keys: BTreeSet::new(),
         }
     }
 
@@ -194,7 +220,15 @@ impl Writer {
                 schema_builder.push(field.clone());
             }
         }
-        Ok(Arc::new(schema_builder.finish()))
+        let mut metadata = std::collections::HashMap::new();
+        if !self.top_level_extension_keys.is_empty() {
+            let keys: Vec<&str> = self.top_level_extension_keys.iter().map(String::as_str).collect();
+            let _ = metadata.insert(
+                TOP_LEVEL_EXTENSION_KEYS_METADATA.to_string(),
+                serde_json::to_string(&keys)?,
+            );
+        }
+        Ok(Arc::new(schema_builder.finish().with_metadata(metadata)))
     }
 
     fn write(mut self, base_schema: SchemaRef) -> Result<RecordBatch> {
@@ -233,7 +267,7 @@ impl Writer {
             columns.push(Arc::new(proj_geometry_array));
             schema_builder.push(Field::new("proj:geometry", data_type, true));
         }
-        let schema = Arc::new(schema_builder.finish());
+        let schema = Arc::new(schema_builder.finish().with_metadata(base_schema.metadata().clone()));
         let record_batch = RecordBatch::try_new(schema, columns)?;
         Ok(record_batch)
     }
@@ -250,10 +284,12 @@ impl Default for Options {
 fn iter_items(
     items: Vec<Item>,
     drop_invalid_attributes: bool,
-) -> impl Iterator<Item = Result<Value>> {
+) -> impl Iterator<Item = Result<(Value, Vec<String>)>> {
     items.into_iter().map(move |item| {
+        let extra_keys: Vec<String> = item.additional_fields.keys().cloned().collect();
         item.into_flat_item(drop_invalid_attributes)
             .and_then(|flat_item| serde_json::to_value(flat_item).map_err(Error::from))
+            .map(|v| (v, extra_keys))
     })
 }
 
@@ -513,5 +549,62 @@ mod tests {
                 _ => {}
             }
         }
+    }
+
+    #[test]
+    fn roundtrip_top_level_extension_fields() {
+        // Regression test for https://github.com/stac-utils/rustac/issues/999
+        // Top-level extension fields like `storage:schemes` must survive a
+        // geoparquet encode → decode round-trip at the item root, not be
+        // dropped or moved into `properties`.
+        use arrow_array::RecordBatchIterator;
+        use serde_json::json;
+
+        let mut item = Item::new("test-item");
+        item.geometry = Some(geojson::Geometry::new_point(vec![-105.1, 41.1]));
+        let _ = item.additional_fields.insert(
+            "storage:schemes".to_string(),
+            json!({"s3": {"requester_pays": false}}),
+        );
+        let _ = item
+            .additional_fields
+            .insert("storage:platform".to_string(), json!("aws"));
+
+        let (record_batch, schema) = super::encode(vec![item]).unwrap();
+
+        // Schema metadata must record the top-level extension keys
+        let meta = schema.metadata();
+        let keys_json = meta
+            .get(super::TOP_LEVEL_EXTENSION_KEYS_METADATA)
+            .expect("schema should contain top-level extension keys metadata");
+        let keys: Vec<String> = serde_json::from_str(keys_json).unwrap();
+        assert!(keys.contains(&"storage:schemes".to_string()));
+        assert!(keys.contains(&"storage:platform".to_string()));
+
+        let item_collection = super::from_record_batch_reader(RecordBatchIterator::new(
+            vec![record_batch].into_iter().map(Ok),
+            schema,
+        ))
+        .unwrap();
+
+        let decoded = &item_collection.items[0];
+        // Fields must be at the item root (additional_fields), not in properties
+        assert_eq!(
+            decoded.additional_fields.get("storage:platform"),
+            Some(&json!("aws")),
+            "storage:platform should be in additional_fields"
+        );
+        assert!(
+            decoded
+                .properties
+                .additional_fields
+                .get("storage:platform")
+                .is_none(),
+            "storage:platform must not end up in properties"
+        );
+        assert!(
+            decoded.additional_fields.contains_key("storage:schemes"),
+            "storage:schemes should be in additional_fields"
+        );
     }
 }

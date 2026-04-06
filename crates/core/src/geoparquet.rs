@@ -393,6 +393,17 @@ impl WriterEncoder {
         let keyvalue = self.encoder.into_keyvalue()?;
         Ok(keyvalue)
     }
+
+    /// Returns the top-level extension key names tracked by this encoder
+    /// (e.g. `["storage:schemes"]`), or an empty vec if none.
+    pub fn top_level_extension_keys(&self) -> Vec<String> {
+        self.geoarrow_encoder
+            .schema()
+            .metadata()
+            .get(crate::geoarrow::TOP_LEVEL_EXTENSION_KEYS_METADATA)
+            .and_then(|s| serde_json::from_str::<Vec<String>>(s).ok())
+            .unwrap_or_default()
+    }
 }
 
 /// Shared state for STAC geoparquet writers (both sync and async).
@@ -492,13 +503,22 @@ impl WriterState {
     /// assert_eq!(metadata[1].key, "stac-geoparquet");
     /// ```
     pub fn into_metadata(self) -> Result<Vec<KeyValue>> {
-        let metadata = vec![
+        let top_level_keys = self.encoder.top_level_extension_keys();
+        let mut metadata = vec![
             self.encoder.into_keyvalue()?,
             KeyValue::new(
                 METADATA_KEY.to_string(),
                 serde_json::to_string(&self.metadata)?,
             ),
         ];
+        // Also write as a direct Parquet KV entry so that readers that don't
+        // parse ARROW:schema (e.g. DuckDB) can still find this metadata.
+        if !top_level_keys.is_empty() {
+            metadata.push(KeyValue::new(
+                crate::geoarrow::TOP_LEVEL_EXTENSION_KEYS_METADATA.to_string(),
+                serde_json::to_string(&top_level_keys)?,
+            ));
+        }
         Ok(metadata)
     }
 }

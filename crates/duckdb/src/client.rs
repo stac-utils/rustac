@@ -13,7 +13,9 @@ use stac::api::{
 };
 use stac::{Collection, SpatialExtent, TemporalExtent, geoarrow::DATETIME_COLUMNS};
 use std::ops::{Deref, DerefMut};
-use std::sync::Mutex;
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 /// Default hive partitioning value
 pub const DEFAULT_USE_HIVE_PARTITIONING: bool = false;
@@ -53,6 +55,9 @@ pub struct Client {
     ///
     /// Defaults to true.
     pub remove_filename_column: bool,
+
+    /// Cache of injected Parquet KV metadata keyed by href.
+    parquet_kv_cache: RefCell<HashMap<String, String>>,
 }
 
 impl Client {
@@ -196,14 +201,29 @@ impl Client {
             return Ok(Default::default());
         };
 
+        // DuckDB does not forward Parquet file-level key-value metadata into the
+        // returned Arrow schema.  Re-read the metadata using the existing DuckDB
+        // connection so that `stac:top_level_extension_keys` survives the round-trip.
+        let schema = self.inject_parquet_metadata(href, schema);
+
         let first_batch = match arrow_iter.next() {
             Some(batch) => batch?,
             None => return Ok(Default::default()),
         };
 
+        let injected_meta = schema.metadata().clone();
         let batches = std::iter::once(Ok(first_batch))
             .chain(arrow_iter)
-            .map(|batch| batch.map_err(|err| ArrowError::ExternalError(Box::new(err))));
+            // Graft the enriched metadata (e.g. stac:top_level_extension_keys)
+            // onto each batch's own schema, preserving the correct field types.
+            .map(move |batch| match batch {
+                Ok(rb) => {
+                    let batch_schema = rb.schema().as_ref().clone().with_metadata(injected_meta.clone());
+                    RecordBatch::try_new(Arc::new(batch_schema), rb.columns().to_vec())
+                        .map_err(|e| ArrowError::ExternalError(Box::new(e)))
+                }
+                Err(e) => Err(ArrowError::ExternalError(Box::new(e))),
+            });
 
         let item_collection = stac::geoarrow::json::from_record_batch_reader(
             RecordBatchIterator::new(batches, schema),
@@ -476,6 +496,7 @@ impl From<Connection> for Client {
             convert_wkb: DEFAULT_CONVERT_WKB,
             union_by_name: DEFAULT_UNION_BY_NAME,
             remove_filename_column: DEFAULT_REMOVE_FILENAME_COLUMN,
+            parquet_kv_cache: RefCell::new(HashMap::new()),
         }
     }
 }
@@ -717,6 +738,48 @@ fn remove_column(mut record_batch: RecordBatch, name: &str) -> RecordBatch {
         record_batch.remove_column(index);
     }
     record_batch
+}
+
+impl Client {
+    /// Reads `stac:top_level_extension_keys` from the Parquet file-level KV
+    /// metadata via the existing DuckDB connection and merges it into `schema`.
+    ///
+    /// DuckDB discards Parquet KV metadata when building its Arrow schema, so
+    /// we query `parquet_kv_metadata()` — which works for local paths, HTTP,
+    /// and S3 URLs — to recover the value and inject it back.
+    fn inject_parquet_metadata(&self, href: &str, schema: SchemaRef) -> SchemaRef {
+        let key = stac::geoarrow::TOP_LEVEL_EXTENSION_KEYS_METADATA;
+        if schema.metadata().contains_key(key) {
+            return schema;
+        }
+        // Return cached value if we've already fetched this href.
+        if let Some(value) = self.parquet_kv_cache.borrow().get(href) {
+            let mut meta = schema.metadata().clone();
+            meta.insert(key.to_string(), value.clone());
+            return Arc::new(schema.as_ref().clone().with_metadata(meta));
+        }
+        // Keys and values from parquet_kv_metadata are BLOB; decode() interprets
+        // them as UTF-8 strings (value::VARCHAR would escape non-ASCII bytes).
+        let sql = format!(
+            "SELECT decode(value) FROM parquet_kv_metadata(?) WHERE decode(key) = '{key}' LIMIT 1"
+        );
+        let Ok(mut stmt) = self.connection.prepare(&sql) else {
+            return schema;
+        };
+        let Ok(mut rows) = stmt.query(duckdb::params![href]) else {
+            return schema;
+        };
+        let Ok(Some(row)) = rows.next() else {
+            return schema;
+        };
+        let Ok(value) = row.get::<_, String>(0) else {
+            return schema;
+        };
+        self.parquet_kv_cache.borrow_mut().insert(href.to_string(), value.clone());
+        let mut meta = schema.metadata().clone();
+        meta.insert(key.to_string(), value);
+        Arc::new(schema.as_ref().clone().with_metadata(meta))
+    }
 }
 
 #[cfg(test)]
