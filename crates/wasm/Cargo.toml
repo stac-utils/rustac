@@ -23,6 +23,7 @@ arrow-array.workspace = true
 arrow-schema.workspace = true
 arrow-wasm = { git = "https://github.com/kylebarron/arrow-wasm", rev = "4da0aa2b45c7ffd8c7e7449274a4b6d84f10cf94" }
 getrandom = { version = "0.4", features = ["wasm_js"] }
+getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 serde.workspace = true
 serde-wasm-bindgen = "0.6.5"
 stac = { version = "0.17.0", path = "../core", features = ["geoparquet"] }
