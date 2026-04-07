@@ -59,10 +59,10 @@ futures-util = "0.3.31"
 geo = "0.32.0"
 geo-traits = "0.3.0"
 geo-types = "0.7.16"
-geoarrow-array = "0.7.0"
-geoparquet = "0.7.0"
-geoarrow-schema = "0.7.0"
+geoarrow-array = "0.8.0"
+geoarrow-schema = "0.8.0"
 geojson = "1.0.0"
+geoparquet = "0.8.0"
 getrandom = { version = "0.4.0", features = ["wasm_js"] }
 http = "1.1"
 indexmap = { version = "2.10.0", features = ["serde"] }
@@ -76,8 +76,8 @@ mockito = "1.5"
 object_store = "0.13.0"
 parquet = { version = "58.0.0" }
 quote = "1.0"
-reqwest = { version = "0.13.1", features = ["query"] }
 referencing = { version = "0.45.0", features = ["retrieve-async"] }
+reqwest = { version = "0.13.1", features = ["query"] }
 rstest = "0.26.1"
 rustls = "0.23.22"
 serde = "1.0"
@@ -102,8 +102,3 @@ tracing-indicatif = "0.3.9"
 url = "2.3"
 webpki-roots = "1.0.0"
 wkb = "0.9.0"
-
-[patch.crates-io]
-geoarrow-array = { git = "https://github.com/geoarrow/geoarrow-rs", rev = "234c7bd287b3e3caaa9ece9e67e81259347121f8" }
-geoarrow-schema = { git = "https://github.com/geoarrow/geoarrow-rs", rev = "234c7bd287b3e3caaa9ece9e67e81259347121f8" }
-geoparquet = { git = "https://github.com/geoarrow/geoarrow-rs", rev = "234c7bd287b3e3caaa9ece9e67e81259347121f8" }
