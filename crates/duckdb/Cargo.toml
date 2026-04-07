@@ -30,7 +30,7 @@ geojson.workspace = true
 getrandom.workspace = true
 log.workspace = true
 serde_json.workspace = true
-stac = { version = "0.16.5", path = "../core", features = ["geoarrow", "geo"] }
+stac = { version = "0.17.0", path = "../core", features = ["geoarrow", "geo"] }
 thiserror.workspace = true
 
 [dev-dependencies]
