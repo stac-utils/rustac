@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0](https://github.com/stac-utils/rustac/compare/stac-v0.16.5...stac-v0.17.0) - 2026-04-07
+
+### Added
+
+- add generic search client traits and adapters ([#994](https://github.com/stac-utils/rustac/pull/994))
+
+### Fixed
+
+- more permissive deserialization, arrow v58 ([#985](https://github.com/stac-utils/rustac/pull/985))
+
+### Other
+
+- *(deps)* update geojson requirement from 0.24.1 to 1.0.0 ([#993](https://github.com/stac-utils/rustac/pull/993))
+
 ## [0.16.5](https://github.com/stac-utils/rustac/compare/stac-v0.16.4...stac-v0.16.5) - 2026-03-02
 
 ### Fixed
