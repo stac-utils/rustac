@@ -35,5 +35,9 @@ updates:
     schedule:
       interval: "weekly"
     labels: []
+    groups:
+      python:
+        patterns:
+          - "*"
     cooldown:
       default-days: 7
