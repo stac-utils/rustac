@@ -6,13 +6,13 @@ requires-python = ">=3.12"
 dependencies = []
 
 [dependency-groups]
-docs = ["mkdocs-material[imaging]>=9.5.40", "mkdocs-redirects>=1.2.2"]
+docs = ["mkdocs-material[imaging]>=9.7.6", "mkdocs-redirects>=1.2.3"]
 stac-geoparquet = [
     "deepdiff>=9.0.0",
-    "pyarrow>=17.0.0",
-    "stac-geoparquet>=0.6.0",
+    "pyarrow>=23.0.1",
+    "stac-geoparquet>=0.7.0",
 ]
-stac-api-validator = ["setuptools>=75.1.0", "stac-api-validator>=0.6.3"]
+stac-api-validator = ["setuptools>=82.0.1", "stac-api-validator>=0.6.8"]
 
 [tool.uv]
 default-groups = ["docs", "stac-geoparquet", "stac-api-validator"]
