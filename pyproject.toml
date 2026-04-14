@@ -12,7 +12,7 @@ stac-geoparquet = [
     "pyarrow>=17.0.0",
     "stac-geoparquet>=0.6.0",
 ]
-stac-api-validator = ["setuptools>=75.1.0", "stac-api-validator>=0.6.3"]
+stac-api-validator = ["setuptools>=82.0.1", "stac-api-validator>=0.6.3"]
 
 [tool.uv]
 default-groups = ["docs", "stac-geoparquet", "stac-api-validator"]
