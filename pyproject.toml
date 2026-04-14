@@ -6,7 +6,7 @@ requires-python = ">=3.12"
 dependencies = []
 
 [dependency-groups]
-docs = ["mkdocs-material[imaging]>=9.5.40", "mkdocs-redirects>=1.2.2"]
+docs = ["mkdocs-material[imaging]>=9.5.40", "mkdocs-redirects>=1.2.3"]
 stac-geoparquet = [
     "deepdiff>=9.0.0",
     "pyarrow>=17.0.0",
