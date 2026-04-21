@@ -2,23 +2,23 @@ use crate::{Error, Result};
 use async_recursion::async_recursion;
 use async_trait::async_trait;
 use fluent_uri::Uri;
-use jsonschema::{AsyncRetrieve, Resource, ValidationOptions, Validator as JsonschemaValidator};
+use jsonschema::{AsyncRetrieve, Registry, Resource, Validator as JsonschemaValidator};
 use reqwest::Client;
 use serde::Serialize;
 use serde_json::{Map, Value};
 use stac::{Type, Version};
 use std::collections::HashMap;
-use std::sync::Arc;
 
 const SCHEMA_BASE: &str = "https://schemas.stacspec.org";
 
 /// A structure for validating STAC.
 pub struct Validator {
     validators: HashMap<Uri<String>, JsonschemaValidator>,
-    validation_options: ValidationOptions<Arc<dyn referencing::AsyncRetrieve>>,
+    registry: Registry<'static>,
+    retriever: Retriever,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Retriever(Client);
 
 impl Validator {
@@ -35,15 +35,17 @@ impl Validator {
     /// }
     /// ```
     pub async fn new() -> Result<Validator> {
-        let validation_options = jsonschema::async_options();
-        let validation_options = validation_options
-            .with_resources(prebuild_resources().into_iter())
-            .with_retriever(Retriever(
-                Client::builder().user_agent(crate::user_agent()).build()?,
-            ));
+        let retriever = Retriever(Client::builder().user_agent(crate::user_agent()).build()?);
+        let registry = Registry::new()
+            .extend(prebuild_resources())
+            .expect("prebuild resource URIs should be valid")
+            .prepare()
+            .expect("prebuild registry should build");
+        let validators = prebuild_validators(&registry, retriever.clone()).await;
         Ok(Validator {
-            validators: prebuild_validators(&validation_options).await,
-            validation_options,
+            validators,
+            registry,
+            retriever,
         })
     }
 
@@ -225,8 +227,9 @@ impl Validator {
             let client = reqwest::Client::new();
             let response = client.get(uri.as_str()).send().await?.error_for_status()?;
             let json_data = response.json().await?;
-            let validator = self
-                .validation_options
+            let validator = jsonschema::async_options()
+                .with_registry(&self.registry)
+                .with_retriever(self.retriever.clone())
                 .build(&json_data)
                 .await
                 .map_err(Box::new)?;
@@ -264,7 +267,8 @@ fn build_uri(r#type: Type, version: &Version) -> Uri<String> {
 }
 
 async fn prebuild_validators(
-    validation_options: &ValidationOptions<Arc<dyn referencing::AsyncRetrieve>>,
+    registry: &Registry<'static>,
+    retriever: Retriever,
 ) -> HashMap<Uri<String>, JsonschemaValidator> {
     use Type::*;
     use Version::*;
@@ -275,7 +279,12 @@ async fn prebuild_validators(
         ($t:expr_2021, $v:expr_2021, $path:expr_2021, $schemas:expr_2021) => {
             let url = build_uri($t, &$v);
             let value = serde_json::from_str(include_str!($path)).unwrap();
-            let validator = validation_options.build(&value).await.unwrap();
+            let validator = jsonschema::async_options()
+                .with_registry(registry)
+                .with_retriever(retriever.clone())
+                .build(&value)
+                .await
+                .unwrap();
             let _ = schemas.insert(url, validator);
         };
     }
