@@ -32,7 +32,7 @@ impl Filter {
         }
     }
 
-    /// Converts this filter to cql2-json.
+    /// Converts this filter to cql2-text.
     pub fn into_cql2_text(self) -> Result<Filter> {
         match self {
             Filter::Cql2Text(_) => Ok(self),
