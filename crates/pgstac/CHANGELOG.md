@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.10](https://github.com/stac-utils/rustac/compare/pgstac-v0.4.9...pgstac-v0.4.10) - 2026-04-28
+
+### Other
+
+- updated the following local packages: stac
+
 ## [0.4.9](https://github.com/stac-utils/rustac/compare/pgstac-v0.4.8...pgstac-v0.4.9) - 2026-04-07
 
 ### Added

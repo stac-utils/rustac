@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.9](https://github.com/stac-utils/rustac/compare/stac-validate-v0.6.8...stac-validate-v0.6.9) - 2026-04-28
+
+### Other
+
+- *(deps)* bump the jsonschema group with 2 updates ([#1031](https://github.com/stac-utils/rustac/pull/1031))
+
 ## [0.6.8](https://github.com/stac-utils/rustac/compare/stac-validate-v0.6.7...stac-validate-v0.6.8) - 2026-04-07
 
 ### Other
