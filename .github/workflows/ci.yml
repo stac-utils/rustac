@@ -169,6 +169,45 @@ jobs:
         run: cargo binstall cargo-hack --no-confirm
       - name: Check msrv
         run: cargo hack check --rust-version --workspace --all-targets --ignore-private
+  changes-r:
+    name: Check R changes
+    runs-on: ubuntu-latest
+    outputs:
+      r: ${{ steps.filter.outputs.r }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            r:
+              - 'crates/r/**'
+  test-r:
+    name: Test R
+    needs: changes-r
+    if: needs.changes-r.outputs.r == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/r
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Swatinem/rust-cache@v2
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: crates/r
+      - name: Build and check
+        run: |
+          R CMD build .
+          R CMD check --output=/tmp --no-manual --no-clean rustac_*.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: r-check-results
+          path: /tmp/rustac.Rcheck/
   doc:
     name: Docs
     runs-on: ubuntu-latest

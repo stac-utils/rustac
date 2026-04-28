@@ -12,6 +12,9 @@ members = [
     "crates/validate",
     "crates/wasm",
 ]
+exclude = [
+    "crates/r/*",
+]
 default-members = [
     "crates/core",
     "crates/cli",
