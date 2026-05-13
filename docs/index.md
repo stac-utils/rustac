@@ -41,7 +41,6 @@ Our Rust documentation is hosted on `docs.rs`:
 - [stac](https://docs.rs/stac): The core Rust crate
 - [stac-io](https://docs.rs/stac-io): Input and output
 - [stac-server](https://docs.rs/stac-server): A STAC API server with multiple backends
-- [pgstac](https://docs.rs/pgstac): Rust bindings for [pgstac](https://github.com/stac-utils/pgstac)
 - [stac-duckdb](https://docs.rs/stac-duckdb/latest/stac_duckdb/): A client and methods for querying [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet/blob/main/spec/stac-geoparquet-spec.md) via [DuckDB](https://duckdb.org/)
 
 ## Acknowledgements

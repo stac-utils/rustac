@@ -7,7 +7,6 @@ members = [
     "crates/duckdb",
     "crates/extensions",
     "crates/io",
-    "crates/pgstac",
     "crates/server",
     "crates/validate",
     "crates/wasm",
@@ -75,6 +74,7 @@ mime = "0.3.17"
 mockito = "1.5"
 object_store = "0.13.0"
 parquet = { version = "58.0.0" }
+pgstac = "0.4.9"
 quote = "1.0"
 referencing = { version = "0.46.0", features = ["retrieve-async"] }
 reqwest = { version = "0.13.1", features = ["query"] }
@@ -102,3 +102,6 @@ tracing-indicatif = "0.3.9"
 url = "2.3"
 webpki-roots = "1.0.0"
 wkb = "0.9.0"
+
+[patch.crates-io]
+stac = { path = "crates/core" }

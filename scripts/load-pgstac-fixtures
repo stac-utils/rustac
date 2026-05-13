@@ -1,9 +1,0 @@
-#!/usr/bin/env sh
-
-set -e
-
-scripts=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-fixtures="$scripts/fixtures"
-dsn=postgresql://username:password@localhost:5432/postgis
-
-cargo run -- pgstac load "$dsn" "$fixtures/sentinel-2-l2a.json" "$fixtures/1000-sentinel-2-items.parquet"

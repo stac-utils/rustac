@@ -5,8 +5,7 @@
 - `crates/core` (`stac`): canonical types, API traits, shared logic.
 - `crates/io`: HTTP and object-store I/O.
 - `crates/duckdb`: DuckDB-backed querying.
-- `crates/server`: API server backends and wiring.
-- `crates/pgstac`: pgstac integration.
+- `crates/server`: API server backends and wiring (pgstac backend uses the external [pgstac](https://github.com/stac-utils/pgstac) crate).
 - `crates/extensions`, `crates/validate`, `crates/wasm`, `crates/derive`, `crates/cli`: supporting crates.
 
 ## Build and validation

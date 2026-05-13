@@ -93,7 +93,7 @@ jobs:
       matrix:
         pgstac_version:
           - v0.8.6
-          - v0.9.8
+          - v0.9.11
     services:
       pgstac:
         image: ghcr.io/stac-utils/pgstac:${{ matrix.pgstac_version }}
@@ -113,8 +113,6 @@ jobs:
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - *get-duckdb
-      - name: Test
-        run: cargo test -p pgstac --all-features
       - name: Validate
         run: uv run --group stac-api-validator scripts/validate-stac-server --pgstac
       - name: Search
