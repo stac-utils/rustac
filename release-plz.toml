@@ -15,9 +15,6 @@ name = "stac-extensions"
 name = "stac-io"
 
 [[package]]
-name = "pgstac"
-
-[[package]]
 name = "stac-server"
 
 [[package]]

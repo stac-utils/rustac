@@ -23,11 +23,10 @@ To use the [pgstac](https://github.com/stac-utils/pgstac) backend:
 rustac serve --pgstac postgresql://username:password@localhost:5432/postgis
 ```
 
-If you'd like to serve your own **pgstac** backend with some sample items:
+If you'd like to serve your own **pgstac** backend:
 
 ```shell
 docker compose up -d pgstac
-scripts/load-pgstac-fixtures  # This might take a while, e.g. 30 seconds or so
 ```
 
 ### Library

@@ -1,4 +1,4 @@
-# pgstac
+# stac-duckdb
 
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/stac-utils/rustac/ci.yml?branch=main&style=for-the-badge)](https://github.com/stac-utils/rustac/actions/workflows/ci.yml)
 [![docs.rs](https://img.shields.io/docsrs/stac-duckdb?style=for-the-badge)](https://docs.rs/stac-duckdb/latest/stac_duckdb/)
