@@ -10,7 +10,7 @@ If you have Rust, use `cargo`:
 ```sh
 cargo install rustac # to use libduckdb on your system
 # or
-cargo install rustac -F duckdb-bundled  # to build libduckdb on install (slow)
+DUCKDB_DOWNLOAD_LIB=1 cargo install rustac -F duckdb-bundled  # to build libduckdb on install
 ```
 
 The CLI is called **rustac**:

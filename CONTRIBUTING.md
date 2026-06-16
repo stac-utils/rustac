@@ -27,10 +27,10 @@ By default, **rustac** will try to find DuckDB on your system,  so you need to s
 If you're on macos and using [Homebrew](https://brew.sh/), this might be `export DUCKDB_LIB_DIR=/opt/homebrew/lib`
 On linux, you can download the `libduckdb-linux-{platform}.zip` file from the [latest release](https://github.com/duckdb/duckdb/releases/latest) and unzip the contents into a directory on your machine (you will also need to set `LD_LIBRARY_PATH` to include this directory).
 
-If you don't want to or can't install DuckDB, you can build **rustac** with the `duckdb-bundled` feature to build the bindings from scratch (warning: this takes a while):
+If you don't want to or can't install DuckDB, you can build **rustac** with the `duckdb-bundled` feature to build the bindings from scratch:
 
 ```sh
-cargo build -F duckdb-bundled  # or cargo test, cargo run, etc...
+DUCKDB_DOWNLOAD_LIB=1 cargo build -F duckdb-bundled  # or cargo test, cargo run, etc...
 ```
 
 ## Linting
