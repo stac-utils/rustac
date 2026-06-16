@@ -529,21 +529,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/browser@npm:^3.0.0":
-  version: 3.2.4
-  resolution: "@vitest/browser@npm:3.2.4"
+"@vitest/browser@npm:^3.2.5":
+  version: 3.2.5
+  resolution: "@vitest/browser@npm:3.2.5"
   dependencies:
-    "@testing-library/dom": "npm:^10.4.0"
-    "@testing-library/user-event": "npm:^14.6.1"
-    "@vitest/mocker": "npm:3.2.4"
-    "@vitest/utils": "npm:3.2.4"
-    magic-string: "npm:^0.30.17"
-    sirv: "npm:^3.0.1"
-    tinyrainbow: "npm:^2.0.0"
-    ws: "npm:^8.18.2"
+    "@testing-library/dom": ^10.4.0
+    "@testing-library/user-event": ^14.6.1
+    "@vitest/mocker": 3.2.5
+    "@vitest/utils": 3.2.5
+    magic-string: ^0.30.17
+    sirv: ^3.0.1
+    tinyrainbow: ^2.0.0
+    ws: ^8.18.2
   peerDependencies:
     playwright: "*"
-    vitest: 3.2.4
+    vitest: 3.2.5
     webdriverio: ^7.0.0 || ^8.0.0 || ^9.0.0
   peerDependenciesMeta:
     playwright:
@@ -552,7 +552,7 @@ __metadata:
       optional: true
     webdriverio:
       optional: true
-  checksum: 0db39daad675aad187eff27d5a7f17a9f533d7abc7476ee1a0b83a9c62a7227b24395f4814e034ecb2ebe39f1a2dec0a8c6a7f79b8d5680c3ac79e408727d742
+  checksum: 8/993cce3e7729427e7ba69aad3bb6316e2043200d98f1cd33750949be901655786f96b5321570f921a56d94e902ace354c0300014dca7b1ff315e6ec9608d9526
   languageName: node
   linkType: hard
 
@@ -569,13 +569,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/mocker@npm:3.2.4":
-  version: 3.2.4
-  resolution: "@vitest/mocker@npm:3.2.4"
+"@vitest/mocker@npm:3.2.5":
+  version: 3.2.5
+  resolution: "@vitest/mocker@npm:3.2.5"
   dependencies:
-    "@vitest/spy": "npm:3.2.4"
-    estree-walker: "npm:^3.0.3"
-    magic-string: "npm:^0.30.17"
+    "@vitest/spy": 3.2.5
+    estree-walker: ^3.0.3
+    magic-string: ^0.30.17
   peerDependencies:
     msw: ^2.4.9
     vite: ^5.0.0 || ^6.0.0 || ^7.0.0-0
@@ -584,7 +584,7 @@ __metadata:
       optional: true
     vite:
       optional: true
-  checksum: f7a4aea19bbbf8f15905847ee9143b6298b2c110f8b64789224cb0ffdc2e96f9802876aa2ca83f1ec1b6e1ff45e822abb34f0054c24d57b29ab18add06536ccd
+  checksum: 8/fd042d113e8f2b8dab4a1b240b39e1bc2f57281ffaf6debe2a64363d3051fff3f4ff83946039cd4ec7a96279f0e78e80657e609d9826e085f624bd7c255a4783
   languageName: node
   linkType: hard
 
@@ -607,12 +607,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/pretty-format@npm:3.2.4":
-  version: 3.2.4
-  resolution: "@vitest/pretty-format@npm:3.2.4"
+"@vitest/pretty-format@npm:3.2.5":
+  version: 3.2.5
+  resolution: "@vitest/pretty-format@npm:3.2.5"
   dependencies:
-    tinyrainbow: "npm:^2.0.0"
-  checksum: 5ad7d4278e067390d7d633e307fee8103958806a419ca380aec0e33fae71b44a64415f7a9b4bc11635d3c13d4a9186111c581d3cef9c65cc317e68f077456887
+    tinyrainbow: ^2.0.0
+  checksum: 8/70cd21acce3b50d5686f6ed5ef82427a29ce11f26a9b877c095a9eed12effea562780c5824e20c2b7f1b5b376eafcd60b55f611518ce34cafe87e3477f28b1a8
   languageName: node
   linkType: hard
 
@@ -647,12 +647,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/spy@npm:3.2.4":
-  version: 3.2.4
-  resolution: "@vitest/spy@npm:3.2.4"
+"@vitest/spy@npm:3.2.5":
+  version: 3.2.5
+  resolution: "@vitest/spy@npm:3.2.5"
   dependencies:
-    tinyspy: "npm:^4.0.3"
-  checksum: 6ebf0b4697dc238476d6b6a60c76ba9eb1dd8167a307e30f08f64149612fd50227682b876420e4c2e09a76334e73f72e3ebf0e350714dc22474258292e202024
+    tinyspy: ^4.0.3
+  checksum: 8/c5d4c756d283f7d2360a514c7d1dff6b1da607a92aeeb8e44e409b8277949b369e8411d977b626f26edfd77de0b65d95a60d97748cc54a3837721a10005c4b71
   languageName: node
   linkType: hard
 
@@ -665,14 +665,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/utils@npm:3.2.4":
-  version: 3.2.4
-  resolution: "@vitest/utils@npm:3.2.4"
+"@vitest/utils@npm:3.2.5":
+  version: 3.2.5
+  resolution: "@vitest/utils@npm:3.2.5"
   dependencies:
-    "@vitest/pretty-format": "npm:3.2.4"
-    loupe: "npm:^3.1.4"
-    tinyrainbow: "npm:^2.0.0"
-  checksum: 024a9b8c8bcc12cf40183c246c244b52ecff861c6deb3477cbf487ac8781ad44c68a9c5fd69f8c1361878e55b97c10d99d511f2597f1f7244b5e5101d028ba64
+    "@vitest/pretty-format": 3.2.5
+    loupe: ^3.1.4
+    tinyrainbow: ^2.0.0
+  checksum: 8/517c5cde0a7c4bacb556ba427db5c8c44c47c92759101f174a3700160cd1bbf838758834dea126c0ce205123b92f750ed6972858ad693a03b6b6222552320e43
   languageName: node
   linkType: hard
 
@@ -1772,7 +1772,7 @@ __metadata:
   resolution: "stac-wasm-tests@workspace:."
   dependencies:
     "@duckdb/duckdb-wasm": ^1.28.0
-    "@vitest/browser": ^3.0.0
+    "@vitest/browser": ^3.2.5
     apache-arrow: ^18.0.0
     playwright: ^1.50.0
     stac-wasm: "file:./pkg"
