@@ -23,7 +23,7 @@ cargo install rustac
 Otherwise:
 
 ```sh
-cargo install rustac -F duckdb-bundled  # (slow)
+DUCKDB_DOWNLOAD_LIB=1 cargo install rustac -F duckdb-bundled  # (slow)
 ```
 
 Then:

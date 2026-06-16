@@ -23,7 +23,7 @@ If you want to build the DuckDB library as a part of this (or a downstream's) cr
 E.g. to test this crate if you don't have DuckDB locally:
 
 ```shell
-cargo test -p stac-duckdb -F bundled
+DUCKDB_DOWNLOAD_LIB=1 cargo test -p stac-duckdb -F bundled
 ```
 
 See [the duckdb-rs docs](https://github.com/duckdb/duckdb-rs?tab=readme-ov-file#notes-on-building-duckdb-and-libduckdb-sys) for more.
