@@ -16,11 +16,11 @@ use std::{
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq)]
 pub struct Fields {
     /// Fields to include.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub include: Vec<String>,
 
     /// Fields to exclude.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub exclude: Vec<String>,
 }
 
@@ -130,5 +130,10 @@ mod tests {
             .to_string(),
             "-geometry"
         );
+    }
+
+    #[test]
+    fn permissive_deserialization() {
+        let _ = serde_json::from_str::<Fields>("{}").unwrap();
     }
 }
