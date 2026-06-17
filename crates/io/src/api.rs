@@ -344,7 +344,7 @@ impl ItemsClient for Client {
 
     async fn search(&self, search: Search) -> std::result::Result<ItemCollection, Error> {
         let url = self.url_builder.search().clone();
-        tracing::debug!("searching {url}");
+        tracing::debug!("searching {url}: {:?}", search);
         self.post(url, &search).await
     }
 }
