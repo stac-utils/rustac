@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::{
     convert::Infallible,
     fmt::{Display, Formatter},
@@ -13,7 +13,7 @@ use std::{
 /// them are in results. Frequently, not all fields in an Item are used, so this
 /// specification provides a mechanism for clients to request that servers to
 /// explicitly include or exclude certain fields.
-#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq)]
+#[derive(Clone, Debug, Serialize, Default, PartialEq)]
 pub struct Fields {
     /// Fields to include.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
@@ -24,22 +24,59 @@ pub struct Fields {
     pub exclude: Vec<String>,
 }
 
-impl FromStr for Fields {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl Fields {
+    fn from_iter<I>(fields: I) -> Fields
+    where
+        I: IntoIterator<Item = String>,
+    {
         let mut include = Vec::new();
         let mut exclude = Vec::new();
-        for field in s.split(',').filter(|s| !s.is_empty()) {
+        for field in fields {
             if let Some(field) = field.strip_prefix('-') {
                 exclude.push(field.to_string());
             } else if let Some(field) = field.strip_prefix('+') {
                 include.push(field.to_string());
             } else {
-                include.push(field.to_string());
+                include.push(field);
             }
         }
-        Ok(Fields { include, exclude })
+        Fields { include, exclude }
+    }
+}
+
+impl FromStr for Fields {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Fields::from_iter(
+            s.split(',')
+                .filter(|s| !s.is_empty())
+                .map(ToString::to_string),
+        ))
+    }
+}
+
+impl<'de> Deserialize<'de> for Fields {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Repr {
+            List(Vec<String>),
+            Struct {
+                #[serde(default)]
+                include: Vec<String>,
+                #[serde(default)]
+                exclude: Vec<String>,
+            },
+        }
+
+        Ok(match Repr::deserialize(deserializer)? {
+            Repr::List(fields) => Fields::from_iter(fields),
+            Repr::Struct { include, exclude } => Fields { include, exclude },
+        })
     }
 }
 
@@ -135,5 +172,32 @@ mod tests {
     #[test]
     fn permissive_deserialization() {
         let _ = serde_json::from_str::<Fields>("{}").unwrap();
+    }
+
+    #[test]
+    fn deserialize_struct() {
+        assert_eq!(
+            Fields {
+                include: vec!["foo".to_string()],
+                exclude: vec!["bar".to_string()],
+            },
+            serde_json::from_str(r#"{"include": ["foo"], "exclude": ["bar"]}"#).unwrap()
+        );
+    }
+
+    #[test]
+    fn deserialize_list() {
+        assert_eq!(
+            Fields {
+                include: vec!["foo".to_string(), "baz".to_string()],
+                exclude: vec!["bar".to_string()],
+            },
+            serde_json::from_str(r#"["foo", "-bar", "+baz"]"#).unwrap()
+        );
+    }
+
+    #[test]
+    fn deserialize_empty_list() {
+        assert_eq!(Fields::default(), serde_json::from_str("[]").unwrap());
     }
 }
