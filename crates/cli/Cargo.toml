@@ -1,7 +1,7 @@
 [package]
 name = "rustac"
 description = "Command line interface for rustac"
-version = "0.2.10"
+version = "0.2.11"
 keywords = ["geospatial", "stac", "metadata", "geo", "raster"]
 authors.workspace = true
 edition.workspace = true
@@ -28,7 +28,7 @@ pgstac = { workspace = true, optional = true }
 serde_json.workspace = true
 stac = { version = "0.17.1", path = "../core" }
 stac-duckdb = { version = "0.3.8", path = "../duckdb" }
-stac-io = { version = "0.2.9", path = "../io", features = [
+stac-io = { version = "0.2.10", path = "../io", features = [
     "store-all",
     "geoparquet",
 ] }
