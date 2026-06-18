@@ -239,7 +239,7 @@ impl Client {
         let page = self
             .request::<(), _>(Method::GET, url.clone(), None, None)
             .await?;
-        Ok(stream_items::<Collections>(
+        Ok(stream::<Collections>(
             self.clone(),
             page,
             self.channel_buffer,
@@ -288,7 +288,7 @@ impl Client {
         let page = self
             .request(Method::GET, url.clone(), items.as_ref(), None)
             .await?;
-        Ok(stream_items::<ItemCollection>(
+        Ok(stream::<ItemCollection>(
             self.clone(),
             page,
             self.channel_buffer,
@@ -396,7 +396,7 @@ impl StreamItemsClient for Client {
     ) -> std::result::Result<impl Stream<Item = std::result::Result<Item, Error>> + Send, Error>
     {
         let page = ItemsClient::search(self, search).await?;
-        Ok(stream_items(self.clone(), page, self.channel_buffer))
+        Ok(stream(self.clone(), page, self.channel_buffer))
     }
 
     async fn items_stream(
@@ -448,7 +448,7 @@ impl BlockingClient {
         let client = self.0.clone();
         let stream = runtime.block_on(async move {
             let page = ItemsClient::search(&client, search).await?;
-            Ok::<_, Error>(stream_items(client, page, self.0.channel_buffer))
+            Ok::<_, Error>(stream(client, page, self.0.channel_buffer))
         })?;
         Ok(BlockingIterator {
             runtime,
@@ -491,7 +491,7 @@ impl Streamable for ItemCollection {
     }
 }
 
-fn stream_items<Page: Streamable + 'static>(
+fn stream<Page: Streamable + 'static>(
     client: Client,
     page: Page,
     channel_buffer: usize,
