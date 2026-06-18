@@ -1,0 +1,1611 @@
+{
+  "collections": [
+    {
+      "id": "copernicus-dem",
+      "type": "Collection",
+      "links": [
+        {
+          "rel": "items",
+          "type": "application/geo+json",
+          "href": "https://stac.eoapi.dev/collections/copernicus-dem/items"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "self",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/collections/copernicus-dem"
+        },
+        {
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "type": "application/schema+json",
+          "title": "Queryables",
+          "href": "https://stac.eoapi.dev/collections/copernicus-dem/queryables"
+        }
+      ],
+      "title": "Copernicus Digital Elevation Model (DEM)",
+      "extent": {
+        "spatial": { "bbox": [[-180.0, -90.0, 180.0, 90.0]] },
+        "temporal": {
+          "interval": [
+            ["2022-05-09T00:00:00.000000Z", "2022-05-10T00:00:00.000000Z"]
+          ]
+        }
+      },
+      "license": "CC-BY-4.0",
+      "description": "Copernicus Digital Elevation Model (DEM)",
+      "item_assets": {
+        "dem": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "dem"
+        }
+      },
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json"
+      ]
+    },
+    {
+      "id": "MAXAR_afghanistan_earthquake22",
+      "type": "Collection",
+      "links": [
+        {
+          "rel": "items",
+          "type": "application/geo+json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_afghanistan_earthquake22/items"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "self",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_afghanistan_earthquake22"
+        },
+        {
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "type": "application/schema+json",
+          "title": "Queryables",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_afghanistan_earthquake22/queryables"
+        },
+        {
+          "rel": "preview",
+          "title": "visual interactive map",
+          "type": "text/html",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_afghanistan_earthquake22/WebMercatorQuad/map.html?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "tiles",
+          "title": "visual tiles",
+          "type": "application/json",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_afghanistan_earthquake22/WebMercatorQuad/tilejson.json?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        }
+      ],
+      "title": "Afghanistan Earthquake",
+      "extent": {
+        "spatial": {
+          "bbox": [
+            [
+              69.183655, 25.87190729678215, 89.49113890637808, 33.32974207664388
+            ],
+            [69.44635048104489, 32.91418, 69.6445184723769, 33.321349],
+            [69.31231014648591, 32.91418, 69.48945012311847, 33.321349],
+            [69.59559231137928, 32.91418, 69.80276634718065, 33.321349],
+            [69.183655, 32.91418, 69.38147194653232, 33.321349],
+            [69.75427362183706, 33.079308290264194, 69.859314, 33.321349],
+            [
+              69.55667085438988, 33.12480123241977, 69.74715134156378,
+              33.319888157198626
+            ],
+            [
+              69.71548818048771, 33.17773183079131, 69.90047661273559,
+              33.315180795929436
+            ],
+            [69.7406158519236, 32.96823676367551, 69.859314, 33.10203820488161],
+            [
+              69.57831406542505, 33.12254483363519, 69.74072597750619,
+              33.324198288585215
+            ],
+            [
+              69.71176788128973, 33.12366515063284, 69.8702808811805,
+              33.32112598623741
+            ],
+            [
+              69.70581161123312, 33.076337844802886, 70.02623369983321,
+              33.32813916429739
+            ],
+            [
+              69.44275445830968, 33.12206565340098, 69.6095350098259,
+              33.32974207664388
+            ],
+            [69.7909381108152, 32.91418, 69.859314, 33.010712780195746],
+            [
+              69.52376996175454, 33.04338221754457, 69.77658344475597,
+              33.17740255588839
+            ],
+            [
+              89.31589687834288, 25.87190729678215, 89.49113890637808,
+              25.97368856662188
+            ]
+          ]
+        },
+        "temporal": {
+          "interval": [["2021-06-09T06:13:36Z", "2022-06-27T06:09:09Z"]]
+        }
+      },
+      "license": "CC-BY-NC-4.0",
+      "renders": {
+        "visual": {
+          "title": "Visual Image",
+          "assets": ["visual"],
+          "asset_bidx": "visual|1,2,3",
+          "minmax_zoom": [8, 22]
+        }
+      },
+      "description": "Maxar OpenData | On Wednesday, June 22, 2022, a 5.9 magnitude earthquake struck eastern Afghanistan. It has been estimated that more than 1,000 have been killed and many more wounded. Houses have been reduced to rubble and an unknown number of people remain stuck under debris. In outlaying areas rescue operations were complicated by difficult conditions including heavy rain, landslides and villages being located in inaccessible hillsides areas. Wednesday's earthquake was the deadliest in Afghanistan since 2022. It struck about 27 miles (44 km) from the southeastern city of Khost, near the border with Pakistan.",
+      "item_assets": {
+        "visual": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["visual"],
+          "title": "Visual Image"
+        },
+        "data-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data-mask"],
+          "title": "Data Mask"
+        },
+        "ms_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Image"
+        },
+        "pan_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Panchromatic Image"
+        }
+      },
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
+      ]
+    },
+    {
+      "id": "MAXAR_BayofBengal_Cyclone_Mocha_May_23",
+      "type": "Collection",
+      "links": [
+        {
+          "rel": "items",
+          "type": "application/geo+json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_BayofBengal_Cyclone_Mocha_May_23/items"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "self",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_BayofBengal_Cyclone_Mocha_May_23"
+        },
+        {
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "type": "application/schema+json",
+          "title": "Queryables",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_BayofBengal_Cyclone_Mocha_May_23/queryables"
+        },
+        {
+          "rel": "preview",
+          "title": "visual interactive map",
+          "type": "text/html",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_BayofBengal_Cyclone_Mocha_May_23/WebMercatorQuad/map.html?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "tiles",
+          "title": "visual tiles",
+          "type": "application/json",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_BayofBengal_Cyclone_Mocha_May_23/WebMercatorQuad/tilejson.json?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        }
+      ],
+      "title": "Bay of Bengal Cyclone Mocha 2023",
+      "extent": {
+        "spatial": {
+          "bbox": [
+            [91.831615, 19.982078842323997, 92.97426268500965, 21.666101],
+            [
+              92.567815, 20.18811887678192, 92.74417544237298, 20.62968532404085
+            ],
+            [92.72278776887262, 20.104801, 92.893524, 20.630214],
+            [
+              92.75855246040959, 19.982078842323997, 92.89682495377032,
+              20.514473160464657
+            ],
+            [
+              92.84253515935835, 19.984656587012033, 92.97426268500965,
+              20.514418665444474
+            ],
+            [91.831615, 21.518411, 91.957078, 21.666101]
+          ]
+        },
+        "temporal": {
+          "interval": [["2023-01-03T04:30:17Z", "2023-05-22T04:35:25Z"]]
+        }
+      },
+      "license": "CC-BY-NC-4.0",
+      "renders": {
+        "visual": {
+          "title": "Visual Image",
+          "assets": ["visual"],
+          "asset_bidx": "visual|1,2,3",
+          "minmax_zoom": [8, 22]
+        }
+      },
+      "description": "Maxar OpenData | Cyclone Mocha, a category five cyclone with 130 mph winds and torrential rain, hit parts of Myanmar and Bangladesh, forcing mass evacuations ahead of the storm. The cyclone, one of the most powerful to hit the region in the last decade, made landfall on Sunday, May 14, 2023, near Sittwe in Myanmar's Rakhine state. Rain and a storm surge caused widespread flooding in low-lying areas. The United National Office Coordination of Humanitarian Affairs stated that there had been extensive damage among already vulnerable communities and that communications with the affected areas have been difficult.",
+      "item_assets": {
+        "visual": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["visual"],
+          "title": "Visual Image"
+        },
+        "data-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data-mask"],
+          "title": "Data Mask"
+        },
+        "ms_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Image"
+        },
+        "pan_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Panchromatic Image"
+        }
+      },
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
+      ]
+    },
+    {
+      "id": "MAXAR_cyclone_emnati22",
+      "type": "Collection",
+      "links": [
+        {
+          "rel": "items",
+          "type": "application/geo+json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_cyclone_emnati22/items"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "self",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_cyclone_emnati22"
+        },
+        {
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "type": "application/schema+json",
+          "title": "Queryables",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_cyclone_emnati22/queryables"
+        },
+        {
+          "rel": "preview",
+          "title": "visual interactive map",
+          "type": "text/html",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_cyclone_emnati22/WebMercatorQuad/map.html?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "tiles",
+          "title": "visual tiles",
+          "type": "application/json",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_cyclone_emnati22/WebMercatorQuad/tilejson.json?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        }
+      ],
+      "title": "Cyclone Emnati",
+      "extent": {
+        "spatial": {
+          "bbox": [
+            [
+              46.95804810414511, -25.08974870092945, 48.3940535516616,
+              -20.948402107119836
+            ],
+            [
+              47.98686063611421, -22.51721325661803, 48.16461777133845,
+              -21.45808773618731
+            ],
+            [
+              46.95804810414511, -25.08974870092945, 47.16061680808063,
+              -23.959423902730734
+            ],
+            [
+              47.67187148704311, -22.915915080640705, 47.84341946501057,
+              -22.465667326117206
+            ],
+            [
+              47.48736962061546, -24.027435780498717, 47.694041451588205,
+              -22.958684387609587
+            ],
+            [
+              48.20462342941186, -22.532957528237237, 48.3940535516616,
+              -20.948402107119836
+            ],
+            [
+              47.53749434436082, -24.036664192034465, 47.74383212387173,
+              -22.48603084721636
+            ]
+          ]
+        },
+        "temporal": {
+          "interval": [["2020-08-11T07:18:42Z", "2022-02-28T06:52:25Z"]]
+        }
+      },
+      "license": "CC-BY-NC-4.0",
+      "renders": {
+        "visual": {
+          "title": "Visual Image",
+          "assets": ["visual"],
+          "asset_bidx": "visual|1,2,3",
+          "minmax_zoom": [8, 22]
+        }
+      },
+      "description": "Maxar OpenData | Tropical Cyclone Emnati made landfall onto Madagascar on February 22, 2022, inundating a country already soaked by Cyclone Basrati two week prior. Flooding and high winds damaged roads and buildings, displacing 44,000 people.",
+      "item_assets": {
+        "visual": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Visual (RGB) Image"
+        },
+        "data-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "Data Mask"
+        },
+        "cloud-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "Cloud Polygons"
+        },
+        "water-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "Water Polygons"
+        },
+        "ms_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Image"
+        },
+        "pan_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Panchromatic Image"
+        },
+        "cloud-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Cloud/Cloud Shadow Coverage Raster"
+        },
+        "cloud-shadow-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "Cloud Shadow Polygons"
+        },
+        "water-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Water Mask"
+        },
+        "ms-saturation-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "MS Pixel Saturation Polygons"
+        },
+        "terrain-shadow-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "Terrain Shadow Polygons"
+        },
+        "ms-saturation-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Pixel Saturation Mask"
+        },
+        "terrain-shadow-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Terrain Shadow Mask"
+        }
+      },
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
+      ]
+    },
+    {
+      "id": "MAXAR_Emilia_Romagna_Italy_flooding_may23",
+      "type": "Collection",
+      "links": [
+        {
+          "rel": "items",
+          "type": "application/geo+json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Emilia_Romagna_Italy_flooding_may23/items"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "self",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Emilia_Romagna_Italy_flooding_may23"
+        },
+        {
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "type": "application/schema+json",
+          "title": "Queryables",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Emilia_Romagna_Italy_flooding_may23/queryables"
+        },
+        {
+          "rel": "preview",
+          "title": "visual interactive map",
+          "type": "text/html",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_Emilia_Romagna_Italy_flooding_may23/WebMercatorQuad/map.html?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "tiles",
+          "title": "visual tiles",
+          "type": "application/json",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_Emilia_Romagna_Italy_flooding_may23/WebMercatorQuad/tilejson.json?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        }
+      ],
+      "title": "Emilia Romagna Italy Flooding",
+      "extent": {
+        "spatial": {
+          "bbox": [
+            [
+              11.486376265966378, 43.78329841260962, 12.710788,
+              44.53512165841268
+            ],
+            [11.840074, 44.376826, 11.994236, 44.489513],
+            [12.473701901491753, 43.948295, 12.689809659440312, 44.111663],
+            [
+              12.646720364003736, 43.94898655726408, 12.710788,
+              44.038486878708696
+            ],
+            [11.947023783226177, 44.103097742099244, 12.150477, 44.269923],
+            [
+              11.64693, 44.13849272591363, 11.839350975559892, 44.33316698350603
+            ],
+            [12.132767, 44.351592, 12.283876, 44.470455],
+            [11.656986, 44.317715, 11.757814, 44.382367],
+            [
+              11.564757707702608, 43.905887, 11.777607106519781,
+              44.09680628705397
+            ],
+            [11.753374830207404, 44.128589, 11.968154977266737, 44.346239],
+            [
+              11.486376265966378, 43.78329841260962, 12.440704303558809,
+              44.53512165841268
+            ],
+            [12.14999822305439, 44.085282, 12.329409, 44.24024]
+          ]
+        },
+        "temporal": {
+          "interval": [["2015-05-28T09:58:35Z", "2023-05-23T10:24:11Z"]]
+        }
+      },
+      "license": "CC-BY-NC-4.0",
+      "renders": {
+        "visual": {
+          "title": "Visual Image",
+          "assets": ["visual"],
+          "asset_bidx": "visual|1,2,3",
+          "minmax_zoom": [8, 22]
+        }
+      },
+      "description": "Maxar OpenData | Severe flooding in Italy's Emilia-Romagna region has forced the evacuation of more than 20,000 residents after two days of torrential rain. More than 14 rivers crested their banks forcing people to climb onto the roofs of buildings and homes, awaiting rescue. Dozens of cities and towns have been submerged and thousands of landslides have occurred in what has been called the worst floods to affect Italy in a century. Up to 27,000 people have been left without power according to the Italian distributor of electricity and gas.",
+      "item_assets": {
+        "visual": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["visual"],
+          "title": "Visual Image"
+        },
+        "data-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data-mask"],
+          "title": "Data Mask"
+        },
+        "cloud-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["cloud"],
+          "title": "Cloud Polygons"
+        },
+        "ms_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Image"
+        },
+        "pan_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Panchromatic Image"
+        },
+        "cloud-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["cloud", "cloud-shadow"],
+          "title": "Cloud/Cloud Shadow Coverage Raster"
+        },
+        "cloud-shadow-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["cloud-shadow"],
+          "title": "Cloud Shadow Polygons"
+        }
+      },
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
+      ]
+    },
+    {
+      "id": "MAXAR_Gambia_flooding_8_11_2022",
+      "type": "Collection",
+      "links": [
+        {
+          "rel": "items",
+          "type": "application/geo+json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Gambia_flooding_8_11_2022/items"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "self",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Gambia_flooding_8_11_2022"
+        },
+        {
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "type": "application/schema+json",
+          "title": "Queryables",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Gambia_flooding_8_11_2022/queryables"
+        },
+        {
+          "rel": "preview",
+          "title": "visual interactive map",
+          "type": "text/html",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_Gambia_flooding_8_11_2022/WebMercatorQuad/map.html?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "tiles",
+          "title": "visual tiles",
+          "type": "application/json",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_Gambia_flooding_8_11_2022/WebMercatorQuad/tilejson.json?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        }
+      ],
+      "title": "The Gambia Flooding",
+      "extent": {
+        "spatial": {
+          "bbox": [
+            [-16.742371, 13.328832, -16.568826, 13.49353],
+            [-16.704856789858184, 13.328832, -16.568826, 13.493419155214472],
+            [-16.742371, 13.333950737185978, -16.67886097488053, 13.49353],
+            [-16.682939610782363, 13.328832, -16.568826, 13.490843477848086],
+            [-16.593455192305772, 13.328832, -16.568826, 13.480327389508563],
+            [-16.742371, 13.328863562803539, -16.57173500885103, 13.49353],
+            [
+              -16.711708277826975, 13.468234796808254, -16.61489483964741,
+              13.49353
+            ]
+          ]
+        },
+        "temporal": {
+          "interval": [["2022-03-15T11:33:20Z", "2022-08-13T11:33:20Z"]]
+        }
+      },
+      "license": "CC-BY-NC-4.0",
+      "renders": {
+        "visual": {
+          "title": "Visual Image",
+          "assets": ["visual"],
+          "asset_bidx": "visual|1,2,3",
+          "minmax_zoom": [8, 22]
+        }
+      },
+      "description": "Maxar OpenData | Record flooding in The Gambia has caused widespread damage, including submerged roads and destroyed buildings. The rainfall measured 10.87 inches (276 mm) at Banjul International Airport, the heaviest recorded in more than 30 years. As of August 9, 2022, six fatalities have been reported and more than 17,200 people affected by the floods. The Gambia Red Cross said its volunteers have been working around the clock to distribute supplies and help families relocate to emergency shelters.",
+      "item_assets": {
+        "visual": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["visual"],
+          "title": "Visual Image"
+        },
+        "data-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data-mask"],
+          "title": "Data Mask"
+        },
+        "ms_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Image"
+        },
+        "pan_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Panchromatic Image"
+        }
+      },
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
+      ]
+    },
+    {
+      "id": "MAXAR_ghana_explosion22",
+      "type": "Collection",
+      "links": [
+        {
+          "rel": "items",
+          "type": "application/geo+json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_ghana_explosion22/items"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "self",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_ghana_explosion22"
+        },
+        {
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "type": "application/schema+json",
+          "title": "Queryables",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_ghana_explosion22/queryables"
+        },
+        {
+          "rel": "preview",
+          "title": "visual interactive map",
+          "type": "text/html",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_ghana_explosion22/WebMercatorQuad/map.html?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "tiles",
+          "title": "visual tiles",
+          "type": "application/json",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_ghana_explosion22/WebMercatorQuad/tilejson.json?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        }
+      ],
+      "title": "Ghana Explosion",
+      "extent": {
+        "spatial": {
+          "bbox": [
+            [
+              -2.163058656818844, 4.686869783743527, -1.941504778100328,
+              6.009346352305143
+            ],
+            [
+              -2.102893710240898, 4.686869783743527, -1.94443047176199,
+              6.009346352305143
+            ],
+            [
+              -2.163058656818844, 5.24370462781881, -1.993741099332081,
+              5.664113390366951
+            ],
+            [
+              -2.11652117657606, 5.475347139049133, -1.941504778100328,
+              5.670042897561462
+            ]
+          ]
+        },
+        "temporal": {
+          "interval": [["2020-01-06T10:43:48Z", "2022-01-22T10:49:54Z"]]
+        }
+      },
+      "license": "CC-BY-NC-4.0",
+      "renders": {
+        "visual": {
+          "title": "Visual Image",
+          "assets": ["visual"],
+          "asset_bidx": "visual|1,2,3",
+          "minmax_zoom": [8, 22]
+        }
+      },
+      "description": "Maxar OpenData | On Sunday, January 20, 2022, a motorbike collided with a truck carrying 10 tons of explosives causing a blast that leveled the entire town of Apiate, located in western Ghana. The explosives were being delivered to the nearby Chirano gold mine. The small town was reduced to rubble, timber and twisted metal, with a large crater at the center of the explosion. As of January 24, 13 people had been killed and approximately 200 injured.",
+      "item_assets": {
+        "visual": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Visual (RGB) Image"
+        },
+        "data-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "Data Mask"
+        },
+        "cloud-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "Cloud Polygons"
+        },
+        "water-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "Water Polygons"
+        },
+        "ms_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Image"
+        },
+        "pan_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Panchromatic Image"
+        },
+        "cloud-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Cloud/Cloud Shadow Coverage Raster"
+        },
+        "cloud-shadow-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "Cloud Shadow Polygons"
+        },
+        "water-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Water Mask"
+        },
+        "ms-saturation-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "MS Pixel Saturation Polygons"
+        },
+        "terrain-shadow-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data"],
+          "title": "Terrain Shadow Polygons"
+        },
+        "ms-saturation-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Pixel Saturation Mask"
+        },
+        "terrain-shadow-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Terrain Shadow Mask"
+        }
+      },
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
+      ]
+    },
+    {
+      "id": "MAXAR_Hurricane_Fiona_9_19_2022",
+      "type": "Collection",
+      "links": [
+        {
+          "rel": "items",
+          "type": "application/geo+json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Hurricane_Fiona_9_19_2022/items"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "self",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Hurricane_Fiona_9_19_2022"
+        },
+        {
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "type": "application/schema+json",
+          "title": "Queryables",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Hurricane_Fiona_9_19_2022/queryables"
+        },
+        {
+          "rel": "preview",
+          "title": "visual interactive map",
+          "type": "text/html",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_Hurricane_Fiona_9_19_2022/WebMercatorQuad/map.html?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "tiles",
+          "title": "visual tiles",
+          "type": "application/json",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_Hurricane_Fiona_9_19_2022/WebMercatorQuad/tilejson.json?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        }
+      ],
+      "title": "Hurricane Fiona",
+      "extent": {
+        "spatial": {
+          "bbox": [
+            [-71.187593, 17.954147, -63.439022, 44.773025],
+            [-69.099169, 18.742458604518692, -68.99159713983063, 19.012464],
+            [-66.64272487919193, 17.954147, -66.505857, 18.07003790570068],
+            [
+              -66.80458743674043, 17.965385273422456, -66.64554177695827,
+              18.304871
+            ],
+            [
+              -66.80104540829352, 17.966338837525004, -66.65466636288615,
+              18.304871
+            ],
+            [
+              -66.6747369828142, 17.955747336188054, -66.5299712774829,
+              18.304871
+            ],
+            [-66.63229909722203, 17.954147, -66.505857, 18.0694680258092],
+            [
+              -63.696920797028596, 44.617236, -63.50264938375682,
+              44.77191280066033
+            ],
+            [-66.747314, 18.215088, -66.65271, 18.304871],
+            [-66.839351, 17.976402135668007, -66.77699566199256, 18.078925],
+            [
+              -66.76894252644114, 17.961091462486046, -66.5934037839884,
+              18.076827519816593
+            ],
+            [-71.187593, 21.422357, -71.087044, 21.516045],
+            [-63.720186, 44.617236, -63.439022, 44.773025],
+            [
+              -66.75435718688048, 17.9546182537576, -66.51706902912508,
+              18.07581454774256
+            ],
+            [-66.839351, 17.965462087815848, -66.64482742070584, 18.078925],
+            [-69.099169, 18.737343302382776, -68.9106661754657, 19.012464],
+            [-68.94144366692778, 18.734463, -68.848803, 19.0044055005562]
+          ]
+        },
+        "temporal": {
+          "interval": [["2022-02-07T15:18:25Z", "2022-09-29T15:26:07Z"]]
+        }
+      },
+      "license": "CC-BY-NC-4.0",
+      "renders": {
+        "visual": {
+          "title": "Visual Image",
+          "assets": ["visual"],
+          "asset_bidx": "visual|1,2,3",
+          "minmax_zoom": [8, 22]
+        }
+      },
+      "description": "Maxar OpenData | Hurricane Fiona made landfall in Puerto Rico on Sunday, September 18, 2022. By Tuesday, September 20, 2022, 60% of Puerto Rico is without water service and only 20% of residents have power, according to the government's emergency portal system. U.S. President Joe Biden issued an emergency declaration.",
+      "item_assets": {
+        "visual": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["visual"],
+          "title": "Visual Image"
+        },
+        "data-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data-mask"],
+          "title": "Data Mask"
+        },
+        "ms_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Image"
+        },
+        "pan_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Panchromatic Image"
+        }
+      },
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
+      ]
+    },
+    {
+      "id": "MAXAR_HurricaneHelene_Oct24",
+      "type": "Collection",
+      "links": [
+        {
+          "rel": "items",
+          "type": "application/geo+json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_HurricaneHelene_Oct24/items"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "self",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_HurricaneHelene_Oct24"
+        },
+        {
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "type": "application/schema+json",
+          "title": "Queryables",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_HurricaneHelene_Oct24/queryables"
+        },
+        {
+          "rel": "preview",
+          "title": "after hurricane interactive map",
+          "type": "text/html",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_HurricaneHelene_Oct24/WebMercatorQuad/map.html?title=after+hurricane&assets=visual&datetime=2024-09-30T00%3A00%3A00Z%2F..&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "tiles",
+          "title": "after hurricane tiles",
+          "type": "application/json",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_HurricaneHelene_Oct24/WebMercatorQuad/tilejson.json?title=after+hurricane&assets=visual&datetime=2024-09-30T00%3A00%3A00Z%2F..&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "preview",
+          "title": "before hurricane interactive map",
+          "type": "text/html",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_HurricaneHelene_Oct24/WebMercatorQuad/map.html?title=before+hurricane&assets=visual&datetime=..%2F2024-09-30T00%3A00%3A00Z&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "tiles",
+          "title": "before hurricane tiles",
+          "type": "application/json",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_HurricaneHelene_Oct24/WebMercatorQuad/tilejson.json?title=before+hurricane&assets=visual&datetime=..%2F2024-09-30T00%3A00%3A00Z&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        }
+      ],
+      "title": "Hurricane Helene",
+      "extent": {
+        "spatial": {
+          "bbox": [
+            [-85.892966, 29.095084, -81.56043235039225, 38.352289],
+            [-83.273257, 35.912627, -83.106743, 36.040518910911395],
+            [-82.642849, 35.522627, -82.52560514158047, 35.657373],
+            [-82.53979839581523, 35.522627, -82.477151, 35.657373],
+            [-82.205372, 35.590563, -82.127438, 35.665681],
+            [-85.892966, 38.127711, -85.70002593260149, 38.352289],
+            [-82.44743050544618, 36.095084, -82.354382, 36.184916],
+            [-82.465618, 36.095084, -82.4158775667082, 36.184916],
+            [-84.00051762796645, 35.847711, -83.781274, 36.07234182121087],
+            [
+              -84.49771841926564, 33.71906170218797, -84.28616555033538,
+              33.865677824458366
+            ],
+            [
+              -81.79965265204511, 36.1788475901833, -81.58484573945272,
+              36.32032025108711
+            ],
+            [-84.35674495598516, 30.375252, -84.156699, 30.424619232241874],
+            [-83.091424, 29.095084, -82.988576, 29.184916],
+            [
+              -82.29139591194563, 35.47761537224814, -82.06192686758827,
+              35.68609709998455
+            ],
+            [-84.525096, 33.667711, -84.254904, 33.892289],
+            [
+              -81.81748734879704, 35.597764992565395, -81.56043235039225,
+              35.82877613108914
+            ],
+            [-84.366296, 30.402592633869745, -84.15811086861412, 30.517519],
+            [
+              -82.04091762315332, 36.03379289102152, -81.81046891094881,
+              36.194681803551106
+            ],
+            [
+              -82.28343208836611, 35.512444848522385, -82.07095436303919,
+              35.674152028778664
+            ],
+            [
+              -83.56173192889271, 35.31711561684277, -83.31693998907272,
+              35.45954522689298
+            ],
+            [-82.205372, 35.590563, -82.127438, 35.665681],
+            [
+              -82.26699878566109, 35.97898400372254, -82.04599376199376,
+              36.116122415980485
+            ],
+            [
+              -81.98843288589781, 35.18662914588505, -81.7338066590797,
+              35.4157003307704
+            ],
+            [-84.26489512362787, 30.378058364244794, -84.156699, 30.517519],
+            [-85.72429710754218, 38.127711, -85.607034, 38.352289],
+            [-84.69007328238487, 29.805084, -84.608214, 29.894916],
+            [-84.711786, 29.805084, -84.67080658862957, 29.894916],
+            [-82.11422, 35.881343, -82.025642, 35.941585],
+            [-85.351765, 29.765084, -85.248235, 29.854916],
+            [
+              -82.13833650048129, 34.645241643976675, -81.91965112856775,
+              34.76967653988996
+            ],
+            [
+              -81.79359228824863, 36.12573037919204, -81.58081185300391,
+              36.26627128193451
+            ],
+            [-84.711786, 29.805084, -84.608214, 29.894916],
+            [
+              -83.19323945480716, 34.61906782833259, -82.99139011887078,
+              34.75868629921965
+            ],
+            [
+              -82.26025715765226, 35.92261570760291, -82.0533118348858,
+              36.042993561041385
+            ],
+            [
+              -81.96521044425668, 35.236032817358584, -81.74748963224081,
+              35.36254664802141
+            ],
+            [
+              -82.02766489113473, 35.977547986890244, -81.81794756471338,
+              36.148184234680095
+            ],
+            [-85.351765, 29.765084, -85.248235, 29.854916],
+            [
+              -82.42565558977888, 35.82024170498999, -82.05828211896767,
+              36.06324733446433
+            ],
+            [-84.366296, 30.375252, -84.24254610928635, 30.511984388106836],
+            [-83.091424, 29.095084, -82.98989741440259, 29.184916857734255],
+            [-81.965116, 35.402403412620345, -81.854884, 35.464916],
+            [-82.11422, 35.881343, -82.025642, 35.941585],
+            [-82.465618, 36.095084, -82.354382, 36.184916]
+          ]
+        },
+        "temporal": {
+          "interval": [["2019-11-09T16:12:05Z", "2024-10-06T16:34:55Z"]]
+        }
+      },
+      "license": "CC-BY-NC-4.0",
+      "renders": {
+        "after hurricane": {
+          "title": "after hurricane",
+          "assets": ["visual"],
+          "datetime": "2024-09-30T00:00:00Z/..",
+          "asset_bidx": "visual|1,2,3",
+          "minmax_zoom": [8, 22]
+        },
+        "before hurricane": {
+          "title": "before hurricane",
+          "assets": ["visual"],
+          "datetime": "../2024-09-30T00:00:00Z",
+          "asset_bidx": "visual|1,2,3",
+          "minmax_zoom": [8, 22]
+        }
+      },
+      "description": "Maxar OpenData | Hurricane Helene made landfall in the Big Bend area of the Florida Gulf Coast as a Category 4 storm late in the evening of September 26, 2024. Helene caused significant impacts across a large portion of the Southeast U.S., especially around the southern Appalachians.",
+      "item_assets": {
+        "visual": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["visual"],
+          "title": "Visual Image"
+        },
+        "data-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data-mask"],
+          "title": "Data Mask"
+        },
+        "cloud-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["cloud"],
+          "title": "Cloud Polygons"
+        },
+        "water-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["water-mask"],
+          "title": "Water Polygons"
+        },
+        "ms_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Image"
+        },
+        "pan_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Panchromatic Image"
+        },
+        "cloud-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["cloud", "cloud-shadow"],
+          "title": "Cloud/Cloud Shadow Coverage Raster"
+        },
+        "cloud-shadow-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["cloud-shadow"],
+          "title": "Cloud Shadow Polygons"
+        },
+        "water-mask-raster": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["water-mask"],
+          "title": "Water Mask"
+        }
+      },
+      "stac_version": "1.1.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json"
+      ]
+    },
+    {
+      "id": "MAXAR_Hurricane_Ian_9_26_2022",
+      "type": "Collection",
+      "links": [
+        {
+          "rel": "items",
+          "type": "application/geo+json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Hurricane_Ian_9_26_2022/items"
+        },
+        {
+          "rel": "parent",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "root",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/"
+        },
+        {
+          "rel": "self",
+          "type": "application/json",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Hurricane_Ian_9_26_2022"
+        },
+        {
+          "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+          "type": "application/schema+json",
+          "title": "Queryables",
+          "href": "https://stac.eoapi.dev/collections/MAXAR_Hurricane_Ian_9_26_2022/queryables"
+        },
+        {
+          "rel": "preview",
+          "title": "visual interactive map",
+          "type": "text/html",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_Hurricane_Ian_9_26_2022/WebMercatorQuad/map.html?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        },
+        {
+          "rel": "tiles",
+          "title": "visual tiles",
+          "type": "application/json",
+          "href": "https://9dru9gaeoh.execute-api.us-west-2.amazonaws.com/collections/MAXAR_Hurricane_Ian_9_26_2022/WebMercatorQuad/tilejson.json?title=Visual+Image&assets=visual&asset_bidx=visual%7C1%2C2%2C3&minmax_zoom=8&minmax_zoom=22"
+        }
+      ],
+      "title": "Hurricane Ian",
+      "extent": {
+        "spatial": {
+          "bbox": [
+            [-83.901156, 22.179453, -78.76563736022848, 33.96944669284327],
+            [
+              -82.0198065782888, 26.464945002172342, -81.74089679642375,
+              26.88739117754846
+            ],
+            [
+              -81.98115622654164, 25.999567441531866, -81.6012435447469,
+              26.601251377033204
+            ],
+            [
+              -81.69349032663095, 25.998435318619297, -81.47416523669433,
+              26.630565603111673
+            ],
+            [
+              -81.91307486127658, 26.310667782819692, -81.73505446273649,
+              26.47069233481796
+            ],
+            [
+              -82.159635401552, 26.063780134370397, -81.97508024877337,
+              27.013933488312134
+            ],
+            [
+              -82.26627444807235, 26.389276848311134, -82.07883312718384,
+              27.016153766657272
+            ],
+            [
+              -81.81241165447605, 26.208823893804148, -81.61467372357629,
+              26.384186631793014
+            ],
+            [
+              -82.69083122524717, 27.011945057801263, -82.45664236923578,
+              28.05376848387163
+            ],
+            [
+              -81.76612312093728, 26.757274204837767, -81.60828992796793,
+              26.998195
+            ],
+            [-83.60767366053702, 22.221370444703258, -83.359361, 22.584077],
+            [-81.261597, 29.535095, -81.158325, 29.624878],
+            [
+              -83.81189919895866, 22.183553069332195, -83.58065935901439,
+              22.804871
+            ],
+            [-83.901156, 22.179453, -83.78618994998156, 22.517352187283585],
+            [-81.39372192697093, 28.24291011999315, -81.33282722, 28.34676792],
+            [
+              -81.75548762296866, 26.343990562059243, -81.591535360599,
+              26.465606752684664
+            ],
+            [
+              -79.43811595274038, 33.21475696949905, -79.22187673020704,
+              33.79946404575505
+            ],
+            [-81.450989, 28.265076, -81.29965921417252, 28.554871],
+            [-83.84073814292422, 22.179453, -83.66664469047254, 22.804871],
+            [
+              -80.246682, 32.81338150343906, -80.10685862197752,
+              33.06182285820447
+            ],
+            [-79.97024371490157, 32.616627, -79.78344753761228, 33.131952],
+            [
+              -79.83052269405552, 32.72919419115654, -79.779797,
+              32.86571314833148
+            ],
+            [
+              -82.80894136888932, 27.735933647040255, -82.63199197901416,
+              28.15107934371677
+            ],
+            [
+              -82.40114800210533, 26.923023129712522, -82.22615183169938,
+              27.77157177219194
+            ],
+            [
+              -82.65443896384585, 27.737388586910857, -82.48317325087173,
+              28.159530422547203
+            ],
+            [
+              -80.16407115823176, 33.01189010102752, -79.95023642211497,
+              33.131952
+            ],
+            [
+              -82.50561027471139, 26.92797411488498, -82.33794115691138,
+              27.96739788899394
+            ],
+            [
+              -82.8756641255437, 27.932945275012518, -82.73642586629026,
+              28.145139152817027
+            ],
+            [
+              -82.908664, 27.604739984406173, -82.77807425515776,
+              27.971437523597505
+            ],
+            [
+              -82.80913003417683, 27.375490600866907, -82.63395785411164,
+              27.971001019698598
+            ],
+            [
+              -82.62112301418064, 27.761626504304285, -82.45267628682424,
+              28.133721162773575
+            ],
+            [
+              -82.46978163264086, 27.75953055479588, -82.30231356032427,
+              28.132430139102443
+            ],
+            [
+              -82.00560393216266, 26.768181298397934, -81.77377881929759,
+              27.021042409094
+            ],
+            [
+              -82.32025871713358, 27.76108008938294, -82.24638788570303,
+              27.979291398724733
+            ],
+            [
+              -82.6211917739363, 27.056919339202484, -82.44366105336108,
+              27.431272937764227
+            ],
+            [
+              -82.75865309049935, 27.36615720967039, -82.12924358377374,
+              28.15660984204002
+            ],
+            [
+              -82.57101030618352, 27.62090923988642, -82.23010630476321,
+              28.161405
+            ],
+            [
+              -82.32856004624429, 26.000104230405693, -81.66149691574576,
+              26.872653137111588
+            ],
+            [
+              -82.01961325203801, 26.348087088574527, -81.77344907460477,
+              27.27313612620753
+            ],
+            [-82.11924780366031, 25.998195, -81.44719, 27.025009775920637],
+            [-81.61109053977998, 25.998195, -81.44719, 26.436257855829638],
+            [
+              -83.71816735793848, 22.200798036234428, -83.51810121958297,
+              22.565213141219374
+            ],
+            [
+              -82.27159895529434, 26.00197404404036, -81.87137938559815,
+              26.66675735548099
+            ],
+            [-83.5437231766452, 22.233233539766786, -83.359361, 22.584077],
+            [
+              -82.85103342854757, 27.35314149619206, -82.6209944091663,
+              27.798925805181234
+            ],
+            [
+              -82.2020650276169, 26.34829104607533, -81.97255626644234,
+              27.403621000148924
+            ],
+            [
+              -82.21820785388458, 25.998662490550956, -81.4693030745998,
+              26.939402114022705
+            ],
+            [-83.901156, 22.179453, -83.69127527174174, 22.53465787936872],
+            [
+              -82.43716212999043, 27.146101841882913, -82.20225330006315,
+              27.78561598169231
+            ],
+            [
+              -82.85484142636044, 27.301427927059787, -82.24636366987141,
+              28.145726636027
+            ],
+            [
+              -81.85012784967945, 25.9993395435529, -81.57415996928762,
+              26.395393313011358
+            ],
+            [
+              -82.90557379263358, 27.23910094761429, -82.38762546894247,
+              28.049401662075994
+            ],
+            [
+              -82.64500801795745, 27.130834770271296, -82.4114402372194,
+              27.78614320206215
+            ],
+            [
+              -82.54112074459, 26.821293590267718, -82.34759579295,
+              27.210639277278993
+            ],
+            [-81.261597, 29.535095, -81.158325, 29.624878],
+            [
+              -82.08970442052225, 26.41197789758819, -81.79522002369899,
+              26.603485937631714
+            ],
+            [
+              -82.27226294747908, 26.705114802165703, -82.0940167270701,
+              27.785342718598425
+            ],
+            [
+              -78.91578854348349, 33.58853454438296, -78.76563736022848,
+              33.96944669284327
+            ],
+            [
+              -79.37856222235015, 33.134692, -79.19457995563451,
+              33.81666260857771
+            ],
+            [
+              -79.06918859385938, 33.346601451357245, -78.90839288420668,
+              33.787169987181194
+            ],
+            [
+              -79.22041245804454, 33.14813196571059, -79.04135252925948,
+              33.813760728814124
+            ],
+            [
+              -80.01047429480914, 32.88499901821015, -79.84322089293694,
+              33.131952
+            ],
+            [-80.13992438852996, 32.616627, -79.93424096157655, 33.131952],
+            [
+              -82.3015034069607, 26.92812051715857, -82.1616099406539,
+              27.952998215749933
+            ],
+            [
+              -82.19877515198155, 26.908688703535624, -82.04190720901984,
+              27.44494
+            ],
+            [
+              -79.53128876146296, 33.28413123121551, -79.38459026078071,
+              33.48900854914762
+            ],
+            [
+              -82.47723367135123, 26.923763810323525, -82.33843254927375,
+              27.970650654949786
+            ],
+            [
+              -79.44255083820194, 33.18284038073279, -79.27487542712707,
+              33.503386613697835
+            ],
+            [-81.46122013, 28.24239648, -81.36640488564169, 28.346516647163362],
+            [
+              -79.596828, 33.406323731184514, -79.51645177301337,
+              33.48587991321481
+            ],
+            [
+              -82.30946144119866, 26.38694866038185, -82.12785424415243,
+              27.358498207472575
+            ],
+            [
+              -82.908664, 27.75952356799786, -82.82201340626315,
+              28.135138335029144
+            ],
+            [-83.778687, 22.715088, -83.681213, 22.804871],
+            [
+              -81.88837118920473, 26.85919798165699, -81.69479316975328,
+              27.046669151746148
+            ],
+            [
+              -81.7519619561204, 26.36400303384514, -81.56173821002089,
+              26.769861662488886
+            ],
+            [
+              -81.70811883348263, 26.379561970708927, -81.55061300595347,
+              26.89069029933937
+            ],
+            [-81.33289000852463, 28.465088, -81.268799, 28.554871],
+            [-81.450989, 28.265076, -81.29968967988397, 28.554871],
+            [-81.56114115166913, 25.998195, -81.44719, 26.548455044953002],
+            [
+              -82.02171235714061, 26.920130581292295, -81.85965515325213,
+              27.276865840543522
+            ],
+            [
+              -79.596828, 33.34026175426697, -79.44219774760117,
+              33.61219149449467
+            ],
+            [
+              -82.47474514321979, 26.749530326833572, -82.3110614403938,
+              27.085259962058306
+            ],
+            [
+              -82.3352991009388, 26.700131622053398, -82.16143713757921,
+              27.08944729124141
+            ],
+            [
+              -79.26951968538876, 33.22052061158067, -79.0974741709356,
+              33.395597096130565
+            ],
+            [
+              -82.07242356366129, 26.703447430550863, -81.90704345913915,
+              27.362122088185718
+            ],
+            [
+              -82.27491555614078, 26.69352183330753, -82.10242456438175,
+              27.08761990222139
+            ],
+            [
+              -82.27336360222321, 27.398652846242292, -82.10320949256709,
+              27.792693542537496
+            ],
+            [
+              -82.4189059522887, 26.86716435525601, -81.97474877593012,
+              27.41698080341863
+            ],
+            [
+              -82.5463086067073, 26.805850603037452, -82.09930191794578,
+              27.36554172762565
+            ],
+            [
+              -82.58285047290853, 26.754240774694264, -82.22087680475893,
+              27.331465029926683
+            ]
+          ]
+        },
+        "temporal": {
+          "interval": [["2021-04-29T18:51:09Z", "2022-10-08T19:09:10Z"]]
+        }
+      },
+      "license": "CC-BY-NC-4.0",
+      "renders": {
+        "visual": {
+          "title": "Visual Image",
+          "assets": ["visual"],
+          "asset_bidx": "visual|1,2,3",
+          "minmax_zoom": [8, 22]
+        }
+      },
+      "description": "Maxar OpenData | Hurricane Ian made landfall as a Category 4 storm near Cay Costa, Florida, on Wednesday, September 28, 2022, with winds of 150 mph and with record storm surge flooding as high as 12 feet in some coastal areas. 2.5 million people were left without power while property damages were estimated to be at least $113 billion. 116 people were killed in the USA and neighboring Cuba.",
+      "item_assets": {
+        "visual": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["visual"],
+          "title": "Visual Image"
+        },
+        "data-mask": {
+          "type": "application/geopackage+sqlite3",
+          "roles": ["data-mask"],
+          "title": "Data Mask"
+        },
+        "ms_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Multispectral Image"
+        },
+        "pan_analytic": {
+          "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+          "roles": ["data"],
+          "title": "Panchromatic Image"
+        }
+      },
+      "stac_version": "1.0.0",
+      "stac_extensions": [
+        "https://stac-extensions.github.io/item-assets/v1.0.0/schema.json",
+        "https://stac-extensions.github.io/render/v1.0.0/schema.json"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "rel": "next",
+      "type": "application/geo+json",
+      "method": "GET",
+      "href": "https://stac.eoapi.dev/collections?offset=10"
+    },
+    {
+      "rel": "root",
+      "type": "application/json",
+      "href": "https://stac.eoapi.dev/"
+    },
+    {
+      "rel": "self",
+      "type": "application/json",
+      "href": "https://stac.eoapi.dev/collections"
+    }
+  ],
+  "numberMatched": 20,
+  "numberReturned": 10
+}

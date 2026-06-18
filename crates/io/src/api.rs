@@ -8,7 +8,8 @@ use reqwest::{ClientBuilder, IntoUrl, Method, StatusCode, header::HeaderMap, hea
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 use stac::api::{
-    GetItems, Item, ItemCollection, Items, ItemsClient, Search, StreamItemsClient, UrlBuilder,
+    Collections, GetItems, Item, ItemCollection, Items, ItemsClient, Search, StreamItemsClient,
+    UrlBuilder,
 };
 use stac::{Collection, Link, Links, SelfHref};
 use std::pin::Pin;
@@ -212,6 +213,39 @@ impl Client {
         not_found_to_none(self.get(url).await)
     }
 
+    /// Returns a stream of collections, using the [collections
+    /// endpoint](https://github.com/radiantearth/stac-api-spec/tree/main/ogcapi-features#collections-collections).
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use stac_io::api::Client;
+    /// use futures::StreamExt;
+    ///
+    /// let client = Client::new("https://stac.eoapi.dev/").unwrap();
+    /// # tokio_test::block_on(async {
+    /// let collections: Vec<_> = client
+    ///     .collections()
+    ///     .await
+    ///     .unwrap()
+    ///     .map(|result| result.unwrap())
+    ///     .collect()
+    ///     .await;
+    /// assert_eq!(collections.len(), 41);
+    /// # })
+    /// ```
+    pub async fn collections(&self) -> Result<impl Stream<Item = Result<Collection>>> {
+        let url = self.url_builder.collections();
+        let page = self
+            .request::<(), _>(Method::GET, url.clone(), None, None)
+            .await?;
+        Ok(stream::<Collections>(
+            self.clone(),
+            page,
+            self.channel_buffer,
+        ))
+    }
+
     /// Returns a stream of items belonging to a collection, using the [items
     /// endpoint](https://github.com/radiantearth/stac-api-spec/tree/main/ogcapi-features#collection-items-collectionscollectioniditems).
     ///
@@ -254,7 +288,11 @@ impl Client {
         let page = self
             .request(Method::GET, url.clone(), items.as_ref(), None)
             .await?;
-        Ok(stream_items(self.clone(), page, self.channel_buffer))
+        Ok(stream::<ItemCollection>(
+            self.clone(),
+            page,
+            self.channel_buffer,
+        ))
     }
 
     /// Searches an API, returning a stream of items.
@@ -358,7 +396,7 @@ impl StreamItemsClient for Client {
     ) -> std::result::Result<impl Stream<Item = std::result::Result<Item, Error>> + Send, Error>
     {
         let page = ItemsClient::search(self, search).await?;
-        Ok(stream_items(self.clone(), page, self.channel_buffer))
+        Ok(stream(self.clone(), page, self.channel_buffer))
     }
 
     async fn items_stream(
@@ -410,7 +448,7 @@ impl BlockingClient {
         let client = self.0.clone();
         let stream = runtime.block_on(async move {
             let page = ItemsClient::search(&client, search).await?;
-            Ok::<_, Error>(stream_items(client, page, self.0.channel_buffer))
+            Ok::<_, Error>(stream(client, page, self.0.channel_buffer))
         })?;
         Ok(BlockingIterator {
             runtime,
@@ -427,11 +465,37 @@ impl Iterator for BlockingIterator {
     }
 }
 
-fn stream_items(
+trait Streamable: Send + DeserializeOwned + Links {
+    type Item;
+    fn is_empty(&self) -> bool;
+    fn into_items(self) -> impl Iterator<Item = Self::Item>;
+}
+
+impl Streamable for Collections {
+    type Item = Collection;
+    fn is_empty(&self) -> bool {
+        self.collections.is_empty()
+    }
+    fn into_items(self) -> impl Iterator<Item = Self::Item> {
+        self.collections.into_iter()
+    }
+}
+
+impl Streamable for ItemCollection {
+    type Item = Item;
+    fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+    fn into_items(self) -> impl Iterator<Item = Self::Item> {
+        self.items.into_iter()
+    }
+}
+
+fn stream<Page: Streamable + 'static>(
     client: Client,
-    page: ItemCollection,
+    page: Page,
     channel_buffer: usize,
-) -> impl Stream<Item = Result<Item>> {
+) -> impl Stream<Item = Result<Page::Item>> {
     let (tx, mut rx) = mpsc::channel(channel_buffer);
     let handle: JoinHandle<std::result::Result<(), SendError<_>>> = tokio::spawn(async move {
         let pages = stream_pages(client, page);
@@ -450,7 +514,7 @@ fn stream_items(
     try_stream! {
         while let Some(result) = rx.recv().await {
             let page = result?;
-            for item in page.items {
+            for item in page.into_items() {
                 yield item;
             }
         }
@@ -458,13 +522,13 @@ fn stream_items(
     }
 }
 
-fn stream_pages(
+fn stream_pages<Page: Streamable>(
     client: Client,
-    mut page: ItemCollection,
-) -> impl Stream<Item = Result<ItemCollection>> {
+    mut page: Page,
+) -> impl Stream<Item = Result<Page>> {
     try_stream! {
         loop {
-            if page.items.is_empty() {
+            if page.is_empty() {
                 break;
             }
             let next_link = page.link("next").cloned();
@@ -504,7 +568,7 @@ mod tests {
     use mockito::{Matcher, Server};
     use serde_json::json;
     use stac::Links;
-    use stac::api::{ItemCollection, Items, ItemsClient, Search, StreamItemsClient};
+    use stac::api::{Collections, ItemCollection, Items, ItemsClient, Search, StreamItemsClient};
     use url::Url;
 
     #[tokio::test]
@@ -697,5 +761,42 @@ mod tests {
             .unwrap();
         let client = builder.build().unwrap();
         let _ = client.search(Default::default()).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn collections() {
+        let mut server = Server::new_async().await;
+        let mut page_1_body: Collections =
+            serde_json::from_str(include_str!("../mocks/collections-page-1.json")).unwrap();
+        let mut next_link = page_1_body.link("next").unwrap().clone();
+        let url: Url = next_link.href.as_str().parse().unwrap();
+        let query = url.query().unwrap();
+        next_link.href = format!("{}/collections?{}", server.url(), query);
+        page_1_body.set_link(next_link);
+        let page_1 = server
+            .mock("GET", "/collections")
+            .with_body(serde_json::to_string(&page_1_body).unwrap())
+            .with_header("content-type", "application/geo+json")
+            .create_async()
+            .await;
+        let page_2 = server
+            .mock("GET", "/collections?offset=10")
+            .with_body(include_str!("../mocks/collections-page-2.json"))
+            .with_header("content-type", "application/geo+json")
+            .create_async()
+            .await;
+
+        let client = Client::new(&server.url()).unwrap();
+        let collections: Vec<_> = client
+            .collections()
+            .await
+            .unwrap()
+            .map(|result| result.unwrap())
+            .collect()
+            .await;
+        page_1.assert_async().await;
+        page_2.assert_async().await;
+        assert_eq!(collections.len(), 20);
+        assert!(collections[0].id != collections[1].id);
     }
 }
