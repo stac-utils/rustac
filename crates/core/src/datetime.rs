@@ -42,17 +42,17 @@ pub fn parse(datetime: &str) -> Result<Interval> {
 
 /// Parses a single datetime permissively.
 pub fn parse_datetime_permissively(s: &str) -> Result<DateTime<Utc>> {
-    match DateTime::parse_from_rfc3339(&s) {
+    match DateTime::parse_from_rfc3339(s) {
         Ok(datetime) => Ok(datetime.to_utc()),
         Err(err) => {
             log::warn!(
                 "error when parsing item datetime as rfc3339 ({err}), trying to parse as naive datetime"
             );
             let (mut datetime, remainder) =
-                NaiveDateTime::parse_and_remainder(&s, "%Y-%m-%dT%H:%M:%S")?;
+                NaiveDateTime::parse_and_remainder(s, "%Y-%m-%dT%H:%M:%S")?;
             // This isn't super efficient but we're in a read-invalid-data path, so I think it's fine.
             if !remainder.is_empty() && remainder.starts_with(".") {
-                datetime = NaiveDateTime::parse_from_str(&s, "%Y-%m-%dT%H:%M:%S%.f")?;
+                datetime = NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S%.f")?;
             }
             Ok(datetime.and_utc())
         }
