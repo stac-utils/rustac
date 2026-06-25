@@ -246,7 +246,7 @@ pub enum Command {
             value_delimiter = ',',
             value_parser = |s: &str| KeyValue::from_str(s).map(|kv| (kv.0, kv.1))
         )]
-        headers: HeaderMap,
+        headers: Option<HeaderMap>,
     },
 
     /// Serves a STAC API.
@@ -468,7 +468,10 @@ impl Rustac {
                     }
                     SearchImplementation::Duckdb => stac_duckdb::search(href, search, *max_items)?,
                     SearchImplementation::Api => {
-                        let builder = ClientBuilder::new().default_headers(headers.clone());
+                        let mut builder = ClientBuilder::new();
+                        if let Some(headers) = headers.clone() {
+                            builder = builder.default_headers(headers);
+                        }
                         stac_io::api::search_with_client_builder(href, search, *max_items, builder)
                             .await?
                     }
