@@ -4,6 +4,7 @@
 
 use anyhow::{Error, Result, anyhow};
 use async_stream::try_stream;
+use axum::http::HeaderMap;
 use clap::{CommandFactory, Parser, Subcommand};
 use futures_core::TryStream;
 use futures_util::{TryStreamExt, pin_mut};
@@ -12,6 +13,7 @@ use stac::{
     Assets, Collection, Item, Links, Migrate, SelfHref,
     geoparquet::{Compression, default_compression},
 };
+use stac_io::api::ClientBuilder;
 use stac_io::{Format, StacStore};
 use stac_server::Backend;
 use stac_validate::Validate;
@@ -244,7 +246,7 @@ pub enum Command {
             value_delimiter = ',',
             value_parser = |s: &str| KeyValue::from_str(s).map(|kv| (kv.0, kv.1))
         )]
-        headers: Vec<(String, String)>,
+        headers: HeaderMap,
     },
 
     /// Serves a STAC API.
@@ -466,7 +468,8 @@ impl Rustac {
                     }
                     SearchImplementation::Duckdb => stac_duckdb::search(href, search, *max_items)?,
                     SearchImplementation::Api => {
-                        stac_io::api::search_with_headers(href, search, *max_items, &headers)
+                        let builder = ClientBuilder::new().default_headers(headers.clone());
+                        stac_io::api::search_with_client_builder(href, search, *max_items, builder)
                             .await?
                     }
                 };

@@ -3,8 +3,9 @@
 use crate::{Error, Result};
 use async_stream::try_stream;
 use futures::{Stream, StreamExt, pin_mut};
-use http::header::{HeaderName, USER_AGENT};
-use reqwest::{ClientBuilder, IntoUrl, Method, StatusCode, header::HeaderMap, header::HeaderValue};
+use http::header::HeaderName;
+pub use reqwest::ClientBuilder;
+use reqwest::{IntoUrl, Method, StatusCode, header::HeaderMap};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 use stac::api::{
@@ -27,21 +28,18 @@ pub async fn search(
     search: Search,
     max_items: Option<usize>,
 ) -> Result<ItemCollection> {
-    search_with_headers(href, search, max_items, &[]).await
+    let builder = ClientBuilder::new();
+    search_with_client_builder(href, search, max_items, builder).await
 }
 
-/// Searches a STAC API with the provided headers.
-pub async fn search_with_headers(
+/// Searches a STAC API with the provided client builder.
+pub async fn search_with_client_builder(
     href: &str,
     mut search: Search,
     max_items: Option<usize>,
-    headers: &[(String, String)],
+    builder: ClientBuilder,
 ) -> Result<ItemCollection> {
-    let mut builder = ApiClientBuilder::new(href)?;
-    if !headers.is_empty() {
-        builder = builder.with_headers(headers)?;
-    }
-    let client = builder.build()?;
+    let client = Client::with_client_builder(builder, href)?;
     if search.limit.is_none()
         && let Some(max_items) = max_items
     {
@@ -89,80 +87,6 @@ pub struct BlockingIterator {
     stream: Pin<Box<dyn Stream<Item = Result<Item>>>>,
 }
 
-/// Builder for configuring and constructing a [`Client`] for STAC APIs.
-///
-/// This type is used to create a `Client` with a specific base URL and a set
-/// of default HTTP headers. A typical usage pattern is:
-///
-/// - Call [`ApiClientBuilder::new`] with the API root URL.
-/// - Optionally call [`ApiClientBuilder::with_headers`] to add extra headers.
-/// - Call [`ApiClientBuilder::build`] to obtain a configured [`Client`].
-///
-/// Internally, `ApiClientBuilder` prepares a `reqwest::Client` and then
-/// delegates to [`Client::with_client`] to produce the final STAC API client.
-pub struct ApiClientBuilder {
-    url: String,
-    headers: HeaderMap,
-}
-
-impl ApiClientBuilder {
-    /// Create ApiClientBuilder
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use stac_io::api::ApiClientBuilder;
-    /// let builder = ApiClientBuilder::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
-    /// ```
-    pub fn new(url: &str) -> Result<Self> {
-        let mut headers = HeaderMap::new();
-        let _ = headers.insert(
-            USER_AGENT,
-            format!("rustac/{}", env!("CARGO_PKG_VERSION")).parse()?,
-        );
-        Ok(Self {
-            url: url.to_string(),
-            headers,
-        })
-    }
-
-    /// Additional headers to pass to default_headers
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use stac_io::api::ApiClientBuilder;
-    /// let headers = vec![("x-my-header".to_string(), "value".to_string())];
-    /// let builder = ApiClientBuilder::new("https://planetarycomputer.microsoft.com/api/stac/v1")
-    ///                 .unwrap()
-    ///                 .with_headers(&headers)
-    ///                 .unwrap();
-    /// ```
-    pub fn with_headers(mut self, headers: &[(String, String)]) -> Result<Self> {
-        for (key, val) in headers.iter() {
-            let header_name = key.parse::<HeaderName>()?;
-            let header_value = HeaderValue::from_str(val)?;
-            self.headers.insert(header_name, header_value);
-        }
-        Ok(self)
-    }
-
-    /// Builds a [`Client`] from this builder.
-    ///
-    /// This finalizes the configuration (including any default and custom headers)
-    /// and constructs the underlying `reqwest::Client`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use stac_io::api::ApiClientBuilder;
-    /// let client = ApiClientBuilder::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap().build().unwrap();
-    pub fn build(self) -> Result<Client> {
-        let client = ClientBuilder::new().default_headers(self.headers).build()?;
-        Client::with_client(client, &self.url)
-    }
-}
-
 impl Client {
     /// Creates a new API client.
     ///
@@ -173,25 +97,26 @@ impl Client {
     /// let client = Client::new("https://planetarycomputer.microsoft.com/api/stac/v1").unwrap();
     /// ```
     pub fn new(url: &str) -> Result<Client> {
-        ApiClientBuilder::new(url)?.build()
+        Client::with_client_builder(ClientBuilder::new(), url)
     }
 
-    /// Creates a new API client with the given [Client].
+    /// Creates a new API client with the given [ClientBuilder].
     ///
-    /// Useful if you want to customize the behavior of the underlying `Client`,
-    /// as documented in [Client::new].
+    /// Useful if you want to customize the behavior of the underlying [reqwest::Client].
     ///
     /// # Examples
     ///
     /// ```
-    /// use stac_io::api::Client;
+    /// use stac_io::api::{Client, ClientBuilder};
     ///
-    /// let client = reqwest::Client::new();
-    /// let client = Client::with_client(client, "https://earth-search.aws.element84.com/v1/").unwrap();
+    /// let builder = ClientBuilder::new();
+    /// let client = Client::with_client_builder(builder, "https://stac.eoapi.dev").unwrap();
     /// ```
-    pub fn with_client(client: reqwest::Client, url: &str) -> Result<Client> {
+    pub fn with_client_builder(client_builder: ClientBuilder, url: &str) -> Result<Client> {
         Ok(Client {
-            client,
+            client: client_builder
+                .user_agent(format!("rustac/{}", env!("CARGO_PKG_VERSION")))
+                .build()?,
             channel_buffer: DEFAULT_CHANNEL_BUFFER,
             url_builder: UrlBuilder::new(url)?,
         })
@@ -561,10 +486,11 @@ fn not_found_to_none<T>(result: Result<T>) -> Result<Option<T>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::api::ApiClientBuilder;
+    use crate::api::ClientBuilder;
 
     use super::Client;
     use futures::StreamExt;
+    use http::HeaderMap;
     use mockito::{Matcher, Server};
     use serde_json::json;
     use stac::Links;
@@ -741,6 +667,7 @@ mod tests {
         let client = Client::new(&server.url()).unwrap();
         let _ = client.search(Default::default()).await.unwrap();
     }
+
     #[tokio::test]
     async fn custom_header() {
         let mut server = Server::new_async().await;
@@ -751,15 +678,11 @@ mod tests {
             .match_header("x-my-other-header", "othervalue")
             .create_async()
             .await;
-        let headers = vec![
-            ("x-my-header".to_string(), "value".to_string()),
-            ("x-my-other-header".to_string(), "othervalue".to_string()),
-        ];
-        let builder = ApiClientBuilder::new(&server.url())
-            .unwrap()
-            .with_headers(&headers)
-            .unwrap();
-        let client = builder.build().unwrap();
+        let mut headers = HeaderMap::new();
+        headers.insert("x-my-header", "value".parse().unwrap());
+        headers.insert("x-my-other-header", "othervalue".parse().unwrap());
+        let builder: ClientBuilder = ClientBuilder::new().default_headers(headers);
+        let client = Client::with_client_builder(builder, &server.url()).unwrap();
         let _ = client.search(Default::default()).await.unwrap();
     }
 
