@@ -26,7 +26,7 @@ futures-core.workspace = true
 futures-util.workspace = true
 pgstac = { workspace = true, optional = true }
 serde_json.workspace = true
-stac = { version = "0.18.0", path = "../core" }
+stac = { version = "0.17.2", path = "../core" }
 stac-duckdb = { version = "0.3.9", path = "../duckdb" }
 stac-io = { version = "0.3.0", path = "../io", features = [
     "store-all",

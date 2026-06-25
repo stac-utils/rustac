@@ -16,4 +16,4 @@ geojson.workspace = true
 indexmap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-stac = { version = "0.18.0", path = "../core" }
+stac = { version = "0.17.2", path = "../core" }
