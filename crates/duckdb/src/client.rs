@@ -363,8 +363,8 @@ impl Client {
             if let Some(start) = interval.0 {
                 wheres.push(format!(
                     "?::TIMESTAMPTZ <= {}",
-                    if has_start_datetime {
-                        "start_datetime"
+                    if has_end_datetime {
+                        "coalesce(end_datetime, datetime)"
                     } else {
                         "datetime"
                     }
@@ -374,8 +374,8 @@ impl Client {
             if let Some(end) = interval.1 {
                 wheres.push(format!(
                     "?::TIMESTAMPTZ >= {}", // Inclusive, https://github.com/radiantearth/stac-spec/pull/1280
-                    if has_end_datetime {
-                        "end_datetime"
+                    if has_start_datetime {
+                        "coalesce(start_datetime, datetime)"
                     } else {
                         "datetime"
                     }
@@ -850,6 +850,17 @@ mod tests {
             .search(
                 "data/100-sentinel-2-items.parquet",
                 Search::default().datetime("2024-12-02T00:00:00Z/"),
+            )
+            .unwrap();
+        assert_eq!(item_collection.items.len(), 1);
+    }
+
+    #[rstest]
+    fn search_datetime_start_end_datetime(client: Client) {
+        let item_collection = client
+            .search(
+                "data/sentinel-1-global-mosaics.parquet",
+                Search::default().datetime("2026-04-15T00:00:00Z"),
             )
             .unwrap();
         assert_eq!(item_collection.items.len(), 1);
