@@ -65,6 +65,11 @@
 //! - `geo`: add some geo-enabled methods, see [geo]
 //! - `geoarrow`: read and write [geoarrow](https://geoarrow.org/), see [geoarrow]
 //! - `geoparquet`: read and write [geoparquet](https://geoparquet.org/), see [geoparquet]
+//!
+//! # Hashing
+//!
+//! The [hash] module provides sortable spatio-temporal hashing using Z-order
+//! curves (Morton codes).
 
 #![deny(
     elided_lifetimes_in_paths,
@@ -115,6 +120,7 @@ pub mod geo;
 pub mod geoarrow;
 #[cfg(feature = "geoparquet")]
 pub mod geoparquet;
+pub mod hash;
 pub mod href;
 pub mod item;
 mod item_asset;
