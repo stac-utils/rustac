@@ -74,7 +74,10 @@ mime = "0.3.17"
 mockito = "1.5"
 object_store = "0.13.0"
 parquet = { version = "58.0.0" }
-pgstac = "0.4.9"
+# pgstac 0.10, from the main pgstac tree (v010io). One crate serves both roles: streaming
+# `search --pgstac` (the `search-writer` feature) and the pgstac `serve` backend (the `pool` feature) —
+# consumers pick. Shares this workspace's stac + stac-io (see [patch.crates-io]).
+pgstac = { version = "0.9.11-dev", path = "/home/bitner/data/pgstac/src/pgstac-rs", default-features = false }
 quote = "1.0"
 referencing = { version = "0.46.0", features = ["retrieve-async"] }
 reqwest = { version = "0.13.1", features = ["query"] }
@@ -105,3 +108,6 @@ wkb = "0.9.0"
 
 [patch.crates-io]
 stac = { path = "crates/core" }
+# So pgstac 0.10 shares this workspace's stac-io — the one with the streaming ItemCollection writer —
+# instead of resolving a separate published copy.
+stac-io = { path = "crates/io" }

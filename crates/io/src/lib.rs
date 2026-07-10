@@ -9,6 +9,7 @@ mod read;
 mod realized_href;
 #[cfg(feature = "store")]
 pub mod store;
+pub mod stream;
 mod write;
 
 #[cfg(feature = "geoparquet")]
@@ -22,6 +23,7 @@ pub use {
     ndjson::{FromNdjsonPath, ToNdjsonPath, ndjson_item_reader},
     read::read,
     realized_href::RealizedHref,
+    stream::{Finalize, ItemStream, StreamSearch, StreamedSearch, write_item_collection},
     write::write,
 };
 
