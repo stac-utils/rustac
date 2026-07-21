@@ -800,11 +800,11 @@ __metadata:
   linkType: hard
 
 "brace-expansion@npm:^5.0.2":
-  version: 5.0.6
-  resolution: "brace-expansion@npm:5.0.6"
+  version: 5.0.7
+  resolution: "brace-expansion@npm:5.0.7"
   dependencies:
     balanced-match: ^4.0.2
-  checksum: 8/b5a0e54a5d5f66d0acb88f297e1f3e74732f9c8a35ab6c87b96bd60f6e390697f099b747dd053b9017bd1a38225ff3f60632de09a723a99f2144740b7fbda66b
+  checksum: 8/5739c92d984dfb4b8460e46e52e2a75baa7364261f700f739e0925e9ce7414776d5eb0b10eb19bb10427c444c4114875e1ff1e829fe6a6c3fc490ca4294eb3a0
   languageName: node
   linkType: hard
 
@@ -1831,15 +1831,15 @@ __metadata:
   linkType: hard
 
 "tar@npm:^7.5.4":
-  version: 7.5.16
-  resolution: "tar@npm:7.5.16"
+  version: 7.5.20
+  resolution: "tar@npm:7.5.20"
   dependencies:
     "@isaacs/fs-minipass": ^4.0.0
     chownr: ^3.0.0
     minipass: ^7.1.2
     minizlib: ^3.1.0
     yallist: ^5.0.0
-  checksum: 8/9b7f886f5ce8681a7430f80b9b377bfa498e6feb957b9afe6507db08e59d309f8546b7f76a0c2e47bdb54da4602575a5c7519e287fe94de8302e635032fc94f1
+  checksum: 8/85f0acccee46a1d6e1a1c0f7e03e66f4f7e91debbcd472365e3f398c29447089f99c269cb2552554a0b424f03bba15f94a3de95c4851f13b0be43085f80e58c1
   languageName: node
   linkType: hard
 
