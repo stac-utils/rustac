@@ -3,16 +3,14 @@
 //! counts) is supplied by a `finalize` callback after the items drain (the `next` link needs the last
 //! item; a `numberMatched` count may run concurrently).
 
+use crate::Result;
 use futures::{Stream, StreamExt};
 use serde_json::Value;
 use stac::api::{ItemCollection, Search};
 use std::{future::Future, io::Write, pin::Pin};
 
-/// A boxed error so backend (item stream, finalize) and writer (IO/serialization) errors compose.
-pub type BoxError = Box<dyn std::error::Error + Send + Sync>;
-
 /// A boxed, pinned stream of serialized STAC items.
-pub type ItemStream = Pin<Box<dyn Stream<Item = Result<Value, BoxError>> + Send>>;
+pub type ItemStream = Pin<Box<dyn Stream<Item = Result<Value>> + Send>>;
 
 /// Produces the finished [`ItemCollection`] (with empty `items`; the writer fills `numberReturned`) from
 /// the first item, the last item, and the number written. Called once, after the stream drains.
@@ -21,7 +19,7 @@ pub type Finalize = Box<
             Option<Value>,
             Option<Value>,
             u64,
-        ) -> Pin<Box<dyn Future<Output = Result<ItemCollection, BoxError>> + Send>>
+        ) -> Pin<Box<dyn Future<Output = Result<ItemCollection>> + Send>>
         + Send,
 >;
 
@@ -46,7 +44,7 @@ pub trait StreamSearch: Send + Sync {
         max_items: Option<usize>,
         context: bool,
         self_href: Option<String>,
-    ) -> impl Future<Output = Result<StreamedSearch, BoxError>> + Send;
+    ) -> impl Future<Output = Result<StreamedSearch>> + Send;
 
     /// Drives this backend's streamed search into `writer` as one flat-memory JSON `ItemCollection`,
     /// returning the number of items written.
@@ -58,7 +56,7 @@ pub trait StreamSearch: Send + Sync {
         self_href: Option<String>,
         writer: W,
         pretty: bool,
-    ) -> impl Future<Output = Result<u64, BoxError>> {
+    ) -> impl Future<Output = Result<u64>> {
         async move {
             let StreamedSearch { items, finalize } = self
                 .stream_search(search, max_items, context, self_href)
@@ -76,12 +74,12 @@ pub async fn write_item_collection<W, S, F, Fut>(
     items: S,
     pretty: bool,
     finalize: F,
-) -> Result<u64, BoxError>
+) -> Result<u64>
 where
     W: Write,
-    S: Stream<Item = Result<Value, BoxError>>,
+    S: Stream<Item = Result<Value>>,
     F: FnOnce(Option<Value>, Option<Value>, u64) -> Fut,
-    Fut: Future<Output = Result<ItemCollection, BoxError>>,
+    Fut: Future<Output = Result<ItemCollection>>,
 {
     writer.write_all(if pretty {
         b"{\n  \"type\": \"FeatureCollection\",\n  \"features\": ["
@@ -142,12 +140,7 @@ where
 
 /// Writes one item as an element of the `features` array. `index` is the
 /// element's position (0-based); a non-zero index gets a leading separator.
-fn write_element<W: Write>(
-    writer: &mut W,
-    item: &Value,
-    index: u64,
-    pretty: bool,
-) -> Result<(), BoxError> {
+fn write_element<W: Write>(writer: &mut W, item: &Value, index: u64, pretty: bool) -> Result<()> {
     if pretty {
         writer.write_all(if index == 0 { b"\n" } else { b",\n" })?;
         let element = serde_json::to_string_pretty(item)?;
