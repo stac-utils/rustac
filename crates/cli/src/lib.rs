@@ -247,6 +247,18 @@ pub enum Command {
             value_parser = |s: &str| KeyValue::from_str(s).map(|kv| (kv.0, kv.1))
         )]
         headers: Option<HeaderMap>,
+
+        /// Request the total match count (the `context` extension's `numberMatched`).
+        ///
+        /// Only the `postgresql` implementation honors this; it costs a second query.
+        #[arg(long = "context")]
+        context: bool,
+
+        /// Base URL that pagination (`next`/`prev`) links extend, i.e. the search endpoint's own
+        /// (`self`) URL. Without it, links are relative (`?token=…`). Only the `postgresql`
+        /// implementation emits pagination links.
+        #[arg(long = "self-href")]
+        self_href: Option<String>,
     },
 
     /// Serves a STAC API.
@@ -426,6 +438,8 @@ impl Rustac {
                 ref filter,
                 ref limit,
                 ref headers,
+                context,
+                ref self_href,
             } => {
                 // Infer the search implementation from the href if not explicitly provided
                 let search_impl = search_with.unwrap_or_else(|| {
@@ -459,11 +473,51 @@ impl Rustac {
                     SearchImplementation::Postgresql => {
                         #[cfg(feature = "pgstac")]
                         {
-                            pgstac::search(href, search, *max_items).await?
+                            use stac_io::StreamSearch as _;
+                            use std::io::Write as _;
+                            let backend = pgstac::PgstacPool::connect(pgstac::ConnectConfig {
+                                dsn: Some(href.to_string()),
+                                ..Default::default()
+                            })
+                            .await?;
+                            let dest = outfile
+                                .as_deref()
+                                .and_then(|path| if path == "-" { None } else { Some(path) });
+                            let pretty = matches!(self.output_format(dest), Format::Json(true));
+                            if let Some(path) = dest {
+                                let file = std::fs::File::create(path)?;
+                                backend
+                                    .write_search(
+                                        search,
+                                        *max_items,
+                                        context,
+                                        self_href.clone(),
+                                        file,
+                                        pretty,
+                                    )
+                                    .await?;
+                            } else {
+                                let stdout = std::io::stdout();
+                                let mut handle = stdout.lock();
+                                backend
+                                    .write_search(
+                                        search,
+                                        *max_items,
+                                        context,
+                                        self_href.clone(),
+                                        &mut handle,
+                                        pretty,
+                                    )
+                                    .await?;
+                                handle.flush()?;
+                            }
+                            return Ok(());
                         }
                         #[cfg(not(feature = "pgstac"))]
                         {
-                            return Err(anyhow!("rustac is not compiled with pgstac support"));
+                            return Err(anyhow!(
+                                "rustac is not compiled with pgstac search support (enable the `pgstac` feature)"
+                            ));
                         }
                     }
                     SearchImplementation::Duckdb => stac_duckdb::search(href, search, *max_items)?,

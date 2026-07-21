@@ -5,11 +5,6 @@ use thiserror::Error;
 #[non_exhaustive]
 pub enum Error {
     /// [bb8::RunError]
-    #[cfg(feature = "pgstac")]
-    #[error(transparent)]
-    Bb8TokioPostgresRun(#[from] bb8::RunError<tokio_postgres::Error>),
-
-    /// [bb8::RunError]
     #[cfg(feature = "duckdb")]
     #[error(transparent)]
     Bb8DuckdbRun(#[from] Box<bb8::RunError<Error>>),
@@ -43,11 +38,6 @@ pub enum Error {
     /// The backend is read-only.
     #[error("this backend is read-only")]
     ReadOnly,
-
-    /// [tokio_postgres::Error]
-    #[cfg(feature = "pgstac")]
-    #[error(transparent)]
-    TokioPostgres(#[from] tokio_postgres::Error),
 
     /// [std::num::TryFromIntError]
     #[error(transparent)]
