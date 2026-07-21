@@ -495,8 +495,7 @@ impl Rustac {
                                         file,
                                         pretty,
                                     )
-                                    .await
-                                    .map_err(Error::from_boxed)?;
+                                    .await?;
                             } else {
                                 let stdout = std::io::stdout();
                                 let mut handle = stdout.lock();
@@ -509,8 +508,7 @@ impl Rustac {
                                         &mut handle,
                                         pretty,
                                     )
-                                    .await
-                                    .map_err(Error::from_boxed)?;
+                                    .await?;
                                 handle.flush()?;
                             }
                             return Ok(());
