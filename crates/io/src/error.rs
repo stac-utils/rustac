@@ -6,7 +6,7 @@ use thiserror::Error;
 pub enum Error {
     /// An error from a [streaming search](crate::stream) backend, which produces its own error type.
     #[error(transparent)]
-    Backend(#[from] Box<dyn std::error::Error + Send + Sync>),
+    StreamBackend(#[from] Box<dyn std::error::Error + Send + Sync>),
 
     /// Returned when unable to read a STAC value from a path.
     #[error("{io}: {path}")]
