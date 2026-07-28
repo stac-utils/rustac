@@ -694,7 +694,7 @@ impl<'conn> Iterator for SearchArrowBatchIter<'conn> {
         let statement = self.statement.as_ref()?;
 
         match statement.step() {
-            Some(struct_array) => {
+            Ok(Some(struct_array)) => {
                 let record_batch = RecordBatch::from(&struct_array);
                 match self.finalize_batch(record_batch) {
                     Ok(batch) => Some(Ok(batch)),
@@ -704,9 +704,13 @@ impl<'conn> Iterator for SearchArrowBatchIter<'conn> {
                     }
                 }
             }
-            None => {
+            Ok(None) => {
                 self.statement = None;
                 None
+            }
+            Err(err) => {
+                self.statement = None;
+                Some(Err(err.into()))
             }
         }
     }
