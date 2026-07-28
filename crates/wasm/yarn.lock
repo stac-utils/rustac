@@ -529,21 +529,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/browser@npm:^3.2.5":
-  version: 3.2.5
-  resolution: "@vitest/browser@npm:3.2.5"
+"@vitest/browser@npm:^3.2.7":
+  version: 3.2.7
+  resolution: "@vitest/browser@npm:3.2.7"
   dependencies:
     "@testing-library/dom": ^10.4.0
     "@testing-library/user-event": ^14.6.1
-    "@vitest/mocker": 3.2.5
-    "@vitest/utils": 3.2.5
+    "@vitest/mocker": 3.2.7
+    "@vitest/utils": 3.2.7
     magic-string: ^0.30.17
     sirv: ^3.0.1
     tinyrainbow: ^2.0.0
     ws: ^8.18.2
   peerDependencies:
     playwright: "*"
-    vitest: 3.2.5
+    vitest: 3.2.7
     webdriverio: ^7.0.0 || ^8.0.0 || ^9.0.0
   peerDependenciesMeta:
     playwright:
@@ -552,7 +552,7 @@ __metadata:
       optional: true
     webdriverio:
       optional: true
-  checksum: 8/993cce3e7729427e7ba69aad3bb6316e2043200d98f1cd33750949be901655786f96b5321570f921a56d94e902ace354c0300014dca7b1ff315e6ec9608d9526
+  checksum: 8/aa6a31fb4cc1d9061f4bdbe5ecc0a31fbf19ce999945a09a0a826e8d06782e2f392964596d9053409ec204bf339dcbb9a806bc24294a07844c7ab6a9791df669
   languageName: node
   linkType: hard
 
@@ -566,25 +566,6 @@ __metadata:
     chai: ^5.2.0
     tinyrainbow: ^2.0.0
   checksum: 8/c1deb5fedf052d3c17cf69d3b27c4ff581b13740fd9b9360dee095608324fd4bbf6dff83479f1679239622c8bd3e017b80438ec495f6d9cb18f2dc950e00e3b2
-  languageName: node
-  linkType: hard
-
-"@vitest/mocker@npm:3.2.5":
-  version: 3.2.5
-  resolution: "@vitest/mocker@npm:3.2.5"
-  dependencies:
-    "@vitest/spy": 3.2.5
-    estree-walker: ^3.0.3
-    magic-string: ^0.30.17
-  peerDependencies:
-    msw: ^2.4.9
-    vite: ^5.0.0 || ^6.0.0 || ^7.0.0-0
-  peerDependenciesMeta:
-    msw:
-      optional: true
-    vite:
-      optional: true
-  checksum: 8/fd042d113e8f2b8dab4a1b240b39e1bc2f57281ffaf6debe2a64363d3051fff3f4ff83946039cd4ec7a96279f0e78e80657e609d9826e085f624bd7c255a4783
   languageName: node
   linkType: hard
 
@@ -607,12 +588,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/pretty-format@npm:3.2.5":
-  version: 3.2.5
-  resolution: "@vitest/pretty-format@npm:3.2.5"
+"@vitest/mocker@npm:3.2.7":
+  version: 3.2.7
+  resolution: "@vitest/mocker@npm:3.2.7"
   dependencies:
-    tinyrainbow: ^2.0.0
-  checksum: 8/70cd21acce3b50d5686f6ed5ef82427a29ce11f26a9b877c095a9eed12effea562780c5824e20c2b7f1b5b376eafcd60b55f611518ce34cafe87e3477f28b1a8
+    "@vitest/spy": 3.2.7
+    estree-walker: ^3.0.3
+    magic-string: ^0.30.17
+  peerDependencies:
+    msw: ^2.4.9
+    vite: ^5.0.0 || ^6.0.0 || ^7.0.0-0
+  peerDependenciesMeta:
+    msw:
+      optional: true
+    vite:
+      optional: true
+  checksum: 8/a0c4ee5f82e08ee826e055abc71858846cd3e72681f583c52932de3ac36aa6761ea937b0d8e70afa842ed123955a4c16c04d45490129ca98289cd9ded40875e8
   languageName: node
   linkType: hard
 
@@ -622,6 +613,15 @@ __metadata:
   dependencies:
     tinyrainbow: ^2.0.0
   checksum: 8/c5f9b676c287850a0c68358adcdbd0860c2b8471d2b75c4e345c8fa1251143258d0dd4331c9f9dae4cba9c3b07a6009391d8016ca5046ffaac54a09d0fb22ed9
+  languageName: node
+  linkType: hard
+
+"@vitest/pretty-format@npm:3.2.7":
+  version: 3.2.7
+  resolution: "@vitest/pretty-format@npm:3.2.7"
+  dependencies:
+    tinyrainbow: ^2.0.0
+  checksum: 8/ab060a1651906821c7f0157adb21fe04a0411b645073695b146ca982508d82c4f0b7010b0f45750b1993c60f485bc140f8b697dedbe95892507b6abfa0b263e1
   languageName: node
   linkType: hard
 
@@ -647,15 +647,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/spy@npm:3.2.5":
-  version: 3.2.5
-  resolution: "@vitest/spy@npm:3.2.5"
-  dependencies:
-    tinyspy: ^4.0.3
-  checksum: 8/c5d4c756d283f7d2360a514c7d1dff6b1da607a92aeeb8e44e409b8277949b369e8411d977b626f26edfd77de0b65d95a60d97748cc54a3837721a10005c4b71
-  languageName: node
-  linkType: hard
-
 "@vitest/spy@npm:3.2.6":
   version: 3.2.6
   resolution: "@vitest/spy@npm:3.2.6"
@@ -665,14 +656,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/utils@npm:3.2.5":
-  version: 3.2.5
-  resolution: "@vitest/utils@npm:3.2.5"
+"@vitest/spy@npm:3.2.7":
+  version: 3.2.7
+  resolution: "@vitest/spy@npm:3.2.7"
   dependencies:
-    "@vitest/pretty-format": 3.2.5
-    loupe: ^3.1.4
-    tinyrainbow: ^2.0.0
-  checksum: 8/517c5cde0a7c4bacb556ba427db5c8c44c47c92759101f174a3700160cd1bbf838758834dea126c0ce205123b92f750ed6972858ad693a03b6b6222552320e43
+    tinyspy: ^4.0.3
+  checksum: 8/748e48f8e6792dbc4547f6a12e86cc9fcda1464cb89116d1cb6a51656deb16480e6337db632855325513fcee20e247106492303ada2e1002ef1fbac8d3bba2b5
   languageName: node
   linkType: hard
 
@@ -684,6 +673,17 @@ __metadata:
     loupe: ^3.1.4
     tinyrainbow: ^2.0.0
   checksum: 8/7b01a21c670965a15d39f2d1f2ec964ec38b0e63f037a5dc56c7fccccf0480527f770480204f87c608301c620cf8d0e42ae89a137879f5c9961b6f3b2b8a7ede
+  languageName: node
+  linkType: hard
+
+"@vitest/utils@npm:3.2.7":
+  version: 3.2.7
+  resolution: "@vitest/utils@npm:3.2.7"
+  dependencies:
+    "@vitest/pretty-format": 3.2.7
+    loupe: ^3.1.4
+    tinyrainbow: ^2.0.0
+  checksum: 8/3286bbc1a2c3640c9b9e9e85ee11ba7374a7ca9f4ebf8bbab68c5a3305e3f5a45455e4c842a4bed3f00b65c5d2576727d4df326e02adaee40b76c4a740b47ef8
   languageName: node
   linkType: hard
 
@@ -1772,7 +1772,7 @@ __metadata:
   resolution: "stac-wasm-tests@workspace:."
   dependencies:
     "@duckdb/duckdb-wasm": ^1.28.0
-    "@vitest/browser": ^3.2.5
+    "@vitest/browser": ^3.2.7
     apache-arrow: ^18.0.0
     playwright: ^1.50.0
     stac-wasm: "file:./pkg"
