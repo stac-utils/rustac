@@ -11,7 +11,7 @@ permissions:
   pull-requests: write
 
 env:
-  DUCKDB_VERSION: "1.4.2"
+  DUCKDB_VERSION: "1.5.1"
   DUCKDB_LIB_DIR: /opt/duckdb
   LD_LIBRARY_PATH: /opt/duckdb
 
