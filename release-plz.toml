@@ -22,8 +22,7 @@ name = "stac-validate"
 
 [[package]]
 name = "stac-wasm"
-publish = false
-git_release_enable = true
+release = false
 
 [[package]]
 name = "rustac"
