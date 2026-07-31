@@ -1,6 +1,7 @@
 name: Release npm
 
 on:
+  workflow_dispatch:
   release:
     types:
       - published
@@ -11,7 +12,7 @@ permissions:
 
 jobs:
   publish:
-    if: startsWith(github.event.release.name, 'stac-wasm-v')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.name, 'stac-wasm-v')
     runs-on: ubuntu-latest
     defaults:
       run:
