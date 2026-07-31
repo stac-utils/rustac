@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.10](https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.3.9...stac-duckdb-v0.3.10) - 2026-07-31
+
+### Other
+
+- bump duckdb version in CI ([#1095](https://github.com/stac-utils/rustac/pull/1095))
+
 ## [0.3.9](https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.3.8...stac-duckdb-v0.3.9) - 2026-06-25
 
 ### Fixed
