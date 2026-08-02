@@ -8,7 +8,7 @@ mod extension;
 
 pub use {
     client::ArrowBatchReader, client::Client, client::HrefClient, client::SearchArrowBatchIter,
-    client::SyncHrefClient, error::Error, extension::Extension,
+    client::SourceFormat, client::SyncHrefClient, error::Error, extension::Extension,
 };
 
 use getrandom as _;
