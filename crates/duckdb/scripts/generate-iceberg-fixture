@@ -1,0 +1,118 @@
+#!/usr/bin/env -S uv run --script
+
+"""Generates a small local Iceberg fixture from an existing stac-geoparquet file."""
+
+import json
+import shutil
+from pathlib import Path
+
+import fastavro
+import pyarrow
+import pyarrow.parquet
+from pyiceberg.catalog.sql import SqlCatalog
+from pyiceberg.schema import Schema
+from pyiceberg.types import (
+    BinaryType,
+    DoubleType,
+    NestedField,
+    StringType,
+    TimestamptzType,
+)
+
+CRATE_ROOT = Path(__file__).resolve().parent.parent
+FIXTURE_REL = "data/hls-iceberg"
+FIXTURE_DIR = CRATE_ROOT / FIXTURE_REL
+SOURCE_PARQUET = CRATE_ROOT / "data" / "100-sentinel-2-items.parquet"
+
+
+def read_subset() -> pyarrow.Table:
+    table = pyarrow.parquet.read_table(SOURCE_PARQUET, columns=["id", "datetime", "collection", "eo:cloud_cover", "platform", "geometry"]).slice(0, 5)
+    geometry = table.column("geometry").cast(pyarrow.binary())
+    return table.set_column(table.schema.get_field_index("geometry"), "geometry", geometry)
+
+
+def build_iceberg_table(warehouse: Path, data: pyarrow.Table) -> Path:
+    catalog = SqlCatalog(
+        "fixture",
+        uri=f"sqlite:///{warehouse}/catalog.db",
+        warehouse=f"file://{warehouse}",
+    )
+    catalog.create_namespace("hls")
+    schema = Schema(
+        NestedField(1, "id", StringType(), required=False),
+        NestedField(2, "datetime", TimestamptzType(), required=False),
+        NestedField(3, "collection", StringType(), required=False),
+        NestedField(4, "eo:cloud_cover", DoubleType(), required=False),
+        NestedField(5, "platform", StringType(), required=False),
+        NestedField(6, "geometry", BinaryType(), required=False),
+    )
+    table = catalog.create_table("hls.items", schema=schema)
+    table.append(data)
+    return warehouse / "hls" / "items"
+
+
+def rewrite_paths(table_dir: Path, dest_rel_prefix: str) -> Path:
+    abs_prefix = f"file://{table_dir}/"
+    rel_prefix = f"{dest_rel_prefix}/"
+
+    metadata_dir = table_dir / "metadata"
+    latest_metadata = max(metadata_dir.glob("*.metadata.json"))
+    meta = json.loads(latest_metadata.read_text())
+    meta["location"] = dest_rel_prefix
+    for snapshot in meta.get("snapshots", []):
+        snapshot["manifest-list"] = snapshot["manifest-list"].replace(
+            abs_prefix, rel_prefix
+        )
+
+    meta.pop("metadata-log", None)
+    latest_metadata.write_text(json.dumps(meta, indent=2) + "\n")
+
+    for avro_path in metadata_dir.glob("*.avro"):
+        with avro_path.open("rb") as f:
+            reader = fastavro.reader(f)
+            writer_schema = reader.writer_schema
+            records = list(reader)
+        for record in records:
+            if "manifest_path" in record and record["manifest_path"].startswith(abs_prefix):
+                record["manifest_path"] = record["manifest_path"].replace(
+                    abs_prefix, rel_prefix
+                )
+            data_file = record.get("data_file")
+            if isinstance(data_file, dict):
+                file_path = data_file.get("file_path", "")
+                if file_path.startswith(abs_prefix):
+                    data_file["file_path"] = file_path.replace(abs_prefix, rel_prefix)
+        with avro_path.open("wb") as f:
+            fastavro.writer(f, writer_schema, records)
+
+    # Give the metadata a stable filename so the test doesn't have to glob for a UUID.
+    stable = metadata_dir / "v1.metadata.json"
+    latest_metadata.rename(stable)
+    for older in metadata_dir.glob("*.metadata.json"):
+        if older != stable:
+            older.unlink()
+    return stable
+
+
+def main() -> None:
+    build_dir = FIXTURE_DIR.parent / "build"
+    if build_dir.exists():
+        shutil.rmtree(build_dir)
+    build_dir.mkdir(parents=True)
+    if FIXTURE_DIR.exists():
+        shutil.rmtree(FIXTURE_DIR)
+
+    data = read_subset()
+    table_dir = build_iceberg_table(build_dir, data)
+    rewrite_paths(table_dir, FIXTURE_REL)
+
+    shutil.copytree(table_dir, FIXTURE_DIR)
+    shutil.rmtree(build_dir)
+
+    for path in sorted(FIXTURE_DIR.rglob("*")):
+        if path.is_file():
+            print(f"  {path.relative_to(FIXTURE_DIR)}")
+
+
+if __name__ == "__main__":
+    main()

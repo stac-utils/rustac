@@ -1,0 +1,106 @@
+{
+  "location": "data/hls-iceberg",
+  "table-uuid": "f93d310f-26f1-4d3e-9124-d593674bbc67",
+  "last-updated-ms": 1786220856641,
+  "last-column-id": 6,
+  "schemas": [
+    {
+      "type": "struct",
+      "fields": [
+        {
+          "id": 1,
+          "name": "id",
+          "type": "string",
+          "required": false
+        },
+        {
+          "id": 2,
+          "name": "datetime",
+          "type": "timestamptz",
+          "required": false
+        },
+        {
+          "id": 3,
+          "name": "collection",
+          "type": "string",
+          "required": false
+        },
+        {
+          "id": 4,
+          "name": "eo:cloud_cover",
+          "type": "double",
+          "required": false
+        },
+        {
+          "id": 5,
+          "name": "platform",
+          "type": "string",
+          "required": false
+        },
+        {
+          "id": 6,
+          "name": "geometry",
+          "type": "binary",
+          "required": false
+        }
+      ],
+      "schema-id": 0,
+      "identifier-field-ids": []
+    }
+  ],
+  "current-schema-id": 0,
+  "partition-specs": [
+    {
+      "spec-id": 0,
+      "fields": []
+    }
+  ],
+  "default-spec-id": 0,
+  "last-partition-id": 999,
+  "properties": {},
+  "current-snapshot-id": 5883779319910942589,
+  "snapshots": [
+    {
+      "snapshot-id": 5883779319910942589,
+      "sequence-number": 1,
+      "timestamp-ms": 1786220856641,
+      "manifest-list": "data/hls-iceberg/metadata/snap-5883779319910942589-0-91a71953-67c1-46d0-9f61-194935b3081f.avro",
+      "summary": {
+        "operation": "append",
+        "added-files-size": "3966",
+        "added-data-files": "1",
+        "added-records": "5",
+        "total-data-files": "1",
+        "total-delete-files": "0",
+        "total-records": "5",
+        "total-files-size": "3966",
+        "total-position-deletes": "0",
+        "total-equality-deletes": "0"
+      },
+      "schema-id": 0
+    }
+  ],
+  "snapshot-log": [
+    {
+      "snapshot-id": 5883779319910942589,
+      "timestamp-ms": 1786220856641
+    }
+  ],
+  "sort-orders": [
+    {
+      "order-id": 0,
+      "fields": []
+    }
+  ],
+  "default-sort-order-id": 0,
+  "refs": {
+    "main": {
+      "snapshot-id": 5883779319910942589,
+      "type": "branch"
+    }
+  },
+  "statistics": [],
+  "partition-statistics": [],
+  "format-version": 2,
+  "last-sequence-number": 1
+}
