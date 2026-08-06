@@ -5,8 +5,10 @@ use crate::{
     geoarrow::{Encoder, Options},
 };
 use arrow_array::RecordBatch;
+use arrow_schema::{DataType, Schema};
 use bytes::Bytes;
 use geoparquet::{
+    metadata::{GeoParquetBboxCovering, GeoParquetCovering, GeoParquetMetadata},
     reader::{GeoParquetReaderBuilder, GeoParquetRecordBatchReader},
     writer::{GeoParquetRecordBatchEncoder, GeoParquetWriterOptionsBuilder},
 };
@@ -47,6 +49,7 @@ pub struct WriterOptions {
 pub struct WriterEncoder {
     geoarrow_encoder: Encoder,
     encoder: GeoParquetRecordBatchEncoder,
+    covering: Option<GeoParquetCovering>,
 }
 
 impl WriterOptions {
@@ -347,10 +350,12 @@ impl WriterEncoder {
             .build();
         let mut encoder = GeoParquetRecordBatchEncoder::try_new(&record_batch.schema(), &options)?;
         let record_batch = encoder.encode_record_batch(&record_batch)?;
+        let covering = bbox_covering(&record_batch.schema());
         Ok((
             WriterEncoder {
                 geoarrow_encoder,
                 encoder,
+                covering,
             },
             record_batch,
         ))
@@ -390,9 +395,43 @@ impl WriterEncoder {
     /// assert_eq!(key_value.key, "geo");
     /// ```
     pub fn into_keyvalue(self) -> Result<KeyValue> {
-        let keyvalue = self.encoder.into_keyvalue()?;
+        let mut keyvalue = self.encoder.into_keyvalue()?;
+        if let (Some(covering), Some(value)) = (self.covering, keyvalue.value.as_ref()) {
+            let mut metadata: GeoParquetMetadata = serde_json::from_str(value)?;
+            let primary_column = metadata.primary_column.clone();
+            if let Some(column) = metadata.columns.get_mut(&primary_column) {
+                column.covering = Some(covering);
+            }
+            keyvalue.value = Some(serde_json::to_string(&metadata)?);
+        }
         Ok(keyvalue)
     }
+}
+
+/// Builds a bbox covering that points at stac-geoparquet's `bbox` struct column.
+///
+/// Returns `None` if the schema doesn't have a `bbox` struct column with the
+/// required `xmin`, `ymin`, `xmax`, and `ymax` sub-fields.
+fn bbox_covering(schema: &Schema) -> Option<GeoParquetCovering> {
+    let field = schema.field_with_name("bbox").ok()?;
+    let DataType::Struct(fields) = field.data_type() else {
+        return None;
+    };
+    let path = |name: &str| {
+        fields
+            .find(name)
+            .map(|_| vec!["bbox".to_string(), name.to_string()])
+    };
+    Some(GeoParquetCovering {
+        bbox: GeoParquetBboxCovering {
+            xmin: path("xmin")?,
+            ymin: path("ymin")?,
+            zmin: path("zmin"),
+            xmax: path("xmax")?,
+            ymax: path("ymax")?,
+            zmax: path("zmax"),
+        },
+    })
 }
 
 /// Shared state for STAC geoparquet writers (both sync and async).
@@ -754,6 +793,7 @@ mod tests {
         geoparquet::{METADATA_KEY, Metadata, VERSION, WriterBuilder},
     };
     use bytes::Bytes;
+    use geoparquet::metadata::GeoParquetMetadata;
     use parquet::file::reader::{FileReader, SerializedFileReader};
     use std::{
         fs::File,
@@ -961,5 +1001,39 @@ mod tests {
         // https://github.com/stac-utils/rustac/issues/959
         let file = File::open("data/opr-one.parquet").unwrap();
         let _: ItemCollection = super::from_reader(file).unwrap();
+    }
+
+    #[test]
+    fn covering() {
+        // https://github.com/stac-utils/rustac/issues/1106
+        let item: Item = crate::read("examples/simple-item.json").unwrap();
+        let mut cursor = Cursor::new(Vec::new());
+        WriterBuilder::new(&mut cursor)
+            .build(vec![item])
+            .unwrap()
+            .add_collection(Collection::new("an-id", "a description"))
+            .unwrap()
+            .finish()
+            .unwrap();
+        let bytes = Bytes::from(cursor.into_inner());
+        let reader = SerializedFileReader::new(bytes).unwrap();
+        let metadata = GeoParquetMetadata::from_parquet_meta(reader.metadata().file_metadata())
+            .unwrap()
+            .unwrap();
+        let covering = metadata.columns["geometry"].covering.as_ref().unwrap();
+        assert_eq!(covering.bbox.xmin, ["bbox", "xmin"]);
+        assert_eq!(covering.bbox.ymin, ["bbox", "ymin"]);
+        assert_eq!(covering.bbox.xmax, ["bbox", "xmax"]);
+        assert_eq!(covering.bbox.ymax, ["bbox", "ymax"]);
+        let fields = reader
+            .metadata()
+            .file_metadata()
+            .schema_descr()
+            .root_schema()
+            .get_fields();
+        assert_eq!(
+            fields.iter().filter(|field| field.name() == "bbox").count(),
+            1
+        );
     }
 }
