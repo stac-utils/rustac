@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.4](https://github.com/stac-utils/rustac/compare/stac-v0.17.3...stac-v0.17.4) - 2026-08-06
+
+### Fixed
+
+- add covering to geoparquet writes ([#1107](https://github.com/stac-utils/rustac/pull/1107))
+
 ## [0.17.3](https://github.com/stac-utils/rustac/compare/stac-v0.17.2...stac-v0.17.3) - 2026-07-31
 
 ### Other
