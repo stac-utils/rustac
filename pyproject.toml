@@ -10,7 +10,7 @@ docs = ["mkdocs-material[imaging]>=9.7.7", "mkdocs-redirects>=1.2.3"]
 stac-geoparquet = [
     "deepdiff>=9.1.0",
     "pyarrow>=25.0.1",
-    "stac-geoparquet>=0.8.1",
+    "stac-geoparquet>=0.8.2",
 ]
 stac-api-validator = ["setuptools>=84.0.0", "stac-api-validator>=0.6.8"]
 
