@@ -31,6 +31,9 @@ pub const DEFAULT_UNION_BY_NAME: bool = true;
 /// Whether to remove the filename column by default.
 pub const DEFAULT_REMOVE_FILENAME_COLUMN: bool = true;
 
+/// The default source format for the data being queried.
+pub const DEFAULT_SOURCE_FORMAT: SourceFormat = SourceFormat::Parquet;
+
 /// A client for making DuckDB requests for STAC objects.
 #[derive(Debug)]
 pub struct Client {
@@ -53,15 +56,18 @@ pub struct Client {
     ///
     /// Defaults to true.
     pub remove_filename_column: bool,
+
+    source_format: SourceFormat,
 }
 
 impl Client {
     /// Creates a new client with an in-memory DuckDB connection.
     ///
-    /// This function will install the spatial extension. If you'd like to
-    /// manage your own extensions (e.g. if your extensions are stored in a
-    /// different location), set things up then use `connection.into()` to get a
-    /// new `Client`.
+    /// Installs the `spatial`, `icu`, and `httpfs` extensions. The `iceberg`
+    /// extension is installed lazily by [`Client::set_source_format`]. If
+    /// you'd like to manage your own extensions (e.g. if your extensions are
+    /// stored in a different location), set things up then use
+    /// `connection.into()` to get a new `Client`.
     ///
     /// # Examples
     ///
@@ -76,6 +82,8 @@ impl Client {
         connection.execute("LOAD spatial", [])?;
         connection.execute("INSTALL icu", [])?;
         connection.execute("LOAD icu", [])?;
+        connection.execute("INSTALL httpfs", [])?;
+        connection.execute("LOAD httpfs", [])?;
         Ok(connection.into())
     }
 
@@ -123,7 +131,7 @@ impl Client {
     pub fn collections(&self, href: &str) -> Result<Vec<Collection>> {
         let start_datetime= if self.prepare(&format!(
             "SELECT column_name FROM (DESCRIBE SELECT * from {}) where column_name = 'start_datetime'",
-            self.format_parquet_href(href)
+            self.format_source_href(href)
         ))?.query([])?.next()?.is_some() {
             "strftime(min(coalesce(start_datetime, datetime)), '%xT%X%z')"
         } else {
@@ -132,7 +140,7 @@ impl Client {
         let end_datetime = if self
             .prepare(&format!(
             "SELECT column_name FROM (DESCRIBE SELECT * from {}) where column_name = 'end_datetime'",
-            self.format_parquet_href(href)
+            self.format_source_href(href)
         ))?
             .query([])?
             .next()?
@@ -144,14 +152,17 @@ impl Client {
         };
         let mut statement = self.prepare(&format!(
             "SELECT DISTINCT collection FROM {}",
-            self.format_parquet_href(href)
+            self.format_source_href(href)
         ))?;
         let mut collections = Vec::new();
         for row in statement.query_map([], |row| row.get::<_, String>(0))? {
             let collection_id = row?;
-            let mut statement = self.connection.prepare(&
-                format!("SELECT ST_AsGeoJSON(ST_Extent_Agg(geometry)), {}, {} FROM {} WHERE collection = $1", start_datetime, end_datetime,
-                self.format_parquet_href(href)
+            let mut statement = self.connection.prepare(&format!(
+                "SELECT ST_AsGeoJSON(ST_Extent_Agg({})), {}, {} FROM {} WHERE collection = $1",
+                self.geometry_expr(),
+                start_datetime,
+                end_datetime,
+                self.format_source_href(href)
             ))?;
             let row = statement.query_row([&collection_id], |row| {
                 Ok((
@@ -274,7 +285,7 @@ impl Client {
         // Check which columns we'll be selecting
         let mut statement = self.prepare(&format!(
             "SELECT column_name FROM (DESCRIBE SELECT * from {})",
-            self.format_parquet_href(href)
+            self.format_source_href(href)
         ))?;
         let mut has_start_datetime = false;
         let mut has_end_datetime = false;
@@ -297,7 +308,12 @@ impl Client {
             }
 
             if column == "geometry" {
-                columns.push("ST_AsWKB(geometry) geometry".to_string());
+                match self.source_format {
+                    SourceFormat::Parquet => {
+                        columns.push("ST_AsWKB(geometry) geometry".to_string())
+                    }
+                    SourceFormat::Iceberg => columns.push("geometry".to_string()),
+                }
             } else if DATETIME_COLUMNS.contains(&column.as_str()) {
                 columns.push(format!("\"{column}\"::TIMESTAMPTZ {column}"))
             } else {
@@ -341,7 +357,10 @@ impl Client {
             params.extend(search.ids.into_iter().map(Value::Text));
         }
         if let Some(intersects) = search.intersects {
-            wheres.push("ST_Intersects(geometry, ST_GeomFromGeoJSON(?))".to_string());
+            wheres.push(format!(
+                "ST_Intersects({}, ST_GeomFromGeoJSON(?))",
+                self.geometry_expr()
+            ));
             params.push(Value::Text(intersects.to_string()));
         }
         if !search.collections.is_empty() {
@@ -355,7 +374,10 @@ impl Client {
             params.extend(search.collections.into_iter().map(Value::Text));
         }
         if let Some(bbox) = search.items.bbox {
-            wheres.push("ST_Intersects(geometry, ST_GeomFromGeoJSON(?))".to_string());
+            wheres.push(format!(
+                "ST_Intersects({}, ST_GeomFromGeoJSON(?))",
+                self.geometry_expr()
+            ));
             params.push(Value::Text(bbox.to_geometry().to_string()));
         }
         if let Some(datetime) = search.items.datetime {
@@ -410,23 +432,61 @@ impl Client {
         let sql = format!(
             "SELECT {} FROM {}{}",
             columns.join(","),
-            self.format_parquet_href(href),
+            self.format_source_href(href),
             suffix,
         );
         Ok(Some((sql, params)))
     }
 
-    fn format_parquet_href(&self, href: &str) -> String {
-        format!(
-            "read_parquet('{}', hive_partitioning={}, union_by_name={})",
-            href,
-            if self.use_hive_partitioning {
-                "true"
-            } else {
-                "false"
-            },
-            if self.union_by_name { "true" } else { "false" }
-        )
+    fn format_source_href(&self, href: &str) -> String {
+        match self.source_format {
+            SourceFormat::Parquet => format!(
+                "read_parquet('{}', hive_partitioning={}, union_by_name={})",
+                href, self.use_hive_partitioning, self.union_by_name
+            ),
+            SourceFormat::Iceberg => format!("iceberg_scan('{href}')"),
+        }
+    }
+
+    fn geometry_expr(&self) -> &'static str {
+        match self.source_format {
+            SourceFormat::Parquet => "geometry",
+            SourceFormat::Iceberg => "ST_GeomFromWKB(geometry)",
+        }
+    }
+
+    /// Returns the source format of the data being queried.
+    ///
+    /// Defaults to [`SourceFormat::Parquet`].
+    pub fn source_format(&self) -> SourceFormat {
+        self.source_format
+    }
+
+    /// Sets the source format of the data being queried.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use stac_duckdb::{Client, SourceFormat};
+    ///
+    /// let mut client = Client::new().unwrap();
+    /// client.set_source_format(SourceFormat::Iceberg).unwrap();
+    /// ```
+    pub fn set_source_format(&mut self, source_format: SourceFormat) -> Result<()> {
+        match source_format {
+            SourceFormat::Iceberg => {
+                self.connection.execute("INSTALL iceberg", [])?;
+                self.connection.execute("LOAD iceberg", [])?;
+                self.connection
+                    .execute("SET enable_geoparquet_conversion = false", [])?;
+            }
+            SourceFormat::Parquet => {
+                self.connection
+                    .execute("RESET enable_geoparquet_conversion", [])?;
+            }
+        }
+        self.source_format = source_format;
+        Ok(())
     }
 }
 
@@ -476,11 +536,20 @@ impl From<Connection> for Client {
             convert_wkb: DEFAULT_CONVERT_WKB,
             union_by_name: DEFAULT_UNION_BY_NAME,
             remove_filename_column: DEFAULT_REMOVE_FILENAME_COLUMN,
+            source_format: DEFAULT_SOURCE_FORMAT,
         }
     }
 }
 
-/// A DuckDB client bound to a specific stac-geoparquet href.
+/// The source format of the data being queried.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum SourceFormat {
+    #[default]
+    Parquet,
+    Iceberg,
+}
+
+/// A DuckDB client bound to a specific stac-geoparquet or iceberg href.
 ///
 /// This wraps a [`Client`] with a specific href, implementing the
 /// [`ArrowItemsClient`] trait. Because [`duckdb::Connection`] is not
@@ -725,7 +794,7 @@ fn remove_column(mut record_batch: RecordBatch, name: &str) -> RecordBatch {
 
 #[cfg(test)]
 mod tests {
-    use super::Client;
+    use super::{Client, SourceFormat};
     use duckdb::Connection;
     use geo::Geometry;
     use rstest::{fixture, rstest};
@@ -1032,5 +1101,18 @@ mod tests {
                     .contains_key("filename")
             );
         }
+    }
+
+    #[rstest]
+    fn iceberg_local(mut client: Client) {
+        client.set_source_format(SourceFormat::Iceberg).unwrap();
+        let item_collection = client
+            .search(
+                "data/hls-iceberg/metadata/v1.metadata.json",
+                Search::default(),
+            )
+            .unwrap();
+        assert_eq!(item_collection.items.len(), 5);
+        assert!(item_collection.items[0].get("geometry").is_some());
     }
 }
