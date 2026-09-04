@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.12](https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.3.11...stac-duckdb-v0.3.12) - 2026-08-27
+
+### Added
+
+- add Iceberg read support via source_format ([#1100](https://github.com/stac-utils/rustac/pull/1100))
+
 ## [0.3.11](https://github.com/stac-utils/rustac/compare/stac-duckdb-v0.3.10...stac-duckdb-v0.3.11) - 2026-08-06
 
 ### Other
