@@ -374,6 +374,25 @@ fn set_column_for_json_rows(
                     Ok(())
                 })?;
         }
+        DataType::FixedSizeList(_, _) => {
+            let listarr = as_fixed_size_list_array(array);
+            rows.iter_mut()
+                .zip(listarr.iter())
+                .filter_map(|(maybe_row, maybe_value)| {
+                    maybe_row.as_mut().map(|row| (row, maybe_value))
+                })
+                .try_for_each(|(row, maybe_value)| -> Result<(), ArrowError> {
+                    let maybe_value = maybe_value
+                        .map(|v| array_to_json_array_internal(&v, explicit_nulls).map(Value::Array))
+                        .transpose()?;
+                    if let Some(j) = maybe_value {
+                        row.insert(col_name.to_string(), j);
+                    } else if explicit_nulls {
+                        row.insert(col_name.to_string(), Value::Null);
+                    }
+                    Ok(())
+                })?;
+        }
         DataType::Dictionary(_, value_type) => {
             let hydrated = arrow_cast::cast(&array, value_type)
                 .expect("cannot cast dictionary to underlying values");
