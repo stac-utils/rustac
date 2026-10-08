@@ -21,7 +21,7 @@ debug = ["console_error_panic_hook"]
 console_error_panic_hook = { version = "0.1.6", optional = true }
 arrow-array.workspace = true
 arrow-schema.workspace = true
-arrow-wasm = { git = "https://github.com/kylebarron/arrow-wasm", rev = "4da0aa2b45c7ffd8c7e7449274a4b6d84f10cf94" }
+arrow-wasm = { git = "https://github.com/kylebarron/arrow-wasm", rev = "ee163ba9cfa1c5d078e7625ac8bcd3cd1e6bda8e" }
 getrandom = { version = "0.4", features = ["wasm_js"] }
 getrandom_03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 serde.workspace = true

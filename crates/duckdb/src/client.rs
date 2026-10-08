@@ -1,6 +1,9 @@
 use crate::{Error, Extension, Result};
-use arrow_array::{RecordBatch, RecordBatchIterator};
-use arrow_schema::{ArrowError, SchemaRef};
+use arrow_array::{
+    RecordBatch, RecordBatchIterator, StructArray,
+    ffi::{FFI_ArrowArray, FFI_ArrowSchema},
+};
+use arrow_schema::{ArrowError, Schema, SchemaRef};
 use chrono::DateTime;
 use cql2::{Expr, ToDuckSQL};
 use duckdb::{Connection, Statement, types::Value};
@@ -13,7 +16,7 @@ use stac::api::{
 };
 use stac::{Collection, SpatialExtent, TemporalExtent, geoarrow::DATETIME_COLUMNS};
 use std::ops::{Deref, DerefMut};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 /// Default hive partitioning value
 pub const DEFAULT_USE_HIVE_PARTITIONING: bool = false;
@@ -250,11 +253,7 @@ impl Client {
             let mut statement = self.prepare(&sql)?;
             statement.execute(duckdb::params_from_iter(params))?;
             log::debug!("query complete");
-            Ok(SearchArrowBatchIter::new(
-                statement,
-                self.convert_wkb,
-                self.remove_filename_column,
-            ))
+            SearchArrowBatchIter::new(statement, self.convert_wkb, self.remove_filename_column)
         } else {
             Ok(SearchArrowBatchIter::empty(
                 self.convert_wkb,
@@ -720,14 +719,18 @@ pub struct SearchArrowBatchIter<'conn> {
 }
 
 impl<'conn> SearchArrowBatchIter<'conn> {
-    fn new(statement: Statement<'conn>, convert_wkb: bool, remove_filename_column: bool) -> Self {
-        let schema = Some(statement.schema());
-        Self {
+    fn new(
+        statement: Statement<'conn>,
+        convert_wkb: bool,
+        remove_filename_column: bool,
+    ) -> Result<Self> {
+        let schema = Some(schema_from_duckdb(&statement.schema())?);
+        Ok(Self {
             statement: Some(statement),
             convert_wkb,
             remove_filename_column,
             schema,
-        }
+        })
     }
 
     fn empty(convert_wkb: bool, remove_filename_column: bool) -> Self {
@@ -764,8 +767,9 @@ impl<'conn> Iterator for SearchArrowBatchIter<'conn> {
 
         match statement.step() {
             Ok(Some(struct_array)) => {
-                let record_batch = RecordBatch::from(&struct_array);
-                match self.finalize_batch(record_batch) {
+                match struct_array_from_duckdb(&struct_array)
+                    .and_then(|struct_array| self.finalize_batch(RecordBatch::from(struct_array)))
+                {
                     Ok(batch) => Some(Ok(batch)),
                     Err(err) => {
                         self.statement = None;
@@ -783,6 +787,36 @@ impl<'conn> Iterator for SearchArrowBatchIter<'conn> {
             }
         }
     }
+}
+
+/// Converts a [`duckdb::arrow`] struct array into our version of arrow via the
+/// [C Data Interface](https://arrow.apache.org/docs/format/CDataInterface.html).
+///
+/// DuckDB may depend on a different version of arrow than we do. The C Data
+/// Interface structs share a `#[repr(C)]` layout across arrow versions, so we
+/// can move the exported structs between versions without copying any data.
+fn struct_array_from_duckdb(
+    struct_array: &duckdb::arrow::array::StructArray,
+) -> Result<StructArray> {
+    use duckdb::arrow::array::Array;
+    let (mut array, mut schema) = duckdb::arrow::ffi::to_ffi(&struct_array.to_data())?;
+    // SAFETY: both pointers are valid, aligned, and initialized C Data Interface
+    // structs. `from_raw` leaves empty structs behind, so the originals are
+    // released only once, by the moved values.
+    let array = unsafe { FFI_ArrowArray::from_raw((&raw mut array).cast()) };
+    let schema = unsafe { FFI_ArrowSchema::from_raw((&raw mut schema).cast()) };
+    // SAFETY: `array` and `schema` were produced together by `to_ffi`.
+    let data = unsafe { arrow_array::ffi::from_ffi(array, &schema)? };
+    Ok(StructArray::from(data))
+}
+
+/// Converts a [`duckdb::arrow`] schema into our version of arrow via the
+/// [C Data Interface](https://arrow.apache.org/docs/format/CDataInterface.html).
+fn schema_from_duckdb(schema: &duckdb::arrow::datatypes::Schema) -> Result<SchemaRef> {
+    let mut schema = duckdb::arrow::ffi::FFI_ArrowSchema::try_from(schema)?;
+    // SAFETY: see `struct_array_from_duckdb`.
+    let schema = unsafe { FFI_ArrowSchema::from_raw((&raw mut schema).cast()) };
+    Ok(Arc::new(Schema::try_from(&schema)?))
 }
 
 fn remove_column(mut record_batch: RecordBatch, name: &str) -> RecordBatch {

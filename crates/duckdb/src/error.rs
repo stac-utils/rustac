@@ -4,6 +4,10 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
+    /// [arrow_schema::ArrowError]
+    #[error(transparent)]
+    Arrow(#[from] arrow_schema::ArrowError),
+
     /// [chrono::format::ParseError]
     #[error(transparent)]
     ChronoParse(#[from] chrono::format::ParseError),
@@ -15,6 +19,10 @@ pub enum Error {
     /// [duckdb::Error]
     #[error(transparent)]
     DuckDB(#[from] duckdb::Error),
+
+    /// [duckdb::arrow::error::ArrowError], from the version of arrow used by duckdb
+    #[error(transparent)]
+    DuckDBArrow(#[from] duckdb::arrow::error::ArrowError),
 
     /// [geoarrow_schema::error::GeoArrowError]
     #[error(transparent)]
