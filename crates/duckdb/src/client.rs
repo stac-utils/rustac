@@ -299,6 +299,7 @@ impl Client {
             if column == "end_datetime" {
                 has_end_datetime = true;
             }
+            column_names.push(column.clone());
 
             if let Some(fields) = search.fields.as_ref()
                 && (fields.exclude.contains(&column)
@@ -319,7 +320,6 @@ impl Client {
             } else {
                 columns.push(format!("\"{column}\""));
             }
-            column_names.push(column);
         }
 
         // Get limit and offset
@@ -1114,5 +1114,21 @@ mod tests {
             .unwrap();
         assert_eq!(item_collection.items.len(), 5);
         assert!(item_collection.items[0].get("geometry").is_some());
+    }
+
+    #[rstest]
+    fn filter_and_include(client: Client) {
+        let search = Search {
+            items: Items {
+                filter: Some("sat:relative_orbit = 98".parse().unwrap()),
+                fields: Some("+id".parse().unwrap()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let item_collection = client
+            .search("data/100-sentinel-2-items.parquet", search)
+            .unwrap();
+        assert_eq!(item_collection.items.len(), 49);
     }
 }
