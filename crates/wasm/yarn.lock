@@ -552,7 +552,7 @@ __metadata:
       optional: true
     webdriverio:
       optional: true
-  checksum: 8/aa6a31fb4cc1d9061f4bdbe5ecc0a31fbf19ce999945a09a0a826e8d06782e2f392964596d9053409ec204bf339dcbb9a806bc24294a07844c7ab6a9791df669
+  checksum: 10c0/2a02d169171eebbf925dcacd1be24e380510e98e413723c814464343eaca1d9086159c3126cbdbd202621362e5103572837f4f609c13382349212f6a0efe25a7
   languageName: node
   linkType: hard
 
@@ -565,7 +565,7 @@ __metadata:
     "@vitest/utils": "npm:3.2.6"
     chai: "npm:^5.2.0"
     tinyrainbow: "npm:^2.0.0"
-  checksum: 8/c1deb5fedf052d3c17cf69d3b27c4ff581b13740fd9b9360dee095608324fd4bbf6dff83479f1679239622c8bd3e017b80438ec495f6d9cb18f2dc950e00e3b2
+  checksum: 10c0/bb51fa6a1f0740b3ee994347bc5067c8a17c2f3dea56b76a8c2c328885cdbfbafbb99b0b94b8166dc605eedbb9f467d37a6a0e0c81855eb18e232417cca4ccbd
   languageName: node
   linkType: hard
 
@@ -584,7 +584,7 @@ __metadata:
       optional: true
     vite:
       optional: true
-  checksum: 8/c176185e62e32f5abd6cc36e180078813816771ec0853302d449c74e74b054225e8e68b5d5bf6f39368cecab9b65b4151b8acf910d0d7ccd3fa688bddd1f2048
+  checksum: 10c0/0429d72e52ca1cc25d7ac44fbc251d0486974d8e0e59860c605d72456c0a17fa1d464b2a5e34690c17afcc7be562d7c22595f53503244a858f1f5903998da100
   languageName: node
   linkType: hard
 
@@ -603,7 +603,7 @@ __metadata:
       optional: true
     vite:
       optional: true
-  checksum: 8/a0c4ee5f82e08ee826e055abc71858846cd3e72681f583c52932de3ac36aa6761ea937b0d8e70afa842ed123955a4c16c04d45490129ca98289cd9ded40875e8
+  checksum: 10c0/e8d9a155723e77b3e14c5a1eba35d8966b94420ebc733ffd7119b7bede22006580c468eec2aec6612fb77852cbcdfa94c6f49218f3ca1427aa9363d545c624fd
   languageName: node
   linkType: hard
 
@@ -612,7 +612,7 @@ __metadata:
   resolution: "@vitest/pretty-format@npm:3.2.6"
   dependencies:
     tinyrainbow: "npm:^2.0.0"
-  checksum: 8/c5f9b676c287850a0c68358adcdbd0860c2b8471d2b75c4e345c8fa1251143258d0dd4331c9f9dae4cba9c3b07a6009391d8016ca5046ffaac54a09d0fb22ed9
+  checksum: 10c0/9fc2887ef4206c90392de4e205d0109add35382446914d0124c53d1da327f49b9e9535fb336cb260394c176e4bb14b1b3aba0a42ab12b0f8b95034ccd4fed4eb
   languageName: node
   linkType: hard
 
@@ -621,7 +621,7 @@ __metadata:
   resolution: "@vitest/pretty-format@npm:3.2.7"
   dependencies:
     tinyrainbow: "npm:^2.0.0"
-  checksum: 8/ab060a1651906821c7f0157adb21fe04a0411b645073695b146ca982508d82c4f0b7010b0f45750b1993c60f485bc140f8b697dedbe95892507b6abfa0b263e1
+  checksum: 10c0/f556dd5f9e5240c7ab054d795622292c1b23f6aad3332d1e250f33d801783efbb7883387640b76d22cc91b81f30cb735b40371ec3e4f5293e735495f45d624df
   languageName: node
   linkType: hard
 
@@ -632,7 +632,7 @@ __metadata:
     "@vitest/utils": "npm:3.2.6"
     pathe: "npm:^2.0.3"
     strip-literal: "npm:^3.0.0"
-  checksum: 8/6f63cd4bc90b578501efbc311053e6456febd013bd0f805904b3dfac5e274f8023b1b0a97502c37469b6f4733bb5d2ebb1b600226d3ea4f49aa55c1e78d827b1
+  checksum: 10c0/bfc552ee2424ec62e4d6c075d000348a8187eb1be7ce9ae4673139c2f4a71e271ac15bef4d6af27cb5a29f4776dd437bea9d5819f62f0b5ece3c6dd857fa300d
   languageName: node
   linkType: hard
 
@@ -643,7 +643,7 @@ __metadata:
     "@vitest/pretty-format": "npm:3.2.6"
     magic-string: "npm:^0.30.17"
     pathe: "npm:^2.0.3"
-  checksum: 8/f10e1e86d6fd1902a5c6135add5e6434f110f6af8ea2d8e87b46619ee279935ad433a28da33869ebae916e329a0de5f6ca26dbb71beaa9be791849118043e3f6
+  checksum: 10c0/b8f73cc2bc50ca6cd013e2dae1f531aa2132d053e52d2055da8544290e6e8a92dd06f8cf07e8fce15137f27e8156f2936eb6bd9fa63c76e6f6a9813cf0820022
   languageName: node
   linkType: hard
 
@@ -652,7 +652,7 @@ __metadata:
   resolution: "@vitest/spy@npm:3.2.6"
   dependencies:
     tinyspy: "npm:^4.0.3"
-  checksum: 8/43b21e6aa7961bce955d809fb8d8b0a86d32d3cb39232a117c38beee0f4901fe06e8d77b1758d50082a966b5a9fceb60111494446924a4be5c1956f4004b66dd
+  checksum: 10c0/b4b022546523168f361cd640dff68feb9709b259aacc05e12055a4f278d07e58fbb280ae70454425199f91e62729b03f0a16bdfe880c5a0b1b10c02bc334fc30
   languageName: node
   linkType: hard
 
@@ -661,7 +661,7 @@ __metadata:
   resolution: "@vitest/spy@npm:3.2.7"
   dependencies:
     tinyspy: "npm:^4.0.3"
-  checksum: 8/748e48f8e6792dbc4547f6a12e86cc9fcda1464cb89116d1cb6a51656deb16480e6337db632855325513fcee20e247106492303ada2e1002ef1fbac8d3bba2b5
+  checksum: 10c0/cf2728b4ddc6137e0ca749215c7714845e8221a5f799e933bc623216a9958fd8b032cdd7f033ed8375df9e6ed84a18b64687ca2530f50e8a76bc3b1d16d88c42
   languageName: node
   linkType: hard
 
@@ -672,7 +672,7 @@ __metadata:
     "@vitest/pretty-format": "npm:3.2.6"
     loupe: "npm:^3.1.4"
     tinyrainbow: "npm:^2.0.0"
-  checksum: 8/7b01a21c670965a15d39f2d1f2ec964ec38b0e63f037a5dc56c7fccccf0480527f770480204f87c608301c620cf8d0e42ae89a137879f5c9961b6f3b2b8a7ede
+  checksum: 10c0/452da757082ebcadf43ce697bf4077d546ea06e094763969440c3cb0d7bb950be0f69d6dbdab297cd0307bdf956294e20b0184d0218a4ef942d3d253995d44ed
   languageName: node
   linkType: hard
 
@@ -683,7 +683,7 @@ __metadata:
     "@vitest/pretty-format": "npm:3.2.7"
     loupe: "npm:^3.1.4"
     tinyrainbow: "npm:^2.0.0"
-  checksum: 8/3286bbc1a2c3640c9b9e9e85ee11ba7374a7ca9f4ebf8bbab68c5a3305e3f5a45455e4c842a4bed3f00b65c5d2576727d4df326e02adaee40b76c4a740b47ef8
+  checksum: 10c0/fea57d6cf66853926f54ea6e9bd249b707120b0abba565d96a3880c7f04d5c5cd4778546879b9074cc73c0b81b475c1873791d4b3b3e5a324115b5bcfd3a46bb
   languageName: node
   linkType: hard
 
@@ -1239,9 +1239,9 @@ __metadata:
   linkType: hard
 
 "ip-address@npm:^10.0.1":
-  version: 10.7.2
-  resolution: "ip-address@npm:10.7.2"
-  checksum: 10c0/290b9c63289b2a89a442dac19eff88d919e65cd41d1a720fa963be736e126f3b0cf4f88f6056b06abbf4a95300dc9ce5362a773e012ef30e0400074d175b9d31
+  version: 10.7.5
+  resolution: "ip-address@npm:10.7.5"
+  checksum: 10c0/0213462eada955051a4d5927a62f6613b7bf0f4b426347641491ef9c8498ee6e1ef0bcbe1455382de6d61771b0ab4a344919102d4b614d284161ed8df620125f
   languageName: node
   linkType: hard
 
@@ -1336,7 +1336,7 @@ __metadata:
   resolution: "minimatch@npm:10.2.4"
   dependencies:
     brace-expansion: "npm:^5.0.2"
-  checksum: 8/56dce6b04c6b30b500d81d7a29822c108b7d58c46696ec7332d04a2bd104a5cb69e5c7ce93e1783dc66d61400d831e6e226ca101ac23665aff32ca303619dc3d
+  checksum: 10c0/35f3dfb7b99b51efd46afd378486889f590e7efb10e0f6a10ba6800428cf65c9a8dedb74427d0570b318d749b543dc4e85f06d46d2858bc8cac7e1eb49a95945
   languageName: node
   linkType: hard
 
@@ -1435,7 +1435,7 @@ __metadata:
   resolution: "nanoid@npm:3.3.16"
   bin:
     nanoid: bin/nanoid.cjs
-  checksum: 8/2489d8f87f02178a15b901d7d06e490838383a2acdf01ec2b4e4343c02325ab648965a539eba8bdb821560a33e4c34be506b9e1c7c1bb5cb750e894f500fce92
+  checksum: 10c0/bbf2dcffe22d2b62d16de2711752070b539c0f644c7916f823ad6521986b2078cbe524f2d6240f58c46e9141ea0c7b87a029e100c0f7f175228cacaf30e41bba
   languageName: node
   linkType: hard
 
@@ -1518,7 +1518,7 @@ __metadata:
 "picomatch@npm:^4.0.2, picomatch@npm:^4.0.3":
   version: 4.0.4
   resolution: "picomatch@npm:4.0.4"
-  checksum: 8/76b387b5157951422fa6049a96bdd1695e39dd126cd99df34d343638dc5cdb8bcdc83fff288c23eddcf7c26657c35e3173d4d5f488c4f28b889b314472e0a662
+  checksum: 10c0/e2c6023372cc7b5764719a5ffb9da0f8e781212fa7ca4bd0562db929df8e117460f00dff3cb7509dacfc06b86de924b247f504d0ce1806a37fac4633081466b0
   languageName: node
   linkType: hard
 
@@ -1553,7 +1553,7 @@ __metadata:
     nanoid: "npm:^3.3.16"
     picocolors: "npm:^1.1.1"
     source-map-js: "npm:^1.2.1"
-  checksum: 8/bd8ea2dfc9343a59675bad40d956508f4f5162117aa85eaaa44ce582415b40eac175e57de0fc80c5141418c9f092c0cc50f184be79115666b694673d8deb75b8
+  checksum: 10c0/b3854840ffee4604249a1bad97291105a974009d63b068b716dbee1d2e034bb965353a9fb4d6e957ede475b2acf4167cd4b1d41074f8dd3ce2fe488b60c8ce44
   languageName: node
   linkType: hard
 
@@ -1685,7 +1685,7 @@ __metadata:
       optional: true
   bin:
     rollup: dist/bin/rollup
-  checksum: 8/c2427c6907f05bb98c92064c1660bbeaebb11f3022ec853635e6a994f8e1d39ed18ccee8d70b219954787dca0a2eb3082941bd2c3e054071eec2569acc1c1509
+  checksum: 10c0/f38742da34cfee5e899302615fa157aa77cb6a2a1495e5e3ce4cc9c540d3262e235bbe60caa31562bbfe492b01fdb3e7a8c43c39d842d3293bcf843123b766fc
   languageName: node
   linkType: hard
 
@@ -1784,7 +1784,7 @@ __metadata:
 "stac-wasm@file:./pkg::locator=stac-wasm-tests%40workspace%3A.":
   version: 0.1.0
   resolution: "stac-wasm@file:./pkg#./pkg::hash=beed02&locator=stac-wasm-tests%40workspace%3A."
-  checksum: 8/8df166619b4c9694b0046268d632392c1527cb902696920e247a6520df78433f0a1c9143ac2301c898318034da812b08bdd2d3f995c76d6fc3b4102d176ebe1b
+  checksum: 10c0/8df166619b4c9694b0046268d632392c1527cb902696920e247a6520df78433f0a1c9143ac2301c898318034da812b08bdd2d3f995c76d6fc3b4102d176ebe1b
   languageName: node
   linkType: hard
 
@@ -1839,7 +1839,7 @@ __metadata:
     minipass: "npm:^7.1.2"
     minizlib: "npm:^3.1.0"
     yallist: "npm:^5.0.0"
-  checksum: 8/e1434f40954410d191ab6d89017bfd40c24869cfd319d19dd74f84db13cbea15370a22bc9b8ecd699d05c2777ec6297f35dac318ed4829b6e776a7cb4f1f7c68
+  checksum: 10c0/1311f6be85a8157ac4c9147bae43e13923d2a1aae15e4aa1bd5239e4e03d2cf53cfe103dde7f35832fbb4c938b042856bc8e9a0afd29abd05e2d1608788c4fea
   languageName: node
   linkType: hard
 
@@ -2072,7 +2072,7 @@ __metadata:
       optional: true
   bin:
     vitest: vitest.mjs
-  checksum: 8/c4e41cd0e6769439b0bf804d335346cf9b9254871e2586bd9442f79cc8a1cda0c8896b6b40a98834904c6f5f229177853431a8970cb312c82b539f82c96e0d7b
+  checksum: 10c0/ea222dcd7310188479e37dbea4fbcbdcdb8db97f952b4813e7e7b370b329485c2de4622551e61076ffd75d4d811a6800a0da1e31520067614c51528f26704758
   languageName: node
   linkType: hard
 
@@ -2117,7 +2117,7 @@ __metadata:
       optional: true
     utf-8-validate:
       optional: true
-  checksum: 8/83ff89ae011bc5c3c5605a45a0d50e12589143c7500ca4de83a8d43b3cd26e71f422cb3206fd1a9e6d541d666eeb66255c30d095d62d413b3c7afe5d2c5cb928
+  checksum: 10c0/ef4a243476283fc49bc7550966c4af4aa0eef56273837211e700de3b664e08604a760cdddcb5ba43c049140e74ccfec5b0ee0bb439e08c2adf9138902fdde5f9
   languageName: node
   linkType: hard
 
