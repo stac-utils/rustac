@@ -185,3 +185,30 @@ fn validate(mut command: Command) {
         .assert()
         .failure();
 }
+
+#[test]
+fn search_header() {
+    let _ = Rustac::try_parse_from([
+        "rustac",
+        "search",
+        "https://stac.test",
+        "--header",
+        "x-foo=bar",
+        "--header",
+        "x-baz=qux,x-quux=corge",
+    ])
+    .unwrap();
+}
+
+#[test]
+fn search_invalid_header() {
+    let err = Rustac::try_parse_from([
+        "rustac",
+        "search",
+        "https://stac.test",
+        "--header",
+        "not a header=bar",
+    ])
+    .unwrap_err();
+    assert_eq!(err.kind(), ErrorKind::ValueValidation);
+}

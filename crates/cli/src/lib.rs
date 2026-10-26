@@ -4,7 +4,7 @@
 
 use anyhow::{Error, Result, anyhow};
 use async_stream::try_stream;
-use axum::http::HeaderMap;
+use axum::http::{HeaderMap, HeaderName, HeaderValue};
 use clap::{CommandFactory, Parser, Subcommand};
 use futures_core::TryStream;
 use futures_util::{TryStreamExt, pin_mut};
@@ -244,9 +244,9 @@ pub enum Command {
         #[arg(
             long = "header",
             value_delimiter = ',',
-            value_parser = |s: &str| KeyValue::from_str(s).map(|kv| (kv.0, kv.1))
+            value_parser = parse_header
         )]
-        headers: Option<HeaderMap>,
+        headers: Vec<(HeaderName, HeaderValue)>,
     },
 
     /// Serves a STAC API.
@@ -468,10 +468,8 @@ impl Rustac {
                     }
                     SearchImplementation::Duckdb => stac_duckdb::search(href, search, *max_items)?,
                     SearchImplementation::Api => {
-                        let mut builder = ClientBuilder::new();
-                        if let Some(headers) = headers.clone() {
-                            builder = builder.default_headers(headers);
-                        }
+                        let builder = ClientBuilder::new()
+                            .default_headers(headers.iter().cloned().collect::<HeaderMap>());
                         stac_io::api::search_with_client_builder(href, search, *max_items, builder)
                             .await?
                     }
@@ -899,6 +897,11 @@ impl FromStr for KeyValue {
             Err(anyhow!("invalid key=value: {s}"))
         }
     }
+}
+
+fn parse_header(s: &str) -> Result<(HeaderName, HeaderValue)> {
+    let KeyValue(key, value) = s.parse()?;
+    Ok((key.parse()?, value.parse()?))
 }
 
 async fn load_and_serve(
