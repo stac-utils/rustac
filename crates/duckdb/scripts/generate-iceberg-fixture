@@ -26,9 +26,21 @@ SOURCE_PARQUET = CRATE_ROOT / "data" / "100-sentinel-2-items.parquet"
 
 
 def read_subset() -> pyarrow.Table:
-    table = pyarrow.parquet.read_table(SOURCE_PARQUET, columns=["id", "datetime", "collection", "eo:cloud_cover", "platform", "geometry"]).slice(0, 5)
+    table = pyarrow.parquet.read_table(
+        SOURCE_PARQUET,
+        columns=[
+            "id",
+            "datetime",
+            "collection",
+            "eo:cloud_cover",
+            "platform",
+            "geometry",
+        ],
+    ).slice(0, 5)
     geometry = table.column("geometry").cast(pyarrow.binary())
-    return table.set_column(table.schema.get_field_index("geometry"), "geometry", geometry)
+    return table.set_column(
+        table.schema.get_field_index("geometry"), "geometry", geometry
+    )
 
 
 def build_iceberg_table(warehouse: Path, data: pyarrow.Table) -> Path:
@@ -71,9 +83,17 @@ def rewrite_paths(table_dir: Path, dest_rel_prefix: str) -> Path:
         with avro_path.open("rb") as f:
             reader = fastavro.reader(f)
             writer_schema = reader.writer_schema
+            codec = reader.codec
+            metadata = {
+                key: value
+                for key, value in reader.metadata.items()
+                if not key.startswith("avro.")
+            }
             records = list(reader)
         for record in records:
-            if "manifest_path" in record and record["manifest_path"].startswith(abs_prefix):
+            if "manifest_path" in record and record["manifest_path"].startswith(
+                abs_prefix
+            ):
                 record["manifest_path"] = record["manifest_path"].replace(
                     abs_prefix, rel_prefix
                 )
@@ -83,7 +103,7 @@ def rewrite_paths(table_dir: Path, dest_rel_prefix: str) -> Path:
                 if file_path.startswith(abs_prefix):
                     data_file["file_path"] = file_path.replace(abs_prefix, rel_prefix)
         with avro_path.open("wb") as f:
-            fastavro.writer(f, writer_schema, records)
+            fastavro.writer(f, writer_schema, records, codec=codec, metadata=metadata)
 
     # Give the metadata a stable filename so the test doesn't have to glob for a UUID.
     stable = metadata_dir / "v1.metadata.json"

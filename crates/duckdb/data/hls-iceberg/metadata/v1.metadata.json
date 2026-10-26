@@ -1,7 +1,7 @@
 {
   "location": "data/hls-iceberg",
-  "table-uuid": "f93d310f-26f1-4d3e-9124-d593674bbc67",
-  "last-updated-ms": 1786220856641,
+  "table-uuid": "9d8901d0-5933-4148-9a44-af4083991cf5",
+  "last-updated-ms": 1793022202025,
   "last-column-id": 6,
   "schemas": [
     {
@@ -58,13 +58,13 @@
   "default-spec-id": 0,
   "last-partition-id": 999,
   "properties": {},
-  "current-snapshot-id": 5883779319910942589,
+  "current-snapshot-id": 8973396384331696904,
   "snapshots": [
     {
-      "snapshot-id": 5883779319910942589,
+      "snapshot-id": 8973396384331696904,
       "sequence-number": 1,
-      "timestamp-ms": 1786220856641,
-      "manifest-list": "data/hls-iceberg/metadata/snap-5883779319910942589-0-91a71953-67c1-46d0-9f61-194935b3081f.avro",
+      "timestamp-ms": 1793022202025,
+      "manifest-list": "data/hls-iceberg/metadata/snap-8973396384331696904-0-6eb4cfbf-acba-43cd-8faf-fbc7e47d0cc6.avro",
       "summary": {
         "operation": "append",
         "added-files-size": "3966",
@@ -82,8 +82,8 @@
   ],
   "snapshot-log": [
     {
-      "snapshot-id": 5883779319910942589,
-      "timestamp-ms": 1786220856641
+      "snapshot-id": 8973396384331696904,
+      "timestamp-ms": 1793022202025
     }
   ],
   "sort-orders": [
@@ -95,7 +95,7 @@
   "default-sort-order-id": 0,
   "refs": {
     "main": {
-      "snapshot-id": 5883779319910942589,
+      "snapshot-id": 8973396384331696904,
       "type": "branch"
     }
   },
