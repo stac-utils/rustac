@@ -9,7 +9,10 @@ dependencies = []
 docs = ["mkdocs-material[imaging]>=9.7.7", "mkdocs-redirects>=1.2.3"]
 stac-geoparquet = [
     "deepdiff>=9.1.0",
+    "fastavro>=1.13.1",
     "pyarrow>=26.0.0",
+    "pyiceberg>=0.12.0",
+    "sqlalchemy>=2.1.6",
     "stac-geoparquet>=0.8.2",
 ]
 stac-api-validator = ["setuptools>=84.0.0", "stac-api-validator>=0.6.8"]
