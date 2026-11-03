@@ -41,7 +41,7 @@ jobs:
           unzip libduckdb-linux-amd64.zip -d /opt/duckdb
           rm libduckdb-linux-amd64.zip
       - name: Run release-plz
-        uses: release-plz/action@6caa8d34f74d82b0dc76a18edd1cc3d6801c9baf # v0.5.143
+        uses: release-plz/action@f67a7e724bdad4a0f6875f186060a0ca2770d76c # v0.5.147
         with:
           command: release
         env:
@@ -58,9 +58,9 @@ jobs:
     steps:
       - *checkout
       - *generate-token
-      - uses: Swatinem/rust-cache@f0d9c3887740aee45f6153b24b3a6b815192ec16 # v2
+      - uses: Swatinem/rust-cache@c8037a86dde8214a8310e9f54a8fc61ab362aa31 # v2
       - name: Run release-plz
-        uses: release-plz/action@6caa8d34f74d82b0dc76a18edd1cc3d6801c9baf # v0.5.143
+        uses: release-plz/action@f67a7e724bdad4a0f6875f186060a0ca2770d76c # v0.5.147
         with:
           command: release-pr
         env:
