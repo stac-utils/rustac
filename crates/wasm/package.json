@@ -13,8 +13,9 @@
   },
   "devDependencies": {
     "@vitest/browser": "^3.2.7",
-    "playwright": "^1.50.0",
+    "playwright": "^1.64.1",
+    "vite": "^7.3.7",
     "vite-plugin-wasm": "^3.4.0",
-    "vitest": "^3.2.6"
+    "vitest": "^3.2.7"
   }
 }
