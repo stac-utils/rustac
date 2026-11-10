@@ -1,8 +1,13 @@
+use stac::Version;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {
+    /// Cannot validate the given STAC version.
+    #[error("cannot validate version: {0}")]
+    CannotValidateVersion(Version),
+
     /// [fluent_uri::ParseError]
     #[error(transparent)]
     FluentUriParse(#[from] fluent_uri::ParseError),

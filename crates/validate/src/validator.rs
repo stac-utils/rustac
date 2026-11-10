@@ -143,7 +143,8 @@ impl Validator {
             .unwrap()
             .ok_or(stac::Error::MissingField("stac_version"))?;
 
-        let uri = build_uri(r#type, &version);
+        let uri =
+            build_uri(r#type, &version).ok_or_else(|| Error::CannotValidateVersion(version))?;
         let validator = self.validator(uri).await?;
         let value = Value::Object(object);
         let errors: Vec<_> = validator.iter_errors(&value).collect();
@@ -255,15 +256,10 @@ impl AsyncRetrieve for Retriever {
     }
 }
 
-fn build_uri(r#type: Type, version: &Version) -> Uri<String> {
-    Uri::parse(format!(
-        "{}{}",
-        SCHEMA_BASE,
-        r#type
-            .spec_path(version)
-            .expect("we shouldn't get here with an item collection")
-    ))
-    .unwrap()
+fn build_uri(r#type: Type, version: &Version) -> Option<Uri<String>> {
+    r#type
+        .spec_path(version)
+        .and_then(|path| Uri::parse(format!("{}{}", SCHEMA_BASE, path)).ok())
 }
 
 async fn prebuild_validators(
@@ -277,7 +273,7 @@ async fn prebuild_validators(
 
     macro_rules! schema {
         ($t:expr_2021, $v:expr_2021, $path:expr_2021, $schemas:expr_2021) => {
-            let url = build_uri($t, &$v);
+            let url = build_uri($t, &$v).unwrap();
             let value = serde_json::from_str(include_str!($path)).unwrap();
             let validator = jsonschema::async_options()
                 .with_registry(registry)
@@ -438,5 +434,15 @@ mod tests {
             "collections": [collection]
         });
         collections.validate().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn validate_invalid_version() {
+        // https://github.com/stac-utils/rustac/issues/1168
+        let mut validator = Validator::new().await.unwrap();
+        validator
+            .validate_value(serde_json::json!({"type": "Feature", "stac_version": "not a version"}))
+            .await
+            .unwrap_err();
     }
 }
