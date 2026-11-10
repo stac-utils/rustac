@@ -24,7 +24,7 @@
 //! #[tokio::main]
 //! async fn main() {
 //!     let mut items: Vec<_> = (0..10).map(|n| Item::new(format!("item-{}", n))).collect();
-//!     let mut validator = Validator::new().await.unwrap();
+//!     let validator = Validator::new().await.unwrap();
 //!     for item in items {
 //!         validator.validate(&item).await.unwrap();
 //!     }
@@ -69,7 +69,7 @@ pub trait Validate: Serialize + Sized {
     /// }
     /// ```
     async fn validate(&self) -> Result<()> {
-        let mut validator = Validator::new().await?;
+        let validator = Validator::new().await?;
         validator.validate(self).await
     }
 }

@@ -7,14 +7,25 @@ use reqwest::Client;
 use serde::Serialize;
 use serde_json::{Map, Value};
 use stac::{Type, Version};
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
+use tokio::sync::OnceCell;
 
 const SCHEMA_BASE: &str = "https://schemas.stacspec.org";
 
+type Cache = HashMap<Uri<String>, Arc<OnceCell<Arc<JsonschemaValidator>>>>;
+
 /// A structure for validating STAC.
+///
+/// Compiled schemas are cached and shared between clones, so a single
+/// [Validator] (or its clones) can be used to validate many objects
+/// concurrently.
+#[derive(Clone)]
 pub struct Validator {
-    validators: HashMap<Uri<String>, JsonschemaValidator>,
-    registry: Registry<'static>,
+    validators: Arc<Mutex<Cache>>,
+    registry: Arc<Registry<'static>>,
     retriever: Retriever,
 }
 
@@ -41,10 +52,14 @@ impl Validator {
             .expect("prebuild resource URIs should be valid")
             .prepare()
             .expect("prebuild registry should build");
-        let validators = prebuild_validators(&registry, retriever.clone()).await;
+        let validators = prebuild_validators(&registry, retriever.clone())
+            .await
+            .into_iter()
+            .map(|(uri, validator)| (uri, Arc::new(OnceCell::new_with(Some(Arc::new(validator))))))
+            .collect();
         Ok(Validator {
-            validators,
-            registry,
+            validators: Arc::new(Mutex::new(validators)),
+            registry: Arc::new(registry),
             retriever,
         })
     }
@@ -63,7 +78,7 @@ impl Validator {
     ///     item.validate().await.unwrap();
     /// }
     /// ```
-    pub async fn validate<T>(&mut self, value: &T) -> Result<()>
+    pub async fn validate<T>(&self, value: &T) -> Result<()>
     where
         T: Serialize,
     {
@@ -74,7 +89,7 @@ impl Validator {
 
     /// If you have a [serde_json::Value], you can skip a deserialization step by using this method.
     #[async_recursion]
-    pub async fn validate_value(&mut self, value: Value) -> Result<Value> {
+    pub async fn validate_value(&self, value: Value) -> Result<Value> {
         if let Value::Object(object) = value {
             self.validate_object(object).await.map(Value::Object)
         } else if let Value::Array(array) = value {
@@ -85,7 +100,7 @@ impl Validator {
     }
 
     #[async_recursion]
-    async fn validate_array(&mut self, array: Vec<Value>) -> Result<Vec<Value>> {
+    async fn validate_array(&self, array: Vec<Value>) -> Result<Vec<Value>> {
         let mut errors = Vec::new();
         let mut new_array = Vec::with_capacity(array.len());
         for value in array {
@@ -108,10 +123,7 @@ impl Validator {
     }
 
     #[async_recursion]
-    async fn validate_object(
-        &mut self,
-        mut object: Map<String, Value>,
-    ) -> Result<Map<String, Value>> {
+    async fn validate_object(&self, mut object: Map<String, Value>) -> Result<Map<String, Value>> {
         let r#type = if let Some(r#type) = object.get("type").and_then(|v| v.as_str()) {
             let r#type: Type = r#type.parse()?;
             if r#type == Type::ItemCollection {
@@ -145,7 +157,7 @@ impl Validator {
 
         let uri =
             build_uri(r#type, &version).ok_or_else(|| Error::CannotValidateVersion(version))?;
-        let validator = self.validator(uri).await?;
+        let validator = self.validator(&uri).await?;
         let value = Value::Object(object);
         let errors: Vec<_> = validator.iter_errors(&value).collect();
         let object = if errors.is_empty() {
@@ -164,10 +176,7 @@ impl Validator {
         self.validate_extensions(object).await
     }
 
-    async fn validate_extensions(
-        &mut self,
-        object: Map<String, Value>,
-    ) -> Result<Map<String, Value>> {
+    async fn validate_extensions(&self, object: Map<String, Value>) -> Result<Map<String, Value>> {
         match object
             .get("stac_extensions")
             .and_then(|value| value.as_array())
@@ -184,14 +193,11 @@ impl Validator {
                         }
                     })
                     .collect::<std::result::Result<Vec<_>, _>>()?;
-                self.ensure_validators(&uris).await?;
+                let validators = self.validators(&uris).await?;
 
                 let mut errors = Vec::new();
                 let value = Value::Object(object);
-                for uri in uris {
-                    let validator = self
-                        .validator_opt(&uri)
-                        .expect("We already ensured they're present");
+                for validator in &validators {
                     errors.extend(validator.iter_errors(&value));
                 }
                 if errors.is_empty() {
@@ -211,36 +217,43 @@ impl Validator {
         }
     }
 
-    async fn validator(&mut self, uri: Uri<String>) -> Result<&JsonschemaValidator> {
-        self.ensure_validator(&uri).await?;
-        Ok(self.validator_opt(&uri).unwrap())
-    }
-
-    async fn ensure_validators(&mut self, uris: &[Uri<String>]) -> Result<()> {
+    async fn validators(&self, uris: &[Uri<String>]) -> Result<Vec<Arc<JsonschemaValidator>>> {
+        let mut validators = Vec::with_capacity(uris.len());
         for uri in uris {
-            self.ensure_validator(uri).await?;
+            validators.push(self.validator(uri).await?);
         }
-        Ok(())
+        Ok(validators)
     }
 
-    async fn ensure_validator(&mut self, uri: &Uri<String>) -> Result<()> {
-        if !self.validators.contains_key(uri) {
-            let client = reqwest::Client::new();
-            let response = client.get(uri.as_str()).send().await?.error_for_status()?;
-            let json_data = response.json().await?;
-            let validator = jsonschema::async_options()
-                .with_registry(&self.registry)
-                .with_retriever(self.retriever.clone())
-                .build(&json_data)
-                .await
-                .map_err(Box::new)?;
-            let _ = self.validators.insert(uri.clone(), validator);
-        }
-        Ok(())
+    async fn validator(&self, uri: &Uri<String>) -> Result<Arc<JsonschemaValidator>> {
+        let cell = self
+            .validators
+            .lock()
+            .expect("validator cache lock should not be poisoned")
+            .entry(uri.clone())
+            .or_default()
+            .clone();
+        cell.get_or_try_init(|| self.build_validator(uri))
+            .await
+            .cloned()
     }
 
-    fn validator_opt(&self, uri: &Uri<String>) -> Option<&JsonschemaValidator> {
-        self.validators.get(uri)
+    async fn build_validator(&self, uri: &Uri<String>) -> Result<Arc<JsonschemaValidator>> {
+        let response = self
+            .retriever
+            .0
+            .get(uri.as_str())
+            .send()
+            .await?
+            .error_for_status()?;
+        let json_data: Value = response.json().await?;
+        let validator = jsonschema::async_options()
+            .with_registry(&self.registry)
+            .with_retriever(self.retriever.clone())
+            .build(&json_data)
+            .await
+            .map_err(Box::new)?;
+        Ok(Arc::new(validator))
     }
 }
 
@@ -423,8 +436,24 @@ mod tests {
             .map(|i| Item::new(format!("item-{i}")))
             .map(|i| serde_json::to_value(i).unwrap())
             .collect();
-        let mut validator = Validator::new().await.unwrap();
+        let validator = Validator::new().await.unwrap();
         validator.validate(&items).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn validate_concurrently() {
+        let validator = Validator::new().await.unwrap();
+        let item: Item = stac_io::read("examples/extended-item.json").unwrap();
+        let handles: Vec<_> = (0..10)
+            .map(|_| {
+                let validator = validator.clone();
+                let item = item.clone();
+                tokio::spawn(async move { validator.validate(&item).await })
+            })
+            .collect();
+        for handle in handles {
+            handle.await.unwrap().unwrap();
+        }
     }
 
     #[tokio::test]
@@ -439,7 +468,7 @@ mod tests {
     #[tokio::test]
     async fn validate_invalid_version() {
         // https://github.com/stac-utils/rustac/issues/1168
-        let mut validator = Validator::new().await.unwrap();
+        let validator = Validator::new().await.unwrap();
         validator
             .validate_value(serde_json::json!({"type": "Feature", "stac_version": "not a version"}))
             .await
