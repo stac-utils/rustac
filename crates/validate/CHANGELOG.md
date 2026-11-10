@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.16](https://github.com/stac-utils/rustac/compare/stac-validate-v0.6.15...stac-validate-v0.6.16) - 2026-11-10
+
+### Added
+
+- add Validator::with_client_builder ([#1175](https://github.com/stac-utils/rustac/pull/1175))
+- use interior mutability for Validator ([#1174](https://github.com/stac-utils/rustac/pull/1174))
+
+### Fixed
+
+- *(validate)* don't panic on invalid STAC version ([#1173](https://github.com/stac-utils/rustac/pull/1173))
+
 ## [0.6.15](https://github.com/stac-utils/rustac/compare/stac-validate-v0.6.14...stac-validate-v0.6.15) - 2026-10-26
 
 ### Other
