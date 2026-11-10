@@ -3,7 +3,7 @@ use async_recursion::async_recursion;
 use async_trait::async_trait;
 use fluent_uri::Uri;
 use jsonschema::{AsyncRetrieve, Registry, Resource, Validator as JsonschemaValidator};
-use reqwest::Client;
+use reqwest::{Client, ClientBuilder};
 use serde::Serialize;
 use serde_json::{Map, Value};
 use stac::{Type, Version};
@@ -46,7 +46,30 @@ impl Validator {
     /// }
     /// ```
     pub async fn new() -> Result<Validator> {
-        let retriever = Retriever(Client::builder().user_agent(crate::user_agent()).build()?);
+        Validator::with_client_builder(Client::builder()).await
+    }
+
+    /// Creates a new validator with the provided client builder.
+    ///
+    /// Use this to customize the Validator's underlying client's behavior.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use reqwest::Client;
+    /// use stac_validate::Validator;
+    /// use std::time::Duration;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let client_builder = Client::builder().timeout(Duration::from_secs(10));
+    ///     let validator = Validator::with_client_builder(client_builder)
+    ///         .await
+    ///         .unwrap();
+    /// }
+    /// ```
+    pub async fn with_client_builder(client_builder: ClientBuilder) -> Result<Validator> {
+        let retriever = Retriever(client_builder.user_agent(crate::user_agent()).build()?);
         let registry = Registry::new()
             .extend(prebuild_resources())
             .expect("prebuild resource URIs should be valid")
