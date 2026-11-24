@@ -12,7 +12,7 @@ stac-geoparquet = [
     "fastavro>=1.13.1",
     "pyarrow>=26.0.1",
     "pyiceberg>=0.12.0",
-    "sqlalchemy>=2.1.8",
+    "sqlalchemy>=2.1.9",
     "stac-geoparquet>=0.8.3",
 ]
 stac-api-validator = ["setuptools>=84.2.1", "stac-api-validator>=0.6.8"]
